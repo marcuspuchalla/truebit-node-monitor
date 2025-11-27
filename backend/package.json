@@ -15,6 +15,6 @@
     "dockerode": "^4.0.2",
     "better-sqlite3": "^9.4.0",
     "dotenv": "^16.4.1",
-    "nats": "^2.29.3"
+    "nats.ws": "^1.30.0"
   }
 }
