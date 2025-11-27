@@ -58,6 +58,17 @@
 
         <div v-if="localSettings.enabled" class="advanced-settings">
           <div class="form-group">
+            <label>NATS Server URL</label>
+            <input
+              type="text"
+              v-model="natsServerUrl"
+              placeholder="wss://federation.tru.watch:9086"
+              @blur="saveNatsServer"
+            />
+            <p class="help-text">WebSocket URL of the federation NATS server</p>
+          </div>
+
+          <div class="form-group">
             <label>Privacy Level</label>
             <select v-model="localSettings.privacyLevel" @change="saveSettings">
               <option value="minimal">Minimal (more data shared)</option>
@@ -206,12 +217,17 @@ const {
 } = storeToRefs(federationStore);
 
 const localSettings = ref({});
+const natsServerUrl = ref('');
 
 let refreshInterval = null;
 
 onMounted(async () => {
   await federationStore.initialize();
   localSettings.value = { ...settings.value };
+  // Initialize NATS server URL from settings array
+  if (settings.value.natsServers && settings.value.natsServers.length > 0) {
+    natsServerUrl.value = settings.value.natsServers[0];
+  }
 
   // Refresh every 10 seconds if enabled
   refreshInterval = setInterval(() => {
@@ -245,6 +261,18 @@ async function saveSettings() {
     await federationStore.updateSettings(localSettings.value);
   } catch (error) {
     alert('Failed to save settings: ' + error.message);
+  }
+}
+
+async function saveNatsServer() {
+  try {
+    const servers = natsServerUrl.value ? [natsServerUrl.value] : [];
+    await federationStore.updateSettings({
+      ...localSettings.value,
+      natsServers: servers
+    });
+  } catch (error) {
+    alert('Failed to save NATS server: ' + error.message);
   }
 }
 
