@@ -5,15 +5,20 @@
       <p class="subtitle">Privacy-first decentralized monitoring</p>
     </div>
 
+    <!-- Error Banner -->
+    <div v-if="errorMessage" class="banner banner-error">
+      {{ errorMessage }}
+    </div>
+
     <!-- Status Banner -->
-    <div v-if="!isEnabled" class="banner banner-info">
-      ⚠️ Federation is currently disabled. Enable it below to participate in the global network.
+    <div v-else-if="!isEnabled" class="banner banner-info">
+      Federation is currently disabled. Enable it below to participate in the global network.
     </div>
     <div v-else-if="!isConnected" class="banner banner-warning">
-      🔴 Federation is enabled but not connected. Checking connection...
+      Federation is enabled but not connected. Checking connection...
     </div>
     <div v-else-if="isHealthy" class="banner banner-success">
-      ✅ Connected to federation network. Your node is participating securely.
+      Connected to federation network. Your node is participating securely.
     </div>
 
     <!-- Quick Stats -->
@@ -218,6 +223,7 @@ const {
 
 const localSettings = ref({});
 const natsServerUrl = ref('');
+const errorMessage = ref('');
 
 let refreshInterval = null;
 
@@ -243,7 +249,16 @@ onUnmounted(() => {
   }
 });
 
+function getErrorMessage(error) {
+  // Try to extract server error message from axios response
+  if (error.response?.data?.error) {
+    return error.response.data.error;
+  }
+  return error.message || 'Unknown error';
+}
+
 async function handleToggleFederation() {
+  errorMessage.value = '';
   try {
     if (localSettings.value.enabled) {
       await federationStore.enableFederation();
@@ -251,20 +266,22 @@ async function handleToggleFederation() {
       await federationStore.disableFederation();
     }
   } catch (error) {
-    alert('Failed to toggle federation: ' + error.message);
+    errorMessage.value = getErrorMessage(error);
     localSettings.value.enabled = !localSettings.value.enabled;
   }
 }
 
 async function saveSettings() {
+  errorMessage.value = '';
   try {
     await federationStore.updateSettings(localSettings.value);
   } catch (error) {
-    alert('Failed to save settings: ' + error.message);
+    errorMessage.value = getErrorMessage(error);
   }
 }
 
 async function saveNatsServer() {
+  errorMessage.value = '';
   try {
     const servers = natsServerUrl.value ? [natsServerUrl.value] : [];
     await federationStore.updateSettings({
@@ -272,7 +289,7 @@ async function saveNatsServer() {
       natsServers: servers
     });
   } catch (error) {
-    alert('Failed to save NATS server: ' + error.message);
+    errorMessage.value = getErrorMessage(error);
   }
 }
 
@@ -334,6 +351,12 @@ function getReputationClass(score) {
   background: #d1fae5;
   color: #065f46;
   border: 1px solid #6ee7b7;
+}
+
+.banner-error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
 }
 
 .stats-grid {
