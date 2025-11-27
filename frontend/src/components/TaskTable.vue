@@ -43,17 +43,17 @@
           <tr v-for="task in tasks" :key="task.id" class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm font-mono text-gray-900">
-                {{ task.execution_id.substring(0, 8) }}...
+                {{ task.execution_id ? task.execution_id.substring(0, 8) + '...' : 'N/A' }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <span :class="getStatusBadgeClass(task.status)" class="px-2 py-1 text-xs font-semibold rounded-full">
-                {{ task.status }}
+                {{ task.status || 'unknown' }}
               </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
               <div class="text-sm text-gray-900 font-mono truncate max-w-xs">
-                {{ task.task_type }}
+                {{ task.task_type || 'N/A' }}
               </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

@@ -51,8 +51,8 @@ export const useTasksStore = defineStore('tasks', () => {
         status: params.status
       });
 
-      tasks.value = data.tasks;
-      pagination.value = data.pagination;
+      tasks.value = data?.tasks || [];
+      pagination.value = data?.pagination || { limit: 50, offset: 0, hasMore: false };
     } catch (err) {
       error.value = err.message;
       console.error('Failed to fetch tasks:', err);
