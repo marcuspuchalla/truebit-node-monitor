@@ -62,7 +62,7 @@
             <input
               type="text"
               v-model="natsServerUrl"
-              placeholder="wss://federation.tru.watch:9086"
+              placeholder="wss://f.tru.watch:9086"
               @blur="saveNatsServer"
             />
             <p class="help-text">WebSocket URL of the federation NATS server</p>

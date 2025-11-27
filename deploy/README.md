@@ -47,7 +47,7 @@ After making changes, restart the Traefik proxy:
 1. Go to **Projects** → Create new project or select existing
 2. Click **+ New** → **Docker Compose**
 3. Paste the contents of `docker-compose.federation.yml`
-4. **Important**: Update the domain in labels if not using `federation.tru.watch`:
+4. **Important**: Update the domain in labels if not using `f.tru.watch`:
    ```yaml
    - traefik.http.routers.truebit-nats.rule=Host(`your-domain.com`)
    ```
@@ -58,7 +58,7 @@ After making changes, restart the Traefik proxy:
 ### Test TLS Certificate
 
 ```bash
-openssl s_client -connect federation.tru.watch:9086 -servername federation.tru.watch </dev/null 2>&1 | head -20
+openssl s_client -connect f.tru.watch:9086 -servername f.tru.watch </dev/null 2>&1 | head -20
 ```
 
 ### Test WebSocket Connection
@@ -69,7 +69,7 @@ curl -s --http1.1 -m 5 \
   -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
   -H "Sec-WebSocket-Version: 13" \
-  https://federation.tru.watch:9086 -i | head -10
+  https://f.tru.watch:9086 -i | head -10
 ```
 
 Expected response:
@@ -89,7 +89,7 @@ docker exec truebit-federation-nats wget -qO- http://localhost:8222/healthz
 
 | Protocol | URL | Use Case |
 |----------|-----|----------|
-| WSS (TLS) | `wss://federation.tru.watch:9086` | Browser/Frontend |
+| WSS (TLS) | `wss://f.tru.watch:9086` | Browser/Frontend |
 | NATS TCP | `nats://localhost:4222` | Internal services |
 
 ## NATS Configuration
@@ -130,7 +130,7 @@ Traefik entrypoint not configured. Check Traefik has `--entrypoints.truebitnats.
 ## Architecture
 
 ```
-Browser (wss://federation.tru.watch:9086)
+Browser (wss://f.tru.watch:9086)
          │
          ▼
     ┌─────────┐

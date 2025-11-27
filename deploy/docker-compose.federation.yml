@@ -35,7 +35,7 @@ services:
 
     labels:
       - traefik.enable=true
-      - traefik.http.routers.truebit-nats.rule=Host(`federation.tru.watch`)
+      - traefik.http.routers.truebit-nats.rule=Host(`f.tru.watch`)
       - traefik.http.routers.truebit-nats.entrypoints=truebitnats
       - traefik.http.routers.truebit-nats.tls=true
       - traefik.http.routers.truebit-nats.tls.certresolver=letsencrypt
