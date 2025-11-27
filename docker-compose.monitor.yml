@@ -10,7 +10,7 @@ services:
     expose:
       - "8090"
     networks:
-      - default
+      - coolify
       - truebit-network
     labels:
       - "traefik.docker.network=coolify"
@@ -33,6 +33,8 @@ volumes:
     driver: local
 
 networks:
+  coolify:
+    external: true
   truebit-network:
     external: true
     name: truebit_runner_node_default
