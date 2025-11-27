@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
     container_name: truebit-node-monitor
     restart: unless-stopped
+    labels:
+      - "traefik.http.services.truebit-monitor.loadbalancer.server.port=8090"
     environment:
       - NODE_ENV=production
       - PORT=8090
