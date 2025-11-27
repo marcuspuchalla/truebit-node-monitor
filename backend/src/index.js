@@ -319,7 +319,7 @@ app.use('/api/status', createStatusRouter(db, dockerClient));
 app.use('/api/tasks', createTasksRouter(db));
 app.use('/api/invoices', createInvoicesRouter(db));
 app.use('/api/logs', createLogsRouter(db));
-app.use('/api/federation', createFederationRouter(db, federation));
+// Federation route is registered in start() after client is created
 
 // Health check
 app.get('/health', (req, res) => {
@@ -352,13 +352,15 @@ async function start() {
     const credentials = anonymizer.getNodeCredentials();
     db.initializeFederationSettings(credentials.nodeId, credentials.salt);
 
-    // Create federation client
-    const fedSettings = db.getFederationSettings();
-    if (fedSettings) {
+    // Function to create/recreate federation client
+    const createFederationClient = async () => {
+      const fedSettings = db.getFederationSettings();
+      if (!fedSettings) return;
+
       federation.client = new FederationClient({
         nodeId: fedSettings.node_id,
         salt: fedSettings.salt,
-        servers: fedSettings.nats_servers ? JSON.parse(fedSettings.nats_servers) : ['nats://localhost:4222'],
+        servers: fedSettings.nats_servers ? JSON.parse(fedSettings.nats_servers) : [],
         token: fedSettings.nats_token,
         tls: !!fedSettings.tls_enabled
       });
@@ -381,8 +383,20 @@ async function start() {
         }
       });
 
-      // Auto-connect if federation is enabled
-      if (fedSettings.enabled) {
+      console.log(`🌐 Federation client created with servers: ${fedSettings.nats_servers || '(none configured)'}`);
+    };
+
+    // Create initial federation client
+    await createFederationClient();
+
+    // Register federation routes with recreateClient callback
+    app.use('/api/federation', createFederationRouter(db, federation, createFederationClient));
+
+    // Auto-connect if federation is enabled and servers are configured
+    const fedSettings = db.getFederationSettings();
+    if (fedSettings?.enabled && fedSettings?.nats_servers) {
+      const servers = JSON.parse(fedSettings.nats_servers);
+      if (servers.length > 0) {
         console.log('🌐 Federation is enabled, connecting...');
         try {
           await federation.client.connect();

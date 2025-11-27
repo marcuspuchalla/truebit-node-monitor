@@ -7,7 +7,7 @@ import express from 'express';
 
 const router = express.Router();
 
-export function createFederationRouter(db, federation) {
+export function createFederationRouter(db, federation, recreateClient) {
   // Get federation settings
   router.get('/settings', (req, res) => {
     try {
@@ -53,8 +53,23 @@ export function createFederationRouter(db, federation) {
         return res.status(400).json({ error: 'Invalid privacy level' });
       }
 
+      // Check if NATS servers changed
+      const oldSettings = db.getFederationSettings();
+      const oldServers = oldSettings?.nats_servers ? JSON.parse(oldSettings.nats_servers) : [];
+      const newServers = settings.natsServers || [];
+      const serversChanged = JSON.stringify(oldServers) !== JSON.stringify(newServers);
+
       // Update database
       db.updateFederationSettings(settings);
+
+      // If NATS servers changed, recreate the client
+      if (serversChanged && newServers.length > 0 && recreateClient) {
+        console.log('🔄 NATS servers changed, recreating federation client...');
+        if (federation.client && federation.client.connected) {
+          await federation.client.disconnect();
+        }
+        await recreateClient();
+      }
 
       // If federation is being enabled, connect
       if (settings.enabled && federation.client && !federation.client.connected) {
