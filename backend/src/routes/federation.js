@@ -7,7 +7,7 @@ import express from 'express';
 
 const router = express.Router();
 
-export function createFederationRouter(db, federationClient) {
+export function createFederationRouter(db, federation) {
   // Get federation settings
   router.get('/settings', (req, res) => {
     try {
@@ -57,13 +57,13 @@ export function createFederationRouter(db, federationClient) {
       db.updateFederationSettings(settings);
 
       // If federation is being enabled, connect
-      if (settings.enabled && federationClient && !federationClient.connected) {
-        await federationClient.connect();
+      if (settings.enabled && federation.client && !federation.client.connected) {
+        await federation.client.connect();
       }
 
       // If federation is being disabled, disconnect
-      if (!settings.enabled && federationClient && federationClient.connected) {
-        await federationClient.disconnect();
+      if (!settings.enabled && federation.client && federation.client.connected) {
+        await federation.client.disconnect();
       }
 
       res.json({ success: true, message: 'Federation settings updated' });
@@ -75,7 +75,7 @@ export function createFederationRouter(db, federationClient) {
   // Enable federation
   router.post('/enable', async (req, res) => {
     try {
-      if (!federationClient) {
+      if (!federation.client) {
         return res.status(500).json({ error: 'Federation client not initialized' });
       }
 
@@ -83,7 +83,7 @@ export function createFederationRouter(db, federationClient) {
       db.updateFederationSettings({ enabled: true });
 
       // Connect to NATS
-      const connected = await federationClient.connect();
+      const connected = await federation.client.connect();
 
       if (connected) {
         res.json({ success: true, message: 'Federation enabled' });
@@ -98,7 +98,7 @@ export function createFederationRouter(db, federationClient) {
   // Disable federation
   router.post('/disable', async (req, res) => {
     try {
-      if (!federationClient) {
+      if (!federation.client) {
         return res.status(500).json({ error: 'Federation client not initialized' });
       }
 
@@ -106,7 +106,7 @@ export function createFederationRouter(db, federationClient) {
       db.updateFederationSettings({ enabled: false });
 
       // Disconnect from NATS
-      await federationClient.disconnect();
+      await federation.client.disconnect();
 
       res.json({ success: true, message: 'Federation disabled' });
     } catch (error) {
@@ -119,7 +119,7 @@ export function createFederationRouter(db, federationClient) {
     try {
       const settings = db.getFederationSettings();
 
-      if (!federationClient) {
+      if (!federation.client) {
         return res.json({
           enabled: false,
           connected: false,
@@ -127,13 +127,13 @@ export function createFederationRouter(db, federationClient) {
         });
       }
 
-      const stats = federationClient.getStats();
+      const stats = federation.client.getStats();
 
       res.json({
         enabled: settings ? !!settings.enabled : false,
-        connected: federationClient.connected,
-        healthy: federationClient.isHealthy(),
-        status: federationClient.connected ? 'connected' : 'disconnected',
+        connected: federation.client.connected,
+        healthy: federation.client.isHealthy(),
+        status: federation.client.connected ? 'connected' : 'disconnected',
         stats: {
           messagesSent: stats.messagesSent,
           messagesReceived: stats.messagesReceived,
@@ -243,7 +243,7 @@ export function createFederationRouter(db, federationClient) {
           stats: settings ? !!settings.share_stats : false
         },
         transparency: {
-          messagesSent: federationClient ? federationClient.getStats().messagesSent : 0,
+          messagesSent: federation.client ? federation.client.getStats().messagesSent : 0,
           messagesReceived: messages.length,
           knownPeers: peers.length
         },

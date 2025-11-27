@@ -44,8 +44,10 @@ const dockerClient = new DockerClient(CONTAINER_NAME, DOCKER_SOCKET);
 const logParser = new LogParser();
 const wsServer = new TruebitWebSocketServer(server);
 
-// Federation client (initialized after database is ready)
-let federationClient = null;
+// Federation client holder (allows late initialization)
+const federation = {
+  client: null
+};
 
 // EventDBReader and LogFileReader will be initialized after dockerClient
 let eventDBReader;
@@ -150,10 +152,10 @@ function handleTaskReceived(parsed) {
     wsServer.sendTask({ ...task, event: 'received' });
 
     // Publish to federation (if enabled and connected)
-    if (federationClient && federationClient.isHealthy()) {
+    if (federation.client && federation.client.isHealthy()) {
       const dbTask = db.getTask(task.executionId);
       if (dbTask) {
-        federationClient.publishTaskReceived(dbTask).catch(err => {
+        federation.client.publishTaskReceived(dbTask).catch(err => {
           console.error('Failed to publish task to federation:', err.message);
         });
       }
@@ -198,10 +200,10 @@ function handleTaskCompleted(parsed) {
   wsServer.sendTask({ executionId: parsed.executionId, event: 'completed' });
 
   // Publish to federation (if enabled and connected)
-  if (federationClient && federationClient.isHealthy()) {
+  if (federation.client && federation.client.isHealthy()) {
     const dbTask = db.getTask(parsed.executionId);
     if (dbTask && dbTask.completed_at) {
-      federationClient.publishTaskCompleted(dbTask).catch(err => {
+      federation.client.publishTaskCompleted(dbTask).catch(err => {
         console.error('Failed to publish task completion to federation:', err.message);
       });
     }
@@ -317,7 +319,7 @@ app.use('/api/status', createStatusRouter(db, dockerClient));
 app.use('/api/tasks', createTasksRouter(db));
 app.use('/api/invoices', createInvoicesRouter(db));
 app.use('/api/logs', createLogsRouter(db));
-app.use('/api/federation', createFederationRouter(db, federationClient));
+app.use('/api/federation', createFederationRouter(db, federation));
 
 // Health check
 app.get('/health', (req, res) => {
@@ -353,7 +355,7 @@ async function start() {
     // Create federation client
     const fedSettings = db.getFederationSettings();
     if (fedSettings) {
-      federationClient = new FederationClient({
+      federation.client = new FederationClient({
         nodeId: fedSettings.node_id,
         salt: fedSettings.salt,
         servers: fedSettings.nats_servers ? JSON.parse(fedSettings.nats_servers) : ['nats://localhost:4222'],
@@ -362,7 +364,7 @@ async function start() {
       });
 
       // Set up federation message handlers
-      federationClient.on('message', ({ subject, data }) => {
+      federation.client.on('message', ({ subject, data }) => {
         try {
           // Store received message
           db.insertFederationMessage(data);
@@ -383,10 +385,10 @@ async function start() {
       if (fedSettings.enabled) {
         console.log('🌐 Federation is enabled, connecting...');
         try {
-          await federationClient.connect();
+          await federation.client.connect();
 
           // Subscribe to all federation messages
-          await federationClient.subscribeToFederation({
+          await federation.client.subscribeToFederation({
             taskReceived: (data) => console.log('📨 Federation: Task received from', data.nodeId),
             taskCompleted: (data) => console.log('✅ Federation: Task completed by', data.nodeId),
             heartbeat: (data) => console.log('💓 Federation: Heartbeat from', data.nodeId)
@@ -581,7 +583,7 @@ async function start() {
     process.on('SIGINT', async () => {
       console.log('\n🛑 Shutting down...');
       logFileReader.stopTailing();
-      if (federationClient) await federationClient.disconnect();
+      if (federation.client) await federation.client.disconnect();
       db.close();
       wsServer.close();
       process.exit(0);
@@ -590,7 +592,7 @@ async function start() {
     process.on('SIGTERM', async () => {
       console.log('\n🛑 Shutting down...');
       logFileReader.stopTailing();
-      if (federationClient) await federationClient.disconnect();
+      if (federation.client) await federation.client.disconnect();
       db.close();
       wsServer.close();
       process.exit(0);
