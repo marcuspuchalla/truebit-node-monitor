@@ -460,28 +460,52 @@ class TruebitDatabase {
   }
 
   updateFederationSettings(settings) {
+    // Build dynamic UPDATE query - only update fields that are provided
+    const updates = [];
+    const values = [];
+
+    if (settings.enabled !== undefined) {
+      updates.push('enabled = ?');
+      values.push(settings.enabled ? 1 : 0);
+    }
+    if (settings.privacyLevel !== undefined) {
+      updates.push('privacy_level = ?');
+      values.push(settings.privacyLevel);
+    }
+    if (settings.shareTasks !== undefined) {
+      updates.push('share_tasks = ?');
+      values.push(settings.shareTasks ? 1 : 0);
+    }
+    if (settings.shareStats !== undefined) {
+      updates.push('share_stats = ?');
+      values.push(settings.shareStats ? 1 : 0);
+    }
+    if (settings.natsServers !== undefined) {
+      updates.push('nats_servers = ?');
+      values.push(settings.natsServers ? JSON.stringify(settings.natsServers) : null);
+    }
+    if (settings.natsToken !== undefined) {
+      updates.push('nats_token = ?');
+      values.push(settings.natsToken || null);
+    }
+    if (settings.tlsEnabled !== undefined) {
+      updates.push('tls_enabled = ?');
+      values.push(settings.tlsEnabled ? 1 : 0);
+    }
+
+    if (updates.length === 0) {
+      return { changes: 0 };
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP');
+
     const stmt = this.db.prepare(`
       UPDATE federation_settings
-      SET enabled = ?,
-          privacy_level = ?,
-          share_tasks = ?,
-          share_stats = ?,
-          nats_servers = ?,
-          nats_token = ?,
-          tls_enabled = ?,
-          updated_at = CURRENT_TIMESTAMP
+      SET ${updates.join(', ')}
       WHERE id = 1
     `);
 
-    return stmt.run(
-      settings.enabled ? 1 : 0,
-      settings.privacyLevel || 'balanced',
-      settings.shareTasks ? 1 : 0,
-      settings.shareStats ? 1 : 0,
-      settings.natsServers ? JSON.stringify(settings.natsServers) : null,
-      settings.natsToken || null,
-      settings.tlsEnabled ? 1 : 0
-    );
+    return stmt.run(...values);
   }
 
   // Federation Messages
