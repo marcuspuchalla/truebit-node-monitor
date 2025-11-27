@@ -1,0 +1,116 @@
+version: '3.8'
+
+services:
+  # NATS Seed Server for TrueBit Monitor Federation
+  nats-seed:
+    image: nats:2.10-alpine
+    container_name: truebit-federation-nats
+    restart: unless-stopped
+
+    command:
+      - "-c"
+      - "/etc/nats/nats-server.conf"
+      - "--max_payload"
+      - "1MB"
+
+    ports:
+      # Client connections (TLS required)
+      - "4222:4222"
+
+      # Leaf node connections
+      - "7422:7422"
+
+      # HTTP monitoring (INTERNAL ONLY - restrict with firewall)
+      - "127.0.0.1:8222:8222"
+
+    volumes:
+      # Server configuration
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+
+      # TLS certificates (mount your generated certs here)
+      - ./certs:/etc/nats/certs:ro
+
+      # Logs
+      - nats-logs:/var/log/nats
+
+    environment:
+      # NATS configuration
+      NATS_SERVER_NAME: "truebit-federation-seed"
+
+    networks:
+      - federation-network
+
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Optional: Nginx rate limiter in front of NATS
+  # Provides DDoS protection and rate limiting
+  nginx-ratelimit:
+    image: nginx:alpine
+    container_name: truebit-federation-nginx
+    restart: unless-stopped
+
+    ports:
+      - "4223:4223"  # Rate-limited NATS proxy
+
+    volumes:
+      - ./nginx-ratelimit.conf:/etc/nginx/nginx.conf:ro
+
+    networks:
+      - federation-network
+
+    depends_on:
+      - nats-seed
+
+    # Uncomment to enable
+    profiles:
+      - rate-limiter
+
+volumes:
+  nats-logs:
+    driver: local
+
+networks:
+  federation-network:
+    driver: bridge
+
+# Deployment Notes:
+#
+# 1. Generate TLS Certificates First:
+#    mkdir -p ./certs
+#    # Use Let's Encrypt, self-signed, or your CA
+#    openssl req -x509 -newkey rsa:4096 -nodes \
+#      -keyout ./certs/server-key.pem \
+#      -out ./certs/server-cert.pem \
+#      -days 365 -subj "/CN=nats.yourdom ain.com"
+#
+# 2. Update nats-server.conf:
+#    - Change default passwords
+#    - Update TLS certificate paths
+#    - Configure JWT if using advanced auth
+#
+# 3. Deploy:
+#    docker compose -f docker-compose.federation.yml up -d
+#
+# 4. Verify:
+#    docker compose -f docker-compose.federation.yml logs -f nats-seed
+#    curl http://localhost:8222/varz
+#
+# 5. Security Checklist:
+#    - [ ] TLS certificates valid and not expired
+#    - [ ] Default passwords changed
+#    - [ ] Monitoring port (8222) not publicly accessible
+#    - [ ] Firewall rules configured (allow only 4222, 7422)
+#    - [ ] Rate limiting enabled (optional nginx service)
+#    - [ ] Log monitoring configured
+#    - [ ] Backup and disaster recovery plan
+#
+# 6. Connect Monitors:
+#    Update monitor federation settings:
+#    - NATS Server: nats://your-server-ip:4222
+#    - TLS: Enabled
+#    - Credentials: As configured in nats-server.conf

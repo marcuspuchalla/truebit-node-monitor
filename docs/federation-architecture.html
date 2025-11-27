@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueBit Node Monitor - Federation Architecture</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            overflow: hidden;
+        }
+
+        .presentation {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .slide.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        h1 {
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            text-align: center;
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 2.3rem;
+            font-weight: 600;
+            margin-bottom: 40px;
+            color: #00d9ff;
+            text-align: center;
+        }
+
+        p {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            color: #ccc;
+            text-align: center;
+            max-width: 900px;
+        }
+
+        .subtitle {
+            font-size: 1.6rem;
+            color: #888;
+            margin-bottom: 50px;
+        }
+
+        ul {
+            list-style: none;
+            font-size: 1.3rem;
+            line-height: 2.2;
+            text-align: left;
+        }
+
+        li {
+            color: #ccc;
+            padding: 8px 0;
+        }
+
+        li::before {
+            content: "●";
+            color: #00d9ff;
+            margin-right: 15px;
+        }
+
+        .highlight {
+            color: #00d9ff;
+            font-weight: 600;
+        }
+
+        .highlight-green {
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        .architecture-diagram {
+            background: #0d1117;
+            border: 2px solid #30363d;
+            border-radius: 16px;
+            padding: 30px 40px;
+            font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+            font-size: 0.85rem;
+            white-space: pre;
+            color: #8b949e;
+            max-width: 95vw;
+            overflow: auto;
+            line-height: 1.4;
+        }
+
+        .architecture-diagram .box {
+            color: #00d9ff;
+        }
+
+        .architecture-diagram .arrow {
+            color: #00ff88;
+        }
+
+        .architecture-diagram .label {
+            color: #fff;
+        }
+
+        .architecture-diagram .private {
+            color: #ff6b6b;
+        }
+
+        .architecture-diagram .public {
+            color: #00ff88;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 30px;
+            max-width: 1000px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 25px;
+            max-width: 1100px;
+        }
+
+        .card {
+            background: linear-gradient(145deg, #0d1a26 0%, #0a1628 100%);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid #1e3a5f;
+        }
+
+        .card h3 {
+            font-size: 1.3rem;
+            color: #00d9ff;
+            margin-bottom: 12px;
+        }
+
+        .card p {
+            font-size: 1rem;
+            text-align: left;
+            color: #a0aec0;
+        }
+
+        .data-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 800px;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .step-number {
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #000;
+            flex-shrink: 0;
+        }
+
+        .step-content {
+            background: rgba(0, 217, 255, 0.1);
+            border: 1px solid rgba(0, 217, 255, 0.3);
+            border-radius: 10px;
+            padding: 15px 20px;
+            flex: 1;
+        }
+
+        .step-content h4 {
+            color: #00d9ff;
+            margin-bottom: 5px;
+        }
+
+        .step-content p {
+            font-size: 1rem;
+            text-align: left;
+            margin: 0;
+        }
+
+        .data-table {
+            border-collapse: collapse;
+            font-size: 1.1rem;
+        }
+
+        .data-table th {
+            background: rgba(0, 217, 255, 0.2);
+            padding: 15px 25px;
+            text-align: left;
+            color: #00d9ff;
+            border: 1px solid #1e3a5f;
+        }
+
+        .data-table td {
+            padding: 12px 25px;
+            border: 1px solid #1e3a5f;
+            color: #ccc;
+        }
+
+        .data-table .never {
+            color: #ff6b6b;
+        }
+
+        .data-table .shared {
+            color: #00ff88;
+        }
+
+        .network-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .server-box {
+            background: linear-gradient(145deg, #1a3a5c 0%, #0d2240 100%);
+            border: 2px solid #00d9ff;
+            border-radius: 12px;
+            padding: 20px 40px;
+            text-align: center;
+        }
+
+        .server-box h4 {
+            color: #00d9ff;
+            font-size: 1.2rem;
+        }
+
+        .nodes-container {
+            display: flex;
+            gap: 40px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .node-box {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.4);
+            border-radius: 10px;
+            padding: 15px 25px;
+            text-align: center;
+        }
+
+        .node-box.you {
+            border-color: #00d9ff;
+            background: rgba(0, 217, 255, 0.15);
+        }
+
+        .connection-lines {
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #00d9ff;
+            font-size: 1.5rem;
+        }
+
+        .message-example {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 25px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 0.95rem;
+            border: 1px solid #30363d;
+            text-align: left;
+            max-width: 600px;
+        }
+
+        .json-key {
+            color: #79c0ff;
+        }
+
+        .json-string {
+            color: #a5d6ff;
+        }
+
+        .json-number {
+            color: #00ff88;
+        }
+
+        .json-comment {
+            color: #8b949e;
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            background: rgba(0, 217, 255, 0.2);
+            border: 1px solid #00d9ff;
+            color: #00d9ff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: #00d9ff;
+            color: #000;
+        }
+
+        .slide-counter {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            font-size: 1rem;
+            color: #555;
+        }
+
+        .principles-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+            max-width: 1100px;
+        }
+
+        .principle-item {
+            background: linear-gradient(145deg, #0d1a26 0%, #0a1628 100%);
+            border-radius: 12px;
+            padding: 20px 15px;
+            text-align: center;
+            border: 1px solid #1e3a5f;
+        }
+
+        .principle-item .icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .principle-item h4 {
+            color: #00d9ff;
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+
+        .principle-item p {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            max-width: 900px;
+        }
+
+        .comparison-box {
+            border-radius: 12px;
+            padding: 25px;
+        }
+
+        .comparison-box.private {
+            background: rgba(255, 107, 107, 0.1);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+        }
+
+        .comparison-box.private h3 {
+            color: #ff6b6b;
+        }
+
+        .comparison-box.shared {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.3);
+        }
+
+        .comparison-box.shared h3 {
+            color: #00ff88;
+        }
+
+        .comparison-box h3 {
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .comparison-box ul {
+            font-size: 1rem;
+        }
+
+        .comparison-box li::before {
+            content: "×";
+        }
+
+        .comparison-box.shared li::before {
+            content: "✓";
+            color: #00ff88;
+        }
+
+        .comparison-box.private li::before {
+            color: #ff6b6b;
+        }
+    </style>
+</head>
+<body>
+    <div class="presentation">
+        <!-- Slide 1: Title -->
+        <div class="slide active" data-slide="1">
+            <h1>Federation Architecture</h1>
+            <p class="subtitle">Decentralized Network for Global TrueBit Monitoring</p>
+            <p>Privacy-preserving, opt-in, peer-to-peer statistics sharing</p>
+        </div>
+
+        <!-- Slide 2: What is Federation? -->
+        <div class="slide" data-slide="2">
+            <h2>What is Federation?</h2>
+            <p style="margin-bottom: 40px;">
+                A <span class="highlight">decentralized network</span> that connects TrueBit Node Monitor instances worldwide,
+                allowing operators to see <span class="highlight-green">aggregated statistics</span> across all participating nodes.
+            </p>
+            <ul>
+                <li>See how many tasks the network is processing globally</li>
+                <li>Compare your node's performance to others</li>
+                <li>Monitor overall TrueBit network health</li>
+                <li>All while maintaining complete privacy</li>
+            </ul>
+        </div>
+
+        <!-- Slide 3: Design Principles -->
+        <div class="slide" data-slide="3">
+            <h2>Design Principles</h2>
+            <div class="principles-grid">
+                <div class="principle-item">
+                    <div class="icon">🔐</div>
+                    <h4>Opt-In</h4>
+                    <p>Disabled by default, explicit consent required</p>
+                </div>
+                <div class="principle-item">
+                    <div class="icon">📋</div>
+                    <h4>Transparent</h4>
+                    <p>Exactly what's shared is clearly documented</p>
+                </div>
+                <div class="principle-item">
+                    <div class="icon">⚡</div>
+                    <h4>Simple</h4>
+                    <p>One command to enable, zero config needed</p>
+                </div>
+                <div class="principle-item">
+                    <div class="icon">🛡️</div>
+                    <h4>Reliable</h4>
+                    <p>Local monitoring works even if federation fails</p>
+                </div>
+                <div class="principle-item">
+                    <div class="icon">🔒</div>
+                    <h4>Secure</h4>
+                    <p>No sensitive data ever transmitted</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 4: System Architecture -->
+        <div class="slide" data-slide="4">
+            <h2>System Architecture</h2>
+            <div class="architecture-diagram"><span class="label">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="label">│</span> <span class="box">Host Machine</span>                                                <span class="label">│</span>
+<span class="label">│</span>                                                             <span class="label">│</span>
+<span class="label">│</span>  <span class="private">┌─────────────────────────────────────────────────────┐</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="private">│</span> <span class="private">TrueBit Runner Node</span>                                  <span class="private">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="private">│</span>   • Private Keys <span class="private">(NEVER ACCESSED)</span>                   <span class="private">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="private">│</span>   • EventDB  <span class="arrow">→ READ ONLY</span>                            <span class="private">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="private">│</span>   • Log Files <span class="arrow">→ READ ONLY</span>                           <span class="private">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="private">└─────────────────────────────────────────────────────┘</span>  <span class="label">│</span>
+<span class="label">│</span>                           <span class="arrow">↓</span>                                  <span class="label">│</span>
+<span class="label">│</span>  <span class="box">┌─────────────────────────────────────────────────────┐</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="box">│</span> <span class="label">TrueBit Monitor</span>                                      <span class="box">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="box">│</span>   <span class="label">Log Parser</span> <span class="arrow">→</span> <span class="label">Anonymizer</span> <span class="arrow">→</span> <span class="public">Federation Client</span>      <span class="box">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="box">│</span>                                    <span class="arrow">↓</span>                  <span class="box">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="box">│</span>                           <span class="public">Only anonymized data</span>       <span class="box">│</span>  <span class="label">│</span>
+<span class="label">│</span>  <span class="box">└─────────────────────────────────────────────────────┘</span>  <span class="label">│</span>
+<span class="label">└─────────────────────────────────────────────────────────────┘</span>
+                                    <span class="arrow">↓</span>
+<span class="public">┌─────────────────────────────────────────────────────────────┐</span>
+<span class="public">│</span> <span class="label">NATS Federation Network</span>                                    <span class="public">│</span>
+<span class="public">│</span>   <span class="label">• Pub/Sub messaging (ephemeral)</span>                         <span class="public">│</span>
+<span class="public">│</span>   <span class="label">• No persistent storage</span>                                 <span class="public">│</span>
+<span class="public">│</span>   <span class="label">• TLS encryption available</span>                              <span class="public">│</span>
+<span class="public">└─────────────────────────────────────────────────────────────┘</span></div>
+        </div>
+
+        <!-- Slide 5: Network Topology -->
+        <div class="slide" data-slide="5">
+            <h2>Network Topology</h2>
+            <div class="network-visual">
+                <div class="server-box">
+                    <h4>NATS Seed Server</h4>
+                    <p style="font-size: 0.9rem; color: #888;">federation.truebit.monitor:4222</p>
+                </div>
+                <div class="connection-lines">↙ ↓ ↘</div>
+                <div class="nodes-container">
+                    <div class="node-box you">
+                        <strong>Your Node</strong>
+                        <p style="font-size: 0.8rem; color: #888;">node-a3f7c9</p>
+                    </div>
+                    <div class="node-box">
+                        <strong>Node B</strong>
+                        <p style="font-size: 0.8rem; color: #888;">NA-EAST</p>
+                    </div>
+                    <div class="node-box">
+                        <strong>Node C</strong>
+                        <p style="font-size: 0.8rem; color: #888;">EU-WEST</p>
+                    </div>
+                    <div class="node-box">
+                        <strong>Node D</strong>
+                        <p style="font-size: 0.8rem; color: #888;">ASIA</p>
+                    </div>
+                    <div class="node-box">
+                        <strong>+43 more</strong>
+                        <p style="font-size: 0.8rem; color: #888;">worldwide</p>
+                    </div>
+                </div>
+            </div>
+            <p style="margin-top: 30px; font-size: 1.1rem;">All nodes subscribe to same topics • Messages broadcast to all peers</p>
+        </div>
+
+        <!-- Slide 6: Data Flow - Outbound -->
+        <div class="slide" data-slide="6">
+            <h2>Data Flow: Broadcasting</h2>
+            <div class="data-flow">
+                <div class="flow-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>Task Received</h4>
+                        <p>TrueBit node receives a task, writes to log</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Log Parsed</h4>
+                        <p>Monitor extracts task metadata from logs</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Anonymization</h4>
+                        <p>Sensitive data stripped, random node ID generated</p>
+                    </div>
+                </div>
+                <div class="flow-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Broadcast</h4>
+                        <p>Anonymized event published to NATS network</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 7: Anonymization -->
+        <div class="slide" data-slide="7">
+            <h2>Anonymization Layer</h2>
+            <div class="comparison">
+                <div class="comparison-box private">
+                    <h3>Never Shared</h3>
+                    <ul>
+                        <li>Private keys</li>
+                        <li>Wallet addresses</li>
+                        <li>Execution IDs</li>
+                        <li>Task hashes</li>
+                        <li>Task input/output</li>
+                        <li>IP addresses</li>
+                        <li>Invoice amounts</li>
+                    </ul>
+                </div>
+                <div class="comparison-box shared">
+                    <h3>Shared (Anonymized)</h3>
+                    <ul>
+                        <li>Chain ID (Ethereum, Arbitrum...)</li>
+                        <li>Block number</li>
+                        <li>Task type (wasm)</li>
+                        <li>Status (completed/failed)</li>
+                        <li>Execution time (ms)</li>
+                        <li>Random node ID</li>
+                        <li>Timestamp</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 8: Message Example -->
+        <div class="slide" data-slide="8">
+            <h2>Example Federation Message</h2>
+            <div class="message-example">
+<span class="json-comment">// What gets broadcast to the network</span>
+{
+  <span class="json-key">"event"</span>: <span class="json-string">"task_completed"</span>,
+  <span class="json-key">"nodeId"</span>: <span class="json-string">"node-a3f7c9d2e1"</span>,    <span class="json-comment">// Random ID</span>
+  <span class="json-key">"chainId"</span>: <span class="json-number">1</span>,                    <span class="json-comment">// Ethereum</span>
+  <span class="json-key">"blockNumber"</span>: <span class="json-number">18950234</span>,
+  <span class="json-key">"taskType"</span>: <span class="json-string">"wasm"</span>,
+  <span class="json-key">"executionTimeMs"</span>: <span class="json-number">245</span>,
+  <span class="json-key">"timestamp"</span>: <span class="json-string">"2024-01-15T10:30:00Z"</span>
+}
+
+<span class="json-comment">// NO wallet, NO execution ID, NO task hash</span>
+<span class="json-comment">// NO input/output data, NO IP address</span>
+            </div>
+        </div>
+
+        <!-- Slide 9: NATS Topics -->
+        <div class="slide" data-slide="9">
+            <h2>NATS Subject Hierarchy</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>truebit.tasks.received</h3>
+                    <p>Broadcast when your node receives a new task</p>
+                </div>
+                <div class="card">
+                    <h3>truebit.tasks.completed</h3>
+                    <p>Broadcast when a task completes successfully</p>
+                </div>
+                <div class="card">
+                    <h3>truebit.tasks.failed</h3>
+                    <p>Broadcast when a task execution fails</p>
+                </div>
+                <div class="card">
+                    <h3>truebit.stats.update</h3>
+                    <p>Periodic aggregated statistics updates</p>
+                </div>
+            </div>
+            <p style="margin-top: 30px;">All nodes subscribe to these topics and receive messages from all peers</p>
+        </div>
+
+        <!-- Slide 10: Connection States -->
+        <div class="slide" data-slide="10">
+            <h2>Connection State Machine</h2>
+            <div class="architecture-diagram" style="font-size: 0.8rem;">
+<span class="label">                    ┌──────────────┐</span>
+<span class="label">                    │</span>   <span class="private">DISABLED</span>   <span class="label">│  ← Default state</span>
+<span class="label">                    └──────┬───────┘</span>
+<span class="label">                           │</span>
+<span class="label">                   User enables</span>
+<span class="label">                           │</span>
+<span class="label">                           ▼</span>
+<span class="label">                    ┌──────────────┐</span>
+<span class="label">                    │</span>  <span class="box">CONNECTING</span>  <span class="label">│</span>
+<span class="label">                    └──────┬───────┘</span>
+<span class="label">                           │</span>
+<span class="label">         ┌─────────────────┴─────────────────┐</span>
+<span class="label">         │                                   │</span>
+<span class="label">         ▼                                   ▼</span>
+<span class="label">  ┌──────────────┐                   ┌──────────────┐</span>
+<span class="label">  │</span>    <span class="private">ERROR</span>     <span class="label">│                   │</span>  <span class="public">CONNECTED</span>   <span class="label">│</span>
+<span class="label">  └──────────────┘                   └──────┬───────┘</span>
+<span class="label">                                            │</span>
+<span class="label">                                    Connection lost</span>
+<span class="label">                                            │</span>
+<span class="label">                                            ▼</span>
+<span class="label">                                     ┌──────────────┐</span>
+<span class="label">                                     │</span> <span class="box">RECONNECTING</span> <span class="label">│</span>
+<span class="label">                                     └──────────────┘</span></div>
+        </div>
+
+        <!-- Slide 11: Security Boundaries -->
+        <div class="slide" data-slide="11">
+            <h2>Security Boundaries</h2>
+            <div class="grid-3">
+                <div class="card">
+                    <h3>Threats Mitigated</h3>
+                    <ul style="font-size: 0.95rem;">
+                        <li>Private key exposure</li>
+                        <li>Wallet address leakage</li>
+                        <li>Task data theft</li>
+                        <li>Node deanonymization</li>
+                        <li>Man-in-the-middle</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Isolation</h3>
+                    <ul style="font-size: 0.95rem;">
+                        <li>Read-only Docker access</li>
+                        <li>Separate container</li>
+                        <li>No write permissions</li>
+                        <li>Federation isolated</li>
+                        <li>Graceful degradation</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h3>Encryption</h3>
+                    <ul style="font-size: 0.95rem;">
+                        <li>TLS support</li>
+                        <li>No persistent storage</li>
+                        <li>Ephemeral messages</li>
+                        <li>Rate limiting</li>
+                        <li>Message validation</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 12: Enabling Federation -->
+        <div class="slide" data-slide="12">
+            <h2>Enabling Federation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Option 1: Environment Variable</h3>
+                    <div style="background: #0d1117; padding: 15px; border-radius: 8px; margin-top: 10px; font-family: monospace; font-size: 0.9rem;">
+                        ENABLE_FEDERATION=true
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Option 2: UI Toggle</h3>
+                    <p>Settings → Federation → Enable<br>Review consent → Save & Restart</p>
+                </div>
+            </div>
+            <p style="margin-top: 40px;">
+                <span class="highlight">Default: Disabled</span> • Explicit consent required • One-click disable anytime
+            </p>
+        </div>
+
+        <!-- Slide 13: What You See -->
+        <div class="slide" data-slide="13">
+            <h2>What You See With Federation</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>Global Statistics</h3>
+                    <p>Active nodes, tasks/24h, success rates, average execution times across the entire network</p>
+                </div>
+                <div class="card">
+                    <h3>Real-Time Feed</h3>
+                    <p>Live stream of tasks from all participating nodes worldwide</p>
+                </div>
+                <div class="card">
+                    <h3>Chain Distribution</h3>
+                    <p>See which blockchains have the most activity (Ethereum, Arbitrum, etc.)</p>
+                </div>
+                <div class="card">
+                    <h3>Your Contribution</h3>
+                    <p>How your node compares to the network average</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Slide 14: Summary -->
+        <div class="slide" data-slide="14">
+            <h2>Federation Summary</h2>
+            <ul>
+                <li><span class="highlight">Opt-in only</span> - Disabled by default, you control participation</li>
+                <li><span class="highlight">Privacy preserved</span> - Only anonymized metadata shared</li>
+                <li><span class="highlight">Decentralized</span> - NATS pub/sub with no persistent storage</li>
+                <li><span class="highlight">Isolated</span> - Local monitoring works even if federation fails</li>
+                <li><span class="highlight">Transparent</span> - Every shared field is documented</li>
+                <li><span class="highlight">Secure</span> - TLS encryption, rate limiting, validation</li>
+            </ul>
+            <p style="margin-top: 40px;">
+                See the global TrueBit network while keeping your data private.
+            </p>
+        </div>
+    </div>
+
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn">← Previous</button>
+        <button class="nav-btn" id="nextBtn">Next →</button>
+    </div>
+
+    <div class="slide-counter">
+        <span id="currentSlide">1</span> / <span id="totalSlides">14</span>
+    </div>
+
+    <script>
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        let currentSlide = 1;
+
+        document.getElementById('totalSlides').textContent = totalSlides;
+
+        function showSlide(n) {
+            if (n < 1) n = 1;
+            if (n > totalSlides) n = totalSlides;
+
+            slides.forEach(slide => slide.classList.remove('active'));
+            document.querySelector(`[data-slide="${n}"]`).classList.add('active');
+
+            currentSlide = n;
+            document.getElementById('currentSlide').textContent = currentSlide;
+        }
+
+        document.getElementById('prevBtn').addEventListener('click', () => showSlide(currentSlide - 1));
+        document.getElementById('nextBtn').addEventListener('click', () => showSlide(currentSlide + 1));
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') showSlide(currentSlide + 1);
+            if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
+            if (e.key === 'Home') showSlide(1);
+            if (e.key === 'End') showSlide(totalSlides);
+        });
+
+        // Touch support
+        let touchStartX = 0;
+        document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX);
+        document.addEventListener('touchend', e => {
+            const diff = touchStartX - e.changedTouches[0].clientX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) showSlide(currentSlide + 1);
+                else showSlide(currentSlide - 1);
+            }
+        });
+    </script>
+</body>
+</html>

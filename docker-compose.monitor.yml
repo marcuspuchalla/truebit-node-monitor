@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: truebit-node-monitor
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=production
+      - PORT=8090
+      - HOST=0.0.0.0
+      - CONTAINER_NAME=runner-node
+      - DOCKER_SOCKET_PATH=/var/run/docker.sock
+      - DB_PATH=/app/data/truebit-monitor.db
+      - LOG_RETENTION_DAYS=30
+    ports:
+      - "8090:8090"
+    volumes:
+      # CRITICAL: Mount host Docker socket (READ-ONLY)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persist database
+      - monitor-data:/app/data
+    networks:
+      - truebit-network
+
+volumes:
+  monitor-data:
+    driver: local
+
+networks:
+  # Network to communicate with TrueBit runner-node
+  truebit-network:
+    external: true
+    name: truebit_runner_node_default
