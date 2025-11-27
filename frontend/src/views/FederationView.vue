@@ -52,10 +52,10 @@
           <input
             type="text"
             v-model="natsServerUrl"
-            placeholder="wss://f.tru.watch:9086"
+            placeholder="ws://nats-seed:9086"
             @blur="saveNatsServer"
           />
-          <p class="help-text">WebSocket URL of the federation NATS server (configure this first)</p>
+          <p class="help-text">For Docker deployments use internal: ws://nats-seed:9086</p>
         </div>
 
         <div class="form-group">

@@ -99,7 +99,7 @@ export function createFederationRouter(db, federation, recreateClient) {
       const servers = settings?.nats_servers ? JSON.parse(settings.nats_servers) : [];
       if (servers.length === 0) {
         return res.status(400).json({
-          error: 'No NATS server configured. Please enter the NATS Server URL first (e.g., wss://f.tru.watch:9086)'
+          error: 'No NATS server configured. Please enter the NATS Server URL first (e.g., ws://nats-seed:9086)'
         });
       }
 
