@@ -12,10 +12,8 @@ services:
     networks:
       - default
       - truebit-network
-    # Note: When deploying with Coolify, you may need to add this label
-    # to specify Traefik's network (check Coolify's network name):
-    # labels:
-    #   - "traefik.docker.network=<coolify-network-name>"
+    labels:
+      - "traefik.docker.network=coolify"
     environment:
       - NODE_ENV=production
       - PORT=8090
