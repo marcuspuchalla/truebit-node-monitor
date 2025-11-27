@@ -14,8 +14,12 @@
 
 import { connect, StringCodec } from 'nats';
 import { EventEmitter } from 'events';
+import WebSocket from 'ws';
 import FederationAnonymizer from './anonymizer.js';
 import PrivacyViolationDetector from '../utils/privacy-checker.js';
+
+// Provide WebSocket implementation for NATS in Node.js
+globalThis.WebSocket = WebSocket;
 
 class FederationClient extends EventEmitter {
   constructor(config = {}) {
