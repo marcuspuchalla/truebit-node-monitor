@@ -29,6 +29,10 @@ COPY backend/src ./src
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/dist ./public
 
+# Copy startup script
+COPY docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
 # Create data directory for SQLite database
 RUN mkdir -p /app/data
 
@@ -40,5 +44,6 @@ ENV NODE_ENV=production
 ENV PORT=8090
 ENV HOST=0.0.0.0
 
-# Start the server
+# Start the server with entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "src/index.js"]
