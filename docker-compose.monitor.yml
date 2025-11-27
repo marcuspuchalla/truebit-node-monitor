@@ -5,12 +5,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    container_name: truebit-node-monitor
     restart: unless-stopped
     expose:
       - "8090"
     networks:
       - default
       - truebit-network
+    # Note: When deploying with Coolify, you may need to add this label
+    # to specify Traefik's network (check Coolify's network name):
+    # labels:
+    #   - "traefik.docker.network=<coolify-network-name>"
     environment:
       - NODE_ENV=production
       - PORT=8090
