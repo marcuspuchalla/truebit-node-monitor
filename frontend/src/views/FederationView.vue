@@ -46,6 +46,18 @@
       <h2>Federation Settings</h2>
 
       <div class="settings-form">
+        <!-- NATS Server URL - always visible so user can configure before enabling -->
+        <div class="form-group">
+          <label>NATS Server URL</label>
+          <input
+            type="text"
+            v-model="natsServerUrl"
+            placeholder="wss://f.tru.watch:9086"
+            @blur="saveNatsServer"
+          />
+          <p class="help-text">WebSocket URL of the federation NATS server (configure this first)</p>
+        </div>
+
         <div class="form-group">
           <label class="toggle-label">
             <input
@@ -62,17 +74,6 @@
         </div>
 
         <div v-if="localSettings.enabled" class="advanced-settings">
-          <div class="form-group">
-            <label>NATS Server URL</label>
-            <input
-              type="text"
-              v-model="natsServerUrl"
-              placeholder="wss://f.tru.watch:9086"
-              @blur="saveNatsServer"
-            />
-            <p class="help-text">WebSocket URL of the federation NATS server</p>
-          </div>
-
           <div class="form-group">
             <label>Privacy Level</label>
             <select v-model="localSettings.privacyLevel" @change="saveSettings">
