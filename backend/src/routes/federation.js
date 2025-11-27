@@ -94,8 +94,22 @@ export function createFederationRouter(db, federation, recreateClient) {
         return res.status(500).json({ error: 'Federation client not initialized' });
       }
 
+      // Check if NATS servers are configured
+      const settings = db.getFederationSettings();
+      const servers = settings?.nats_servers ? JSON.parse(settings.nats_servers) : [];
+      if (servers.length === 0) {
+        return res.status(400).json({
+          error: 'No NATS server configured. Please enter the NATS Server URL first (e.g., wss://f.tru.watch:9086)'
+        });
+      }
+
       // Update settings
       db.updateFederationSettings({ enabled: true });
+
+      // Recreate client with current settings and connect
+      if (recreateClient) {
+        await recreateClient();
+      }
 
       // Connect to NATS
       const connected = await federation.client.connect();
@@ -103,7 +117,7 @@ export function createFederationRouter(db, federation, recreateClient) {
       if (connected) {
         res.json({ success: true, message: 'Federation enabled' });
       } else {
-        res.status(500).json({ error: 'Failed to connect to federation network' });
+        res.status(500).json({ error: 'Failed to connect to federation network. Check the NATS Server URL.' });
       }
     } catch (error) {
       res.status(500).json({ error: error.message });

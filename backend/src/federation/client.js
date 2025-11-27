@@ -27,7 +27,7 @@ class FederationClient extends EventEmitter {
 
     this.config = {
       // NATS server connection
-      servers: config.servers || ['nats://localhost:4222'],
+      servers: (config.servers && config.servers.length > 0) ? config.servers : [],
 
       // Authentication (JWT or NKeys)
       user: config.user || null,
@@ -86,6 +86,12 @@ class FederationClient extends EventEmitter {
    * Connect to NATS federation network
    */
   async connect() {
+    // Check if servers are configured
+    if (!this.config.servers || this.config.servers.length === 0) {
+      console.warn('⚠️  No NATS servers configured. Please set the NATS Server URL in Federation settings.');
+      return false;
+    }
+
     try {
       console.log('🌐 Connecting to NATS federation...');
       console.log(`   Servers: ${this.config.servers.join(', ')}`);
