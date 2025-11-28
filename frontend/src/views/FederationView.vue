@@ -10,7 +10,6 @@
       <div class="status-indicator" :class="statusClass"></div>
       <div class="status-info">
         <span class="status-label">{{ statusLabel }}</span>
-        <span class="status-server">{{ serverUrl }}</span>
       </div>
     </div>
 
@@ -95,8 +94,9 @@ const {
 
 const errorMessage = ref('');
 
-// Public federation server URL
+// Public federation server URL (logged to console only)
 const serverUrl = 'wss://f.tru.watch:9086';
+console.log('Federation server:', serverUrl);
 
 const isConnected = computed(() => status.value?.connected || false);
 
@@ -252,12 +252,6 @@ function formatTime(timestamp) {
 .status-label {
   font-weight: 600;
   font-size: 1.1rem;
-}
-
-.status-server {
-  font-size: 0.875rem;
-  color: #6b7280;
-  font-family: monospace;
 }
 
 .error-banner {
