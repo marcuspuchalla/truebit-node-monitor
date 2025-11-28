@@ -107,15 +107,24 @@ async function toggleFederation() {
   errorMessage.value = '';
   isLoading.value = true;
 
+  console.log('Toggle federation clicked, isEnabled:', isEnabled.value);
+
   try {
     if (isEnabled.value) {
+      console.log('Calling disableFederation...');
       await federationStore.disableFederation();
+      console.log('disableFederation completed');
     } else {
+      console.log('Calling enableFederation...');
       await federationStore.enableFederation();
+      console.log('enableFederation completed');
     }
     // Refresh status after toggle
+    console.log('Fetching status...');
     await federationStore.fetchStatus();
+    console.log('Status fetched, isEnabled now:', isEnabled.value, 'isConnected:', isConnected.value);
   } catch (error) {
+    console.error('Toggle federation error:', error);
     errorMessage.value = error.response?.data?.error || error.message || 'Connection failed';
   } finally {
     isLoading.value = false;
