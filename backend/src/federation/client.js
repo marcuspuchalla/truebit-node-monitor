@@ -102,8 +102,9 @@ class FederationClient extends EventEmitter {
         maxReconnectAttempts: this.config.maxReconnectAttempts,
         reconnectTimeWait: this.config.reconnectTimeWait,
 
-        // TLS configuration
-        ...(this.config.tls && {
+        // Note: For wss:// URLs, TLS is handled automatically by the WebSocket layer.
+        // Only add explicit TLS config if we have certificates AND using non-wss protocol
+        ...(this.config.tlsCert && this.config.tlsKey && {
           tls: {
             cert: this.config.tlsCert,
             key: this.config.tlsKey,
