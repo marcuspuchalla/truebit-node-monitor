@@ -11,10 +11,15 @@ class TruebitWebSocketServer {
       verifyClient: (info, callback) => {
         // Check origin header for CORS-like protection
         const origin = info.origin || info.req.headers.origin;
-        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8090'];
+        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 
         // Allow connections from allowed origins or if no origin (direct connection)
-        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        if (!origin || allowedOrigins.includes('*')) {
+          return callback(true);
+        }
+
+        // Check if origin matches any allowed origin
+        if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
           callback(true);
         } else {
           console.warn(`⚠️ WebSocket connection rejected from origin: ${origin}`);

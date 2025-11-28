@@ -36,7 +36,7 @@ const HOST = process.env.HOST || '0.0.0.0';
 const CONTAINER_NAME = process.env.CONTAINER_NAME || 'runner-node';
 const DB_PATH = process.env.DB_PATH || './data/truebit-monitor.db';
 const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8090'];
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 
 // Helper function to hash node addresses for privacy
 function hashNodeAddress(address) {
@@ -46,31 +46,28 @@ function hashNodeAddress(address) {
 
 // Security Middleware
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "wss://f.tru.watch:9086", "ws://localhost:*"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"]
-    }
-  },
-  crossOriginEmbedderPolicy: false // Allow loading external resources
+  // Disable CSP - let the browser handle it, as strict CSP breaks browser extensions
+  // and causes issues with Vue's dynamic script loading
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
 }));
 
 // CORS configuration - only allow specified origins
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Allow requests with no origin (like mobile apps, curl, or direct IP access)
     if (!origin) return callback(null, true);
 
-    if (ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*')) {
+    // Allow all if wildcard is set
+    if (ALLOWED_ORIGINS.includes('*')) {
+      return callback(null, true);
+    }
+
+    // Check if origin matches any allowed origin
+    if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
       callback(null, true);
     } else {
+      console.warn(`CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
