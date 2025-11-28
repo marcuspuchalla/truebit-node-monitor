@@ -90,33 +90,47 @@ export function createFederationRouter(db, federation, recreateClient) {
   // Enable federation
   router.post('/enable', async (req, res) => {
     try {
+      console.log('📥 Enable federation request received');
+
       // Update settings - enable with all sharing on
+      // Also save the default NATS server URL
       db.updateFederationSettings({
         enabled: true,
         shareTasks: true,
         shareStats: true,
-        privacyLevel: 'minimal'
+        privacyLevel: 'minimal',
+        natsServers: ['ws://nats-seed:9086']
       });
+
+      console.log('📝 Settings updated in DB');
 
       // Recreate client and connect
       if (recreateClient) {
         await recreateClient();
+        console.log('🔄 Client recreated');
       }
 
       if (!federation.client) {
+        console.log('❌ Federation client is null after recreate');
         return res.status(500).json({ error: 'Federation client not initialized' });
       }
 
       // Connect to NATS
+      console.log('🔌 Calling connect()...');
       const connected = await federation.client.connect();
+      console.log(`🔌 Connect result: ${connected}`);
 
       if (connected) {
+        const settings = db.getFederationSettings();
+        console.log('📤 Sending success response, DB enabled:', settings?.enabled);
         res.json({ success: true, message: 'Federation enabled', connected: true });
       } else {
+        db.updateFederationSettings({ enabled: false });
         res.status(500).json({ error: 'Failed to connect to federation network' });
       }
     } catch (error) {
       console.error('Enable federation error:', error);
+      db.updateFederationSettings({ enabled: false });
       res.status(500).json({ error: error.message });
     }
   });
@@ -146,6 +160,7 @@ export function createFederationRouter(db, federation, recreateClient) {
       const settings = db.getFederationSettings();
 
       if (!federation.client) {
+        console.log('📊 Status: client not initialized');
         return res.json({
           enabled: false,
           connected: false,
@@ -154,8 +169,7 @@ export function createFederationRouter(db, federation, recreateClient) {
       }
 
       const stats = federation.client.getStats();
-
-      res.json({
+      const response = {
         enabled: settings ? !!settings.enabled : false,
         connected: federation.client.connected,
         healthy: federation.client.isHealthy(),
@@ -169,7 +183,10 @@ export function createFederationRouter(db, federation, recreateClient) {
           circuitOpen: stats.circuitOpen
         },
         nodeId: stats.nodeId
-      });
+      };
+
+      console.log(`📊 Status: enabled=${response.enabled}, connected=${response.connected}`);
+      res.json(response);
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
