@@ -3,12 +3,13 @@ import express from 'express';
 const router = express.Router();
 
 /**
- * SECURITY: Sanitize task data for API responses
- * Removes sensitive fields that must never be exposed in federation
+ * Format task data for local API responses
+ * Note: For federation, the anonymizer strips sensitive data separately
  */
-function sanitizeTaskForAPI(task) {
+function formatTaskForAPI(task) {
   return {
     id: task.id,
+    execution_id: task.execution_id,
     chain_id: task.chain_id,
     block_number: task.block_number,
     block_hash: task.block_hash,
@@ -21,12 +22,7 @@ function sanitizeTaskForAPI(task) {
     elapsed_ms: task.elapsed_ms,
     gas_used: task.gas_used,
     exit_code: task.exit_code,
-    cached: task.cached,
-    // PRIVACY: NEVER include these sensitive fields:
-    // - execution_id (can be used to correlate tasks)
-    // - input_data (contains sensitive computation input)
-    // - output_data (contains sensitive computation results)
-    // - error_data (may contain system information)
+    cached: task.cached
   };
 }
 
@@ -41,7 +37,7 @@ export function createTasksRouter(db) {
       const tasks = db.getTasks(limit, offset, status);
 
       res.json({
-        tasks: tasks.map(task => sanitizeTaskForAPI(task)),
+        tasks: tasks.map(task => formatTaskForAPI(task)),
         pagination: {
           limit,
           offset,
@@ -62,7 +58,7 @@ export function createTasksRouter(db) {
         return res.status(404).json({ error: 'Task not found' });
       }
 
-      res.json(sanitizeTaskForAPI(task));
+      res.json(formatTaskForAPI(task));
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

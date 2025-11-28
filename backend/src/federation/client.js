@@ -21,13 +21,16 @@ import PrivacyViolationDetector from '../utils/privacy-checker.js';
 // Provide WebSocket implementation for nats.ws in Node.js
 globalThis.WebSocket = WebSocket;
 
+// Default NATS server for Docker deployments
+const DEFAULT_NATS_SERVER = 'ws://nats-seed:9086';
+
 class FederationClient extends EventEmitter {
   constructor(config = {}) {
     super();
 
     this.config = {
-      // NATS server connection
-      servers: (config.servers && config.servers.length > 0) ? config.servers : [],
+      // NATS server connection - use default if not specified
+      servers: (config.servers && config.servers.length > 0) ? config.servers : [DEFAULT_NATS_SERVER],
 
       // Authentication (JWT or NKeys)
       user: config.user || null,
@@ -86,12 +89,6 @@ class FederationClient extends EventEmitter {
    * Connect to NATS federation network
    */
   async connect() {
-    // Check if servers are configured
-    if (!this.config.servers || this.config.servers.length === 0) {
-      console.warn('⚠️  No NATS servers configured. Please set the NATS Server URL in Federation settings.');
-      return false;
-    }
-
     try {
       console.log('🌐 Connecting to NATS federation...');
       console.log(`   Servers: ${this.config.servers.join(', ')}`);

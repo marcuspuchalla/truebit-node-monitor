@@ -90,36 +90,33 @@ export function createFederationRouter(db, federation, recreateClient) {
   // Enable federation
   router.post('/enable', async (req, res) => {
     try {
-      if (!federation.client) {
-        return res.status(500).json({ error: 'Federation client not initialized' });
-      }
+      // Update settings - enable with all sharing on
+      db.updateFederationSettings({
+        enabled: true,
+        shareTasks: true,
+        shareStats: true,
+        privacyLevel: 'minimal'
+      });
 
-      // Check if NATS servers are configured
-      const settings = db.getFederationSettings();
-      const servers = settings?.nats_servers ? JSON.parse(settings.nats_servers) : [];
-      if (servers.length === 0) {
-        return res.status(400).json({
-          error: 'No NATS server configured. Please enter the NATS Server URL first (e.g., ws://nats-seed:9086)'
-        });
-      }
-
-      // Update settings
-      db.updateFederationSettings({ enabled: true });
-
-      // Recreate client with current settings and connect
+      // Recreate client and connect
       if (recreateClient) {
         await recreateClient();
+      }
+
+      if (!federation.client) {
+        return res.status(500).json({ error: 'Federation client not initialized' });
       }
 
       // Connect to NATS
       const connected = await federation.client.connect();
 
       if (connected) {
-        res.json({ success: true, message: 'Federation enabled' });
+        res.json({ success: true, message: 'Federation enabled', connected: true });
       } else {
-        res.status(500).json({ error: 'Failed to connect to federation network. Check the NATS Server URL.' });
+        res.status(500).json({ error: 'Failed to connect to federation network' });
       }
     } catch (error) {
+      console.error('Enable federation error:', error);
       res.status(500).json({ error: error.message });
     }
   });
