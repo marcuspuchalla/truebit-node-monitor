@@ -330,14 +330,7 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Serve static frontend files
-const frontendPath = path.join(__dirname, '..', 'public');
-app.use(express.static(frontendPath));
-
-// Catch-all route for client-side routing (Vue Router)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(frontendPath, 'index.html'));
-});
+// Static files and catch-all are set up in start() after all API routes
 
 // Initialize and start
 async function start() {
@@ -391,6 +384,15 @@ async function start() {
 
     // Register federation routes with recreateClient callback
     app.use('/api/federation', createFederationRouter(db, federation, createFederationClient));
+
+    // NOW register static files and catch-all (AFTER all API routes)
+    const frontendPath = path.join(__dirname, '..', 'public');
+    app.use(express.static(frontendPath));
+
+    // Catch-all route for client-side routing (Vue Router) - must be LAST
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
 
     // Auto-connect if federation is enabled and servers are configured
     const fedSettings = db.getFederationSettings();
