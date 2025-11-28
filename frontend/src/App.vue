@@ -1,5 +1,8 @@
 <template>
   <div class="min-h-screen bg-gray-50">
+    <!-- Preloader -->
+    <Preloader />
+
     <nav class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -70,8 +73,37 @@
 
 <script setup>
 import { onMounted } from 'vue';
+import Preloader from './components/Preloader.vue';
+import { usePreloader } from './composables/usePreloader';
+import { useNodeStore } from './stores/node';
+import { useTasksStore } from './stores/tasks';
+import { useInvoicesStore } from './stores/invoices';
 
-onMounted(() => {
+const { setProgress } = usePreloader();
+const nodeStore = useNodeStore();
+const tasksStore = useTasksStore();
+const invoicesStore = useInvoicesStore();
+
+onMounted(async () => {
+  console.log('TrueBit Monitor loading...');
+
+  setProgress(10);
+
+  // Load node status
+  await nodeStore.fetchStatus();
+  setProgress(40);
+
+  // Load tasks
+  await tasksStore.fetchTasks();
+  setProgress(70);
+
+  // Load invoices
+  await invoicesStore.fetchInvoices();
+  setProgress(90);
+
+  // Complete loading
+  setProgress(100);
+
   console.log('TrueBit Monitor loaded');
 });
 </script>
