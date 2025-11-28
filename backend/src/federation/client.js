@@ -21,8 +21,10 @@ import PrivacyViolationDetector from '../utils/privacy-checker.js';
 // Provide WebSocket implementation for nats.ws in Node.js
 globalThis.WebSocket = WebSocket;
 
-// Default NATS server for Docker deployments
-const DEFAULT_NATS_SERVER = 'ws://nats-seed:9086';
+// Default public federation server
+// Community note: If the maintainer stops maintaining this project, the community
+// can fork and set up their own federation server by changing this URL.
+const DEFAULT_NATS_SERVER = process.env.FEDERATION_NATS_URL || 'wss://f.tru.watch:9086';
 
 class FederationClient extends EventEmitter {
   constructor(config = {}) {

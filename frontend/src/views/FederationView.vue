@@ -64,8 +64,10 @@ const {
 const errorMessage = ref('');
 const isLoading = ref(false);
 
-// Hardcoded server URL for Docker deployments
-const serverUrl = 'ws://nats-seed:9086';
+// Public federation server URL
+// Community note: If the maintainer stops maintaining this project, the community
+// can fork and set up their own federation server by changing this URL.
+const serverUrl = 'wss://f.tru.watch:9086';
 
 const isEnabled = computed(() => settings.value?.enabled || false);
 const isConnected = computed(() => status.value?.connected || false);
