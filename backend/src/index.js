@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import { createServer } from 'http';
+import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -33,10 +36,61 @@ const HOST = process.env.HOST || '0.0.0.0';
 const CONTAINER_NAME = process.env.CONTAINER_NAME || 'runner-node';
 const DB_PATH = process.env.DB_PATH || './data/truebit-monitor.db';
 const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:8090'];
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// Helper function to hash node addresses for privacy
+function hashNodeAddress(address) {
+  if (!address) return null;
+  return crypto.createHash('sha256').update(address).digest('hex').slice(0, 16);
+}
+
+// Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "wss://f.tru.watch:9086", "ws://localhost:*"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false // Allow loading external resources
+}));
+
+// CORS configuration - only allow specified origins
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (ALLOWED_ORIGINS.includes(origin) || ALLOWED_ORIGINS.includes('*')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+// Rate limiting - 100 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
+  message: { error: 'Too many requests, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply rate limiting to API routes
+app.use('/api/', apiLimiter);
+
+// Body parser with size limit
+app.use(express.json({ limit: '1mb' }));
 
 // Initialize components
 const db = new TruebitDatabase(DB_PATH);
@@ -297,8 +351,11 @@ function handleRegistration(parsed) {
   if (!parsed.nodeAddress) return;
 
   try {
+    // Hash node address for privacy in logs
+    const hashedAddress = hashNodeAddress(parsed.nodeAddress);
+
     const status = {
-      address: parsed.nodeAddress,
+      address: parsed.nodeAddress, // Store real address in DB
       version: parsed.version,
       totalCores: 4, // Default, can be extracted from logs
       registered: parsed.message.includes('successfully'),
@@ -308,7 +365,8 @@ function handleRegistration(parsed) {
     db.updateNodeStatus(status);
     wsServer.sendNodeStatus(status);
 
-    console.log(`🔗 Node registration: ${parsed.nodeAddress}`);
+    // Log with hashed address for privacy
+    console.log(`🔗 Node registration: ${hashedAddress}...`);
   } catch (error) {
     console.error('Error handling registration:', error.message);
   }

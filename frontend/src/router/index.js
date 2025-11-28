@@ -10,6 +10,11 @@ import AboutView from '../views/AboutView.vue';
 const routes = [
   {
     path: '/',
+    name: 'federation',
+    component: FederationView
+  },
+  {
+    path: '/dashboard',
     name: 'dashboard',
     component: Dashboard
   },
@@ -32,11 +37,6 @@ const routes = [
     path: '/logs',
     name: 'logs',
     component: LogsView
-  },
-  {
-    path: '/federation',
-    name: 'federation',
-    component: FederationView
   },
   {
     path: '/about',

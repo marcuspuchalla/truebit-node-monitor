@@ -14,6 +14,13 @@
               <router-link
                 to="/"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                :class="$route.name === 'federation' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+              >
+                Network
+              </router-link>
+              <router-link
+                to="/dashboard"
+                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 :class="$route.name === 'dashboard' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
                 Dashboard
@@ -38,13 +45,6 @@
                 :class="$route.name === 'logs' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
                 Logs
-              </router-link>
-              <router-link
-                to="/federation"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'federation' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
-              >
-                Federation
               </router-link>
               <router-link
                 to="/about"

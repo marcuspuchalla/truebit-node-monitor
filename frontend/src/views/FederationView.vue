@@ -1,8 +1,8 @@
 <template>
   <div class="federation-view">
     <div class="header">
-      <h1>Federation Network</h1>
-      <p class="subtitle">Share anonymized task statistics with the global network</p>
+      <h1>TrueBit Network</h1>
+      <p class="subtitle">Global network status and statistics</p>
     </div>
 
     <!-- Connection Status -->
@@ -12,14 +12,6 @@
         <span class="status-label">{{ statusLabel }}</span>
         <span class="status-server">{{ serverUrl }}</span>
       </div>
-      <button
-        class="toggle-btn"
-        :class="{ enabled: isEnabled }"
-        @click="toggleFederation"
-        :disabled="isLoading"
-      >
-        {{ isLoading ? 'Connecting...' : (isEnabled ? 'Disable' : 'Enable') }}
-      </button>
     </div>
 
     <!-- Error Message -->
@@ -27,19 +19,58 @@
       {{ errorMessage }}
     </div>
 
-    <!-- Stats (only when connected) -->
-    <div v-if="isConnected" class="stats-grid">
+    <!-- Network Stats -->
+    <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-value">{{ totalMessagesSent }}</div>
-        <div class="stat-label">Messages Sent</div>
+        <div class="stat-value">{{ activePeerCount }}</div>
+        <div class="stat-label">Active Nodes</div>
       </div>
       <div class="stat-card">
         <div class="stat-value">{{ totalMessagesReceived }}</div>
-        <div class="stat-label">Messages Received</div>
+        <div class="stat-label">Network Events</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">{{ activePeerCount }}</div>
-        <div class="stat-label">Active Peers</div>
+        <div class="stat-value">{{ totalMessagesSent }}</div>
+        <div class="stat-label">Events Shared</div>
+      </div>
+    </div>
+
+    <!-- Network Activity -->
+    <div class="section">
+      <h2>Network Activity</h2>
+      <div class="activity-list" v-if="recentMessages.length > 0">
+        <div
+          v-for="msg in recentMessages"
+          :key="msg.id"
+          class="activity-item"
+        >
+          <div class="activity-icon" :class="getMessageTypeClass(msg.type)">
+            {{ getMessageIcon(msg.type) }}
+          </div>
+          <div class="activity-content">
+            <div class="activity-title">{{ getMessageTitle(msg.type) }}</div>
+            <div class="activity-meta">
+              <span class="activity-node">Node {{ msg.nodeId?.slice(0, 8) }}...</span>
+              <span class="activity-time">{{ formatTime(msg.timestamp) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-else class="empty-state">
+        <p>No network activity yet. Events will appear here as nodes share data.</p>
+      </div>
+    </div>
+
+    <!-- Active Peers -->
+    <div class="section" v-if="peers.length > 0">
+      <h2>Active Nodes</h2>
+      <div class="peers-grid">
+        <div v-for="peer in peers" :key="peer.node_id" class="peer-card">
+          <div class="peer-id">{{ peer.node_id.slice(0, 12) }}...</div>
+          <div class="peer-meta">
+            <span class="peer-seen">Last seen: {{ formatTime(peer.last_seen) }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -55,47 +86,54 @@ const federationStore = useFederationStore();
 const {
   settings,
   status,
-  settingsLoading,
+  messages,
+  peers,
   totalMessagesSent,
   totalMessagesReceived,
   activePeerCount
 } = storeToRefs(federationStore);
 
 const errorMessage = ref('');
-const isLoading = ref(false);
 
 // Public federation server URL
-// Community note: If the maintainer stops maintaining this project, the community
-// can fork and set up their own federation server by changing this URL.
 const serverUrl = 'wss://f.tru.watch:9086';
 
-const isEnabled = computed(() => settings.value?.enabled || false);
 const isConnected = computed(() => status.value?.connected || false);
 
 const statusClass = computed(() => {
-  if (isLoading.value) return 'connecting';
   if (isConnected.value) return 'connected';
-  if (isEnabled.value) return 'disconnected';
-  return 'disabled';
+  return 'connecting';
 });
 
 const statusLabel = computed(() => {
-  if (isLoading.value) return 'Connecting...';
-  if (isConnected.value) return 'Connected';
-  if (isEnabled.value) return 'Disconnected';
-  return 'Disabled';
+  if (isConnected.value) return 'Connected to Network';
+  return 'Connecting...';
+});
+
+const recentMessages = computed(() => {
+  return (messages.value || []).slice(0, 10);
 });
 
 let refreshInterval = null;
 
 onMounted(async () => {
+  // Initialize and auto-enable federation
   await federationStore.initialize();
 
-  // Refresh status every 5 seconds
-  refreshInterval = setInterval(() => {
-    if (isEnabled.value) {
-      federationStore.fetchStatus();
+  // Auto-enable if not already enabled
+  if (!settings.value?.enabled) {
+    try {
+      await federationStore.enableFederation();
+    } catch (error) {
+      errorMessage.value = 'Failed to connect to network';
     }
+  }
+
+  // Refresh data periodically
+  refreshInterval = setInterval(() => {
+    federationStore.fetchStatus();
+    federationStore.fetchMessages();
+    federationStore.fetchPeers();
   }, 5000);
 });
 
@@ -105,39 +143,53 @@ onUnmounted(() => {
   }
 });
 
-async function toggleFederation() {
-  errorMessage.value = '';
-  isLoading.value = true;
+function getMessageIcon(type) {
+  const icons = {
+    'task_received': '📥',
+    'task_completed': '✅',
+    'heartbeat': '💓'
+  };
+  return icons[type] || '📨';
+}
 
-  console.log('Toggle federation clicked, isEnabled:', isEnabled.value);
+function getMessageTitle(type) {
+  const titles = {
+    'task_received': 'Task Received',
+    'task_completed': 'Task Completed',
+    'heartbeat': 'Node Heartbeat'
+  };
+  return titles[type] || 'Network Event';
+}
 
-  try {
-    if (isEnabled.value) {
-      console.log('Calling disableFederation...');
-      await federationStore.disableFederation();
-      console.log('disableFederation completed');
-    } else {
-      console.log('Calling enableFederation...');
-      await federationStore.enableFederation();
-      console.log('enableFederation completed');
-    }
-    // Refresh status after toggle
-    console.log('Fetching status...');
-    await federationStore.fetchStatus();
-    console.log('Status fetched, isEnabled now:', isEnabled.value, 'isConnected:', isConnected.value);
-  } catch (error) {
-    console.error('Toggle federation error:', error);
-    errorMessage.value = error.response?.data?.error || error.message || 'Connection failed';
-  } finally {
-    isLoading.value = false;
-  }
+function getMessageTypeClass(type) {
+  const classes = {
+    'task_received': 'type-received',
+    'task_completed': 'type-completed',
+    'heartbeat': 'type-heartbeat'
+  };
+  return classes[type] || '';
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return 'Unknown';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHour = Math.floor(diffMin / 60);
+
+  if (diffSec < 60) return `${diffSec}s ago`;
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHour < 24) return `${diffHour}h ago`;
+  return date.toLocaleDateString();
 }
 </script>
 
 <style scoped>
 .federation-view {
   padding: 2rem;
-  max-width: 800px;
+  max-width: 1000px;
   margin: 0 auto;
 }
 
@@ -185,14 +237,6 @@ async function toggleFederation() {
   animation: pulse 1s infinite;
 }
 
-.status-indicator.disconnected {
-  background: #ef4444;
-}
-
-.status-indicator.disabled {
-  background: #9ca3af;
-}
-
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
@@ -216,34 +260,6 @@ async function toggleFederation() {
   font-family: monospace;
 }
 
-.toggle-btn {
-  padding: 0.75rem 1.5rem;
-  border-radius: 0.5rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  background: #3b82f6;
-  color: white;
-}
-
-.toggle-btn:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.toggle-btn.enabled {
-  background: #6b7280;
-}
-
-.toggle-btn.enabled:hover:not(:disabled) {
-  background: #4b5563;
-}
-
-.toggle-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .error-banner {
   padding: 1rem;
   background: #fee2e2;
@@ -257,6 +273,7 @@ async function toggleFederation() {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .stat-card {
@@ -279,6 +296,114 @@ async function toggleFederation() {
   margin-top: 0.25rem;
 }
 
+.section {
+  margin-bottom: 2rem;
+}
+
+.section h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  color: #1f2937;
+}
+
+.activity-list {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.activity-item:last-child {
+  border-bottom: none;
+}
+
+.activity-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+}
+
+.activity-icon.type-received {
+  background: #dbeafe;
+}
+
+.activity-icon.type-completed {
+  background: #d1fae5;
+}
+
+.activity-icon.type-heartbeat {
+  background: #fce7f3;
+}
+
+.activity-content {
+  flex: 1;
+}
+
+.activity-title {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.activity-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.activity-node {
+  font-family: monospace;
+}
+
+.empty-state {
+  padding: 2rem;
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  color: #6b7280;
+}
+
+.peers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.peer-card {
+  padding: 1rem;
+  background: white;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.peer-id {
+  font-family: monospace;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.peer-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 640px) {
   .stats-grid {
     grid-template-columns: 1fr;
@@ -291,6 +416,11 @@ async function toggleFederation() {
 
   .status-info {
     align-items: center;
+  }
+
+  .activity-meta {
+    flex-direction: column;
+    gap: 0.25rem;
   }
 }
 </style>

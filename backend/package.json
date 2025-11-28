@@ -9,12 +9,15 @@
     "start": "node src/index.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "cors": "^2.8.5",
-    "ws": "^8.16.0",
-    "dockerode": "^4.0.2",
     "better-sqlite3": "^9.4.0",
+    "cors": "^2.8.5",
+    "dockerode": "^4.0.2",
     "dotenv": "^16.4.1",
-    "nats.ws": "^1.30.0"
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "nats.ws": "^1.30.0",
+    "ws": "^8.16.0",
+    "zod": "^4.1.13"
   }
 }

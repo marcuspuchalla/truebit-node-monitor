@@ -4,6 +4,7 @@
  */
 
 import express from 'express';
+import { validate, schemas } from '../middleware/validate.js';
 
 const router = express.Router();
 
@@ -44,48 +45,45 @@ export function createFederationRouter(db, federation, recreateClient) {
   });
 
   // Update federation settings
-  router.put('/settings', async (req, res) => {
-    try {
-      const settings = req.body;
+  router.put('/settings',
+    validate({ body: schemas.federationSettings }),
+    async (req, res) => {
+      try {
+        const settings = req.body;
 
-      // Validate settings
-      if (settings.privacyLevel && !['minimal', 'balanced', 'maximum'].includes(settings.privacyLevel)) {
-        return res.status(400).json({ error: 'Invalid privacy level' });
-      }
+        // Check if NATS servers changed
+        const oldSettings = db.getFederationSettings();
+        const oldServers = oldSettings?.nats_servers ? JSON.parse(oldSettings.nats_servers) : [];
+        const newServers = settings.natsServers || [];
+        const serversChanged = JSON.stringify(oldServers) !== JSON.stringify(newServers);
 
-      // Check if NATS servers changed
-      const oldSettings = db.getFederationSettings();
-      const oldServers = oldSettings?.nats_servers ? JSON.parse(oldSettings.nats_servers) : [];
-      const newServers = settings.natsServers || [];
-      const serversChanged = JSON.stringify(oldServers) !== JSON.stringify(newServers);
+        // Update database
+        db.updateFederationSettings(settings);
 
-      // Update database
-      db.updateFederationSettings(settings);
+        // If NATS servers changed, recreate the client
+        if (serversChanged && newServers.length > 0 && recreateClient) {
+          console.log('🔄 NATS servers changed, recreating federation client...');
+          if (federation.client && federation.client.connected) {
+            await federation.client.disconnect();
+          }
+          await recreateClient();
+        }
 
-      // If NATS servers changed, recreate the client
-      if (serversChanged && newServers.length > 0 && recreateClient) {
-        console.log('🔄 NATS servers changed, recreating federation client...');
-        if (federation.client && federation.client.connected) {
+        // If federation is being enabled, connect
+        if (settings.enabled && federation.client && !federation.client.connected) {
+          await federation.client.connect();
+        }
+
+        // If federation is being disabled, disconnect
+        if (!settings.enabled && federation.client && federation.client.connected) {
           await federation.client.disconnect();
         }
-        await recreateClient();
-      }
 
-      // If federation is being enabled, connect
-      if (settings.enabled && federation.client && !federation.client.connected) {
-        await federation.client.connect();
+        res.json({ success: true, message: 'Federation settings updated' });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
       }
-
-      // If federation is being disabled, disconnect
-      if (!settings.enabled && federation.client && federation.client.connected) {
-        await federation.client.disconnect();
-      }
-
-      res.json({ success: true, message: 'Federation settings updated' });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+    });
 
   // Enable federation
   router.post('/enable', async (req, res) => {
@@ -122,6 +120,13 @@ export function createFederationRouter(db, federation, recreateClient) {
       console.log(`🔌 Connect result: ${connected}`);
 
       if (connected) {
+        // Subscribe to federation messages after connecting
+        await federation.client.subscribeToFederation({
+          taskReceived: (data) => console.log('📨 Federation: Task received from', data.nodeId?.slice(0, 8)),
+          taskCompleted: (data) => console.log('✅ Federation: Task completed by', data.nodeId?.slice(0, 8)),
+          heartbeat: (data) => console.log('💓 Federation: Heartbeat from', data.nodeId?.slice(0, 8))
+        });
+
         const settings = db.getFederationSettings();
         console.log('📤 Sending success response, DB enabled:', settings?.enabled);
         res.json({ success: true, message: 'Federation enabled', connected: true });
@@ -194,32 +199,31 @@ export function createFederationRouter(db, federation, recreateClient) {
   });
 
   // Get federation messages (received from other nodes)
-  router.get('/messages', (req, res) => {
-    try {
-      const limit = parseInt(req.query.limit) || 100;
-      const offset = parseInt(req.query.offset) || 0;
-      const type = req.query.type || null;
+  router.get('/messages',
+    validate({ query: schemas.messagesQuery }),
+    (req, res) => {
+      try {
+        const { limit, offset, type } = req.query;
+        const messages = db.getFederationMessages(limit, offset, type || null);
 
-      const messages = db.getFederationMessages(limit, offset, type);
+        // Parse JSON data field
+        const parsedMessages = messages.map(msg => ({
+          ...msg,
+          data: msg.data ? JSON.parse(msg.data) : null
+        }));
 
-      // Parse JSON data field
-      const parsedMessages = messages.map(msg => ({
-        ...msg,
-        data: msg.data ? JSON.parse(msg.data) : null
-      }));
-
-      res.json({
-        messages: parsedMessages,
-        pagination: {
-          limit,
-          offset,
-          hasMore: messages.length === limit
-        }
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+        res.json({
+          messages: parsedMessages,
+          pagination: {
+            limit,
+            offset,
+            hasMore: messages.length === limit
+          }
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
 
   // Get federation peers (other nodes)
   router.get('/peers', (req, res) => {
@@ -236,35 +240,38 @@ export function createFederationRouter(db, federation, recreateClient) {
   });
 
   // Block a peer
-  router.post('/peers/:nodeId/block', (req, res) => {
-    try {
-      const { nodeId } = req.params;
-      db.blockPeer(nodeId);
+  router.post('/peers/:nodeId/block',
+    validate({ params: schemas.nodeIdParam }),
+    (req, res) => {
+      try {
+        const { nodeId } = req.params;
+        db.blockPeer(nodeId);
 
-      res.json({ success: true, message: `Peer ${nodeId} blocked` });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+        res.json({ success: true, message: `Peer ${nodeId} blocked` });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
 
   // Get federation network statistics
-  router.get('/stats', (req, res) => {
-    try {
-      const statType = req.query.type || null;
-      const hours = parseInt(req.query.hours) || 24;
+  router.get('/stats',
+    validate({ query: schemas.statsQuery }),
+    (req, res) => {
+      try {
+        const { type, hours } = req.query;
 
-      const stats = db.getFederationStats(statType, hours);
-      const aggregated = db.getAggregatedFederationStats();
+        const stats = db.getFederationStats(type || null, hours);
+        const aggregated = db.getAggregatedFederationStats();
 
-      res.json({
-        timeSeriesStats: stats,
-        aggregatedStats: aggregated,
-        period: `${hours} hours`
-      });
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  });
+        res.json({
+          timeSeriesStats: stats,
+          aggregatedStats: aggregated,
+          period: `${hours} hours`
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
 
   // Get privacy report
   router.get('/privacy', (req, res) => {

@@ -1,0 +1,92 @@
+version: '3.8'
+
+# Standalone deployment with automatic HTTPS via Traefik + Let's Encrypt
+# Usage:
+#   1. Copy .env.example to .env and set your domain/email
+#   2. docker compose -f docker-compose.https.yml up -d
+#
+# Required environment variables:
+#   DOMAIN=monitor.yourdomain.com
+#   ACME_EMAIL=your-email@example.com
+
+services:
+  traefik:
+    image: traefik:v3.0
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      # API and Dashboard
+      - "--api.dashboard=false"
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      # HTTP to HTTPS redirect
+      - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
+      # Let's Encrypt
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
+      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
+      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - letsencrypt:/letsencrypt
+    networks:
+      - web
+
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: truebit-node-monitor
+    restart: unless-stopped
+    networks:
+      - web
+      - truebit-network
+    environment:
+      - NODE_ENV=production
+      - PORT=8090
+      - HOST=0.0.0.0
+      - CONTAINER_NAME=runner-node
+      - DOCKER_SOCKET_PATH=/var/run/docker.sock
+      - DB_PATH=/app/data/truebit-monitor.db
+      - LOG_RETENTION_DAYS=30
+      - ALLOWED_ORIGINS=https://${DOMAIN}
+    volumes:
+      # CRITICAL: Mount host Docker socket (READ-ONLY)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persist database
+      - monitor-data:/app/data
+    labels:
+      - "traefik.enable=true"
+      # HTTP Router
+      - "traefik.http.routers.monitor.rule=Host(`${DOMAIN}`)"
+      - "traefik.http.routers.monitor.entrypoints=websecure"
+      - "traefik.http.routers.monitor.tls.certresolver=letsencrypt"
+      # Service
+      - "traefik.http.services.monitor.loadbalancer.server.port=8090"
+      # Security headers
+      - "traefik.http.middlewares.security-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.security-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.security-headers.headers.stsPreload=true"
+      - "traefik.http.middlewares.security-headers.headers.forceSTSHeader=true"
+      - "traefik.http.routers.monitor.middlewares=security-headers"
+
+volumes:
+  monitor-data:
+    driver: local
+  letsencrypt:
+    driver: local
+
+networks:
+  web:
+    driver: bridge
+  truebit-network:
+    external: true
+    name: truebit_runner_node_default
