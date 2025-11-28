@@ -17,16 +17,12 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      <div class="lg:col-span-2">
-        <NodeStatus />
-      </div>
-      <div>
-        <InvoiceSummary />
-      </div>
+    <!-- Three Summary Cards in One Row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <NodeStatus />
+      <InvoiceSummary />
+      <TaskSummary />
     </div>
-
-    <TaskSummary />
 
     <TaskTable :tasks="tasksStore.recentTasks" title="Recent Tasks" :show-view-all="true" />
 
