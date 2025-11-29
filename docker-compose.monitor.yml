@@ -14,6 +14,9 @@ services:
       - truebit-network
     labels:
       - "traefik.docker.network=coolify"
+      # Disable Coolify's default rate limiting for this service
+      - "traefik.http.middlewares.truebit-monitor-ratelimit.ratelimit.average=0"
+      - "traefik.http.middlewares.truebit-monitor-ratelimit.ratelimit.burst=0"
     environment:
       - NODE_ENV=production
       - PORT=8090
