@@ -36,5 +36,4 @@ networks:
   coolify:
     external: true
   truebit-network:
-    external: true
-    name: truebit_runner_node_default
+    name: truebit-federation-network

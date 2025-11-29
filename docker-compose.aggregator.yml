@@ -30,6 +30,7 @@ services:
       - aggregator-data:/data
     networks:
       - coolify
+      - truebit-network
     logging:
       driver: "json-file"
       options:
@@ -43,3 +44,5 @@ volumes:
 networks:
   coolify:
     external: true
+  truebit-network:
+    name: truebit-federation-network

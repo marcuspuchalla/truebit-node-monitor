@@ -31,7 +31,7 @@ services:
 
     networks:
       - coolify
-      - federation-network
+      - truebit-network
 
     labels:
       - traefik.enable=true
@@ -56,5 +56,5 @@ volumes:
 networks:
   coolify:
     external: true
-  federation-network:
-    driver: bridge
+  truebit-network:
+    name: truebit-federation-network
