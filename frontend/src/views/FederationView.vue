@@ -125,11 +125,13 @@ console.log('Federation server:', serverUrl);
 const isConnected = computed(() => status.value?.connected || false);
 
 const statusClass = computed(() => {
+  if (status.value?.status === 'not_initialized') return 'disconnected';
   if (isConnected.value) return 'connected';
   return 'connecting';
 });
 
 const statusLabel = computed(() => {
+  if (status.value?.status === 'not_initialized') return 'Not Connected';
   if (isConnected.value) return 'Connected to Network';
   return 'Connecting...';
 });
@@ -144,11 +146,14 @@ onMounted(async () => {
   // Initialize and auto-enable federation
   await federationStore.initialize();
 
-  // Auto-enable if not already enabled
-  if (!settings.value?.enabled) {
+  // Auto-enable if not already enabled or not connected
+  if (!settings.value?.enabled || !status.value?.connected) {
     try {
       await federationStore.enableFederation();
+      // Refresh status after enabling
+      await federationStore.fetchStatus();
     } catch (error) {
+      console.error('Federation enable error:', error);
       errorMessage.value = 'Failed to connect to network';
     }
   }
@@ -259,6 +264,10 @@ function formatTime(timestamp) {
 .status-indicator.connecting {
   background: #f59e0b;
   animation: pulse 1s infinite;
+}
+
+.status-indicator.disconnected {
+  background: #ef4444;
 }
 
 @keyframes pulse {
