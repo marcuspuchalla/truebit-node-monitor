@@ -1,0 +1,38 @@
+# AWS-specific Docker Compose for TrueBit Node Monitor
+# This version doesn't use the coolify network and exposes the port directly
+
+version: '3.8'
+
+services:
+  monitor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: truebit-node-monitor
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    networks:
+      - truebit-network
+    environment:
+      - NODE_ENV=production
+      - PORT=8090
+      - HOST=0.0.0.0
+      - CONTAINER_NAME=runner-node
+      - DOCKER_SOCKET_PATH=/var/run/docker.sock
+      - DB_PATH=/app/data/truebit-monitor.db
+      - LOG_RETENTION_DAYS=30
+    volumes:
+      # CRITICAL: Mount host Docker socket (READ-ONLY)
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Persist database
+      - monitor-data:/app/data
+
+volumes:
+  monitor-data:
+    driver: local
+
+networks:
+  truebit-network:
+    external: true
+    name: truebit_runner_node_default
