@@ -8,7 +8,7 @@
           </div>
 
           <div class="text-content">
-            <h1 class="title">TrueBit Monitor</h1>
+            <h1 class="title">TrueBit Node Monitor</h1>
             <p class="subtitle">Loading application...</p>
           </div>
 

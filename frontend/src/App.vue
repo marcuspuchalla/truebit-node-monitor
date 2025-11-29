@@ -9,7 +9,7 @@
           <div class="flex">
             <div class="flex-shrink-0 flex items-center gap-3">
               <img src="/logo.png" alt="TruBit Watch" class="h-10 w-auto" />
-              <h1 class="text-xl font-bold text-gray-900">TrueBit Monitor</h1>
+              <h1 class="text-xl font-bold text-gray-900">TrueBit Node Monitor</h1>
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
               <router-link
