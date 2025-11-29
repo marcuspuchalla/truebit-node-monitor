@@ -1,9 +1,9 @@
 # Federation Aggregator for Coolify
 #
-# Deploy this on the same server as the NATS federation server (f.tru.watch)
-# It collects statistics from all TrueBit Monitor nodes and publishes aggregated data.
+# This service collects statistics from all TrueBit Monitor nodes and publishes aggregated data.
+# It connects to the NATS server via the public WSS endpoint.
 #
-# Dependencies:
+# Prerequisites:
 #   - NATS server must be running (deploy/docker-compose.federation.yml)
 #
 # What it does:
@@ -21,79 +21,25 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      # Connect to NATS via internal Docker network (same Coolify server)
-      - NATS_URL=ws://truebit-federation-nats:9086
+      # Connect to NATS via public WSS URL
+      - NATS_URL=wss://f.tru.watch:9086
       - DB_PATH=/data/aggregator.db
       - PUBLISH_INTERVAL=30000
       - RETENTION_DAYS=30
     volumes:
       - aggregator-data:/data
     networks:
-      - federation-network
-    depends_on:
-      - nats-seed
+      - coolify
     logging:
       driver: "json-file"
       options:
         max-size: "10m"
         max-file: "3"
 
-  # NATS Seed Server for TrueBit Monitor Federation
-  nats-seed:
-    image: nats:2.10-alpine
-    container_name: truebit-federation-nats
-    restart: unless-stopped
-
-    entrypoint:
-      - /bin/sh
-      - '-c'
-    command:
-      - |
-        cat > /tmp/nats.conf << 'EOF'
-        port: 4222
-        http_port: 8222
-        websocket {
-          port: 9086
-          no_tls: true
-        }
-        jetstream {
-          store_dir: /data
-        }
-        max_payload: 1048576
-        EOF
-        exec nats-server -c /tmp/nats.conf
-
-    volumes:
-      - nats-data:/data
-
-    networks:
-      - coolify
-      - federation-network
-
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.truebit-nats.rule=Host(`f.tru.watch`)
-      - traefik.http.routers.truebit-nats.entrypoints=truebitnats
-      - traefik.http.routers.truebit-nats.tls=true
-      - traefik.http.routers.truebit-nats.tls.certresolver=letsencrypt
-      - traefik.http.services.truebit-nats.loadbalancer.server.port=9086
-      - traefik.docker.network=coolify
-
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-
 volumes:
-  nats-data:
-    driver: local
   aggregator-data:
     driver: local
 
 networks:
   coolify:
     external: true
-  federation-network:
-    driver: bridge
