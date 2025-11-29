@@ -4,11 +4,7 @@
       <div class="preloader-card">
         <div class="preloader-content">
           <div class="logo-container">
-            <svg class="logo" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4" opacity="0.2"/>
-              <circle cx="32" cy="32" r="28" stroke="currentColor" stroke-width="4"
-                stroke-dasharray="176" stroke-dashoffset="44" class="spinner"/>
-            </svg>
+            <img src="/logo.png" alt="TruBit Watch" class="logo-image" />
           </div>
 
           <div class="text-content">
@@ -62,27 +58,28 @@ const { showPreloader, progress } = usePreloader()
 }
 
 .logo-container {
-  width: 64px;
-  height: 64px;
-  color: #3b82f6;
+  width: 160px;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.logo {
+.logo-image {
   width: 100%;
   height: 100%;
+  object-fit: contain;
+  animation: pulse 2s ease-in-out infinite;
 }
 
-.spinner {
-  animation: spin 1s linear infinite;
-  transform-origin: center;
-}
-
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
   }
-  to {
-    transform: rotate(360deg);
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
   }
 }
 
