@@ -1,0 +1,19 @@
+{
+  "name": "truebit-federation-aggregator",
+  "version": "1.0.0",
+  "description": "Federation aggregator service for TrueBit Monitor network statistics",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "nats": "^2.19.0",
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

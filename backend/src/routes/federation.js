@@ -124,7 +124,15 @@ export function createFederationRouter(db, federation, recreateClient) {
         await federation.client.subscribeToFederation({
           taskReceived: (data) => console.log('📨 Federation: Task received from', data.nodeId?.slice(0, 8)),
           taskCompleted: (data) => console.log('✅ Federation: Task completed by', data.nodeId?.slice(0, 8)),
-          heartbeat: (data) => console.log('💓 Federation: Heartbeat from', data.nodeId?.slice(0, 8))
+          heartbeat: (data) => console.log('💓 Federation: Heartbeat from', data.nodeId?.slice(0, 8)),
+          networkStats: (data) => {
+            console.log('📊 Federation: Network stats received');
+            try {
+              db.updateNetworkStats(data);
+            } catch (error) {
+              console.error('Failed to update network stats:', error.message);
+            }
+          }
         });
 
         const settings = db.getFederationSettings();
@@ -272,6 +280,45 @@ export function createFederationRouter(db, federation, recreateClient) {
         res.status(500).json({ error: error.message });
       }
     });
+
+  // Get network-wide aggregated statistics (from aggregator)
+  router.get('/network-stats', (req, res) => {
+    try {
+      const networkStats = db.getNetworkStats();
+
+      if (!networkStats) {
+        // Return placeholder stats if no data yet
+        return res.json({
+          activeNodes: 0,
+          totalNodes: 0,
+          totalTasks: 0,
+          completedTasks: 0,
+          failedTasks: 0,
+          cachedTasks: 0,
+          tasksLast24h: 0,
+          totalInvoices: 0,
+          invoicesLast24h: 0,
+          successRate: 0,
+          cacheHitRate: 0,
+          executionTimeDistribution: {},
+          gasUsageDistribution: {},
+          stepsComputedDistribution: {},
+          memoryUsedDistribution: {},
+          chainDistribution: {},
+          taskTypeDistribution: {},
+          lastUpdated: null,
+          status: 'awaiting_data'
+        });
+      }
+
+      res.json({
+        ...networkStats,
+        status: 'connected'
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  });
 
   // Get privacy report
   router.get('/privacy', (req, res) => {

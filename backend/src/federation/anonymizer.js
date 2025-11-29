@@ -95,6 +95,62 @@ class FederationAnonymizer {
   }
 
   /**
+   * Anonymize invoice created event
+   */
+  anonymizeInvoice(invoice) {
+    // Extract details from invoice
+    const details = typeof invoice.details === 'string'
+      ? JSON.parse(invoice.details)
+      : invoice.details || {};
+
+    const stepsComputed = details.totalStepsComputed || details.lineItem?.[0]?.total_steps_computed || 0;
+    const memoryUsed = details.peakMemoryUsed || details.lineItem?.[0]?.peak_memory_used || 0;
+
+    return {
+      version: '1.0',
+      type: 'invoice_created',
+      nodeId: this.nodeId,
+      timestamp: this.roundTimestamp(invoice.timestamp || new Date()),
+      data: {
+        // PRIVACY: Hash invoice and task IDs
+        invoiceIdHash: this.hashWithSalt(details.invoiceId || invoice.id),
+        taskIdHash: this.hashWithSalt(details.taskId || details.executionId),
+        chainId: details.chainId,
+        // Bucket compute metrics
+        stepsComputedBucket: this.bucketStepsComputed(stepsComputed),
+        memoryUsedBucket: this.bucketMemoryUsed(memoryUsed),
+        operation: details.operation || details.lineItem?.[0]?.operation || 'compute'
+      }
+    };
+  }
+
+  /**
+   * Bucket steps computed into ranges
+   */
+  bucketStepsComputed(steps) {
+    if (!steps || steps < 0) return 'unknown';
+
+    if (steps < 100000) return '<100K';
+    if (steps < 1000000) return '100K-1M';
+    if (steps < 10000000) return '1M-10M';
+    if (steps < 100000000) return '10M-100M';
+    return '>100M';
+  }
+
+  /**
+   * Bucket memory used into ranges
+   */
+  bucketMemoryUsed(bytes) {
+    if (!bytes || bytes < 0) return 'unknown';
+
+    const mb = bytes / (1024 * 1024);
+    if (mb < 64) return '<64MB';
+    if (mb < 256) return '64-256MB';
+    if (mb < 1024) return '256MB-1GB';
+    return '>1GB';
+  }
+
+  /**
    * Hash value with secret salt (one-way, irreversible)
    */
   hashWithSalt(value) {

@@ -207,6 +207,14 @@ class FederationClient extends EventEmitter {
   }
 
   /**
+   * Publish anonymized invoice created event
+   */
+  async publishInvoice(invoice) {
+    const anonymized = this.anonymizer.anonymizeInvoice(invoice);
+    return this.publish('truebit.invoices.created', anonymized);
+  }
+
+  /**
    * Publish message to NATS subject
    */
   async publish(subject, data) {
@@ -323,6 +331,7 @@ class FederationClient extends EventEmitter {
     await this.subscribe('truebit.tasks.received', handlers.taskReceived);
     await this.subscribe('truebit.tasks.completed', handlers.taskCompleted);
     await this.subscribe('truebit.heartbeat', handlers.heartbeat);
+    await this.subscribe('truebit.stats.aggregated', handlers.networkStats);
     await this.subscribe('truebit.>', handlers.all); // Wildcard for all messages
   }
 

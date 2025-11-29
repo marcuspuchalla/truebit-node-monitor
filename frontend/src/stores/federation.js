@@ -39,10 +39,27 @@ export const useFederationStore = defineStore('federation', {
     peers: [],
     peersLoading: false,
 
-    // Network statistics
+    // Network statistics (time series)
     networkStats: {
       timeSeriesStats: [],
       aggregatedStats: []
+    },
+
+    // Network-wide aggregated statistics (from aggregator)
+    aggregatedNetworkStats: {
+      activeNodes: 0,
+      totalNodes: 0,
+      totalTasks: 0,
+      completedTasks: 0,
+      failedTasks: 0,
+      cachedTasks: 0,
+      tasksLast24h: 0,
+      totalInvoices: 0,
+      invoicesLast24h: 0,
+      successRate: 0,
+      cacheHitRate: 0,
+      lastUpdated: null,
+      status: 'awaiting_data'
     },
 
     // Loading states
@@ -182,7 +199,7 @@ export const useFederationStore = defineStore('federation', {
       }
     },
 
-    // Fetch network statistics
+    // Fetch network statistics (time series)
     async fetchNetworkStats(hours = 24) {
       try {
         const response = await federationAPI.getStats(hours);
@@ -193,13 +210,25 @@ export const useFederationStore = defineStore('federation', {
       }
     },
 
+    // Fetch aggregated network statistics (from aggregator)
+    async fetchAggregatedNetworkStats() {
+      try {
+        const response = await federationAPI.getNetworkStats();
+        this.aggregatedNetworkStats = response;
+      } catch (error) {
+        this.error = error.message;
+        console.error('Failed to fetch aggregated network stats:', error);
+      }
+    },
+
     // Initialize store (fetch all data)
     async initialize() {
       await Promise.all([
         this.fetchSettings(),
         this.fetchStatus(),
         this.fetchMessages(),
-        this.fetchPeers()
+        this.fetchPeers(),
+        this.fetchAggregatedNetworkStats()
       ]);
     },
 
@@ -208,7 +237,8 @@ export const useFederationStore = defineStore('federation', {
       await Promise.all([
         this.fetchStatus(),
         this.fetchMessages(50, 0),
-        this.fetchPeers()
+        this.fetchPeers(),
+        this.fetchAggregatedNetworkStats()
       ]);
     }
   }

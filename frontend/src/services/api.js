@@ -111,6 +111,12 @@ export const federationAPI = {
     return data;
   },
 
+  // Network-wide aggregated statistics
+  async getNetworkStats() {
+    const { data } = await api.get('/federation/network-stats');
+    return data;
+  },
+
   // Privacy
   async getPrivacyReport() {
     const { data } = await api.get('/federation/privacy');

@@ -18,19 +18,39 @@
       {{ errorMessage }}
     </div>
 
-    <!-- Network Stats -->
+    <!-- Network Stats Grid -->
     <div class="stats-grid">
       <div class="stat-card">
-        <div class="stat-value">{{ activePeerCount }}</div>
+        <div class="stat-value">{{ networkStatsData.activeNodes || activePeerCount }}</div>
         <div class="stat-label">Active Nodes</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">{{ totalMessagesReceived }}</div>
-        <div class="stat-label">Network Events</div>
+        <div class="stat-value">{{ networkStatsData.totalTasks || 0 }}</div>
+        <div class="stat-label">Total Tasks</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">{{ totalMessagesSent }}</div>
-        <div class="stat-label">Events Shared</div>
+        <div class="stat-value">{{ networkStatsData.totalInvoices || 0 }}</div>
+        <div class="stat-label">Total Invoices</div>
+      </div>
+    </div>
+
+    <!-- Extended Stats -->
+    <div class="stats-grid secondary">
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.completedTasks || 0 }}</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.tasksLast24h || 0 }}</div>
+        <div class="stat-label">Last 24h</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.successRate?.toFixed(1) || 0 }}%</div>
+        <div class="stat-label">Success Rate</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.invoicesLast24h || 0 }}</div>
+        <div class="stat-label">Invoices 24h</div>
       </div>
     </div>
 
@@ -89,8 +109,12 @@ const {
   peers,
   totalMessagesSent,
   totalMessagesReceived,
-  activePeerCount
+  activePeerCount,
+  aggregatedNetworkStats
 } = storeToRefs(federationStore);
+
+// Computed network stats with fallbacks
+const networkStatsData = computed(() => aggregatedNetworkStats.value || {});
 
 const errorMessage = ref('');
 
@@ -267,6 +291,11 @@ function formatTime(timestamp) {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.stats-grid.secondary {
+  grid-template-columns: repeat(4, 1fr);
   margin-bottom: 2rem;
 }
 
@@ -276,6 +305,18 @@ function formatTime(timestamp) {
   border-radius: 0.75rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   text-align: center;
+}
+
+.stat-card.small {
+  padding: 1rem;
+}
+
+.stat-card.small .stat-value {
+  font-size: 1.5rem;
+}
+
+.stat-card.small .stat-label {
+  font-size: 0.75rem;
 }
 
 .stat-value {
@@ -401,6 +442,10 @@ function formatTime(timestamp) {
 @media (max-width: 640px) {
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-grid.secondary {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .status-card {

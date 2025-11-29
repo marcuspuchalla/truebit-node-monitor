@@ -1,0 +1,28 @@
+# Federation Aggregator - Deploy alongside NATS server
+#
+# This service should run on the same machine as your NATS server (f.tru.watch)
+# It collects messages from all TrueBit Monitor nodes and publishes aggregated stats.
+
+version: '3.8'
+
+services:
+  aggregator:
+    build: .
+    container_name: truebit-federation-aggregator
+    restart: unless-stopped
+    environment:
+      # Connect to local NATS (if on same machine) or remote
+      - NATS_URL=${NATS_URL:-wss://f.tru.watch:9086}
+      - DB_PATH=/data/aggregator.db
+      - PUBLISH_INTERVAL=${PUBLISH_INTERVAL:-30000}
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+    volumes:
+      - aggregator-data:/data
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  aggregator-data:

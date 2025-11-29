@@ -163,6 +163,31 @@ class TruebitDatabase {
       )
     `);
 
+    // Network-wide statistics cache (received from aggregator)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS network_stats_cache (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        active_nodes INTEGER,
+        total_nodes INTEGER,
+        total_tasks INTEGER,
+        completed_tasks INTEGER,
+        failed_tasks INTEGER,
+        cached_tasks INTEGER,
+        tasks_last_24h INTEGER,
+        total_invoices INTEGER,
+        invoices_last_24h INTEGER,
+        success_rate REAL,
+        cache_hit_rate REAL,
+        execution_time_distribution TEXT,
+        gas_usage_distribution TEXT,
+        steps_computed_distribution TEXT,
+        memory_used_distribution TEXT,
+        chain_distribution TEXT,
+        task_type_distribution TEXT,
+        last_updated TEXT
+      )
+    `);
+
     // Create indexes
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_tasks_execution_id ON tasks(execution_id);
@@ -653,6 +678,122 @@ class TruebitDatabase {
       GROUP BY stat_type
     `);
     return stmt.all();
+  }
+
+  // Network Stats Cache (from aggregator)
+  updateNetworkStats(stats) {
+    const data = stats.data || stats;
+    const now = new Date().toISOString();
+
+    // Check if row exists
+    const existing = this.db.prepare('SELECT COUNT(*) as count FROM network_stats_cache WHERE id = 1').get();
+
+    if (existing.count === 0) {
+      const stmt = this.db.prepare(`
+        INSERT INTO network_stats_cache (
+          id, active_nodes, total_nodes, total_tasks, completed_tasks,
+          failed_tasks, cached_tasks, tasks_last_24h, total_invoices,
+          invoices_last_24h, success_rate, cache_hit_rate,
+          execution_time_distribution, gas_usage_distribution,
+          steps_computed_distribution, memory_used_distribution,
+          chain_distribution, task_type_distribution, last_updated
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `);
+
+      return stmt.run(
+        data.activeNodes,
+        data.totalNodes,
+        data.totalTasks,
+        data.completedTasks,
+        data.failedTasks,
+        data.cachedTasks,
+        data.tasksLast24h,
+        data.totalInvoices,
+        data.invoicesLast24h,
+        data.successRate,
+        data.cacheHitRate,
+        JSON.stringify(data.executionTimeDistribution),
+        JSON.stringify(data.gasUsageDistribution),
+        JSON.stringify(data.stepsComputedDistribution),
+        JSON.stringify(data.memoryUsedDistribution),
+        JSON.stringify(data.chainDistribution),
+        JSON.stringify(data.taskTypeDistribution),
+        now
+      );
+    }
+
+    const stmt = this.db.prepare(`
+      UPDATE network_stats_cache SET
+        active_nodes = ?,
+        total_nodes = ?,
+        total_tasks = ?,
+        completed_tasks = ?,
+        failed_tasks = ?,
+        cached_tasks = ?,
+        tasks_last_24h = ?,
+        total_invoices = ?,
+        invoices_last_24h = ?,
+        success_rate = ?,
+        cache_hit_rate = ?,
+        execution_time_distribution = ?,
+        gas_usage_distribution = ?,
+        steps_computed_distribution = ?,
+        memory_used_distribution = ?,
+        chain_distribution = ?,
+        task_type_distribution = ?,
+        last_updated = ?
+      WHERE id = 1
+    `);
+
+    return stmt.run(
+      data.activeNodes,
+      data.totalNodes,
+      data.totalTasks,
+      data.completedTasks,
+      data.failedTasks,
+      data.cachedTasks,
+      data.tasksLast24h,
+      data.totalInvoices,
+      data.invoicesLast24h,
+      data.successRate,
+      data.cacheHitRate,
+      JSON.stringify(data.executionTimeDistribution),
+      JSON.stringify(data.gasUsageDistribution),
+      JSON.stringify(data.stepsComputedDistribution),
+      JSON.stringify(data.memoryUsedDistribution),
+      JSON.stringify(data.chainDistribution),
+      JSON.stringify(data.taskTypeDistribution),
+      now
+    );
+  }
+
+  getNetworkStats() {
+    const stmt = this.db.prepare('SELECT * FROM network_stats_cache WHERE id = 1');
+    const row = stmt.get();
+
+    if (!row) return null;
+
+    // Parse JSON fields
+    return {
+      activeNodes: row.active_nodes,
+      totalNodes: row.total_nodes,
+      totalTasks: row.total_tasks,
+      completedTasks: row.completed_tasks,
+      failedTasks: row.failed_tasks,
+      cachedTasks: row.cached_tasks,
+      tasksLast24h: row.tasks_last_24h,
+      totalInvoices: row.total_invoices,
+      invoicesLast24h: row.invoices_last_24h,
+      successRate: row.success_rate,
+      cacheHitRate: row.cache_hit_rate,
+      executionTimeDistribution: JSON.parse(row.execution_time_distribution || '{}'),
+      gasUsageDistribution: JSON.parse(row.gas_usage_distribution || '{}'),
+      stepsComputedDistribution: JSON.parse(row.steps_computed_distribution || '{}'),
+      memoryUsedDistribution: JSON.parse(row.memory_used_distribution || '{}'),
+      chainDistribution: JSON.parse(row.chain_distribution || '{}'),
+      taskTypeDistribution: JSON.parse(row.task_type_distribution || '{}'),
+      lastUpdated: row.last_updated
+    };
   }
 
   close() {
