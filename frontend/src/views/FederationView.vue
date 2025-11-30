@@ -206,50 +206,93 @@ const {
 const selectedNode = ref(null);
 const selectedMessage = ref(null);
 
+// Parse bucket string to get minimum value (e.g., "1-10" -> 1, "0" -> 0, ">1K" -> 1000)
+function parseBucketMin(bucket) {
+  if (!bucket || bucket === 'unknown') return 0;
+  if (bucket === '0') return 0;
+  if (bucket.startsWith('>')) {
+    // Handle ">1K", ">5", etc.
+    const num = bucket.slice(1).replace('K', '000').replace('M', '000000');
+    return parseInt(num) || 0;
+  }
+  if (bucket.includes('-')) {
+    // Handle "1-10", "10-50", etc.
+    return parseInt(bucket.split('-')[0]) || 0;
+  }
+  // Handle single number like "1", "2-3"
+  return parseInt(bucket) || 0;
+}
+
 // Computed network stats with fallbacks - compute from messages if aggregator data not available
 const networkStatsData = computed(() => {
   const aggStats = aggregatedNetworkStats.value || {};
 
-  // If we have aggregator data, use it
-  if (aggStats.status !== 'awaiting_data' && aggStats.activeNodes > 0) {
+  // If we have aggregator data with real values, use it
+  if (aggStats.status !== 'awaiting_data' && aggStats.totalTasks > 0) {
     return aggStats;
   }
 
   // Otherwise, compute from available data
   const uniqueNodes = new Set();
-  let totalTasks = 0;
-  let completedTasks = 0;
+  const nodeStats = new Map(); // Track latest stats per node
 
   // Count unique nodes from peers
   peers.value.forEach(peer => {
     uniqueNodes.add(peer.node_id);
   });
 
-  // Get stats from heartbeat messages
+  // Get stats from heartbeat messages - track per-node to avoid duplicates
   messages.value.forEach(msg => {
     if (msg.sender_node_id) {
       uniqueNodes.add(msg.sender_node_id);
     }
     if (msg.message_type === 'heartbeat' && msg.data) {
-      const tasks = parseInt(msg.data.totalTasksBucket) || 0;
-      if (tasks > totalTasks) totalTasks = tasks;
-    }
-    if (msg.message_type === 'task_completed') {
-      completedTasks++;
+      const nodeId = msg.sender_node_id;
+      const existing = nodeStats.get(nodeId);
+      const msgTime = new Date(msg.received_at);
+
+      // Only update if this is a newer message
+      if (!existing || msgTime > existing.time) {
+        nodeStats.set(nodeId, {
+          time: msgTime,
+          totalTasksBucket: msg.data.totalTasksBucket,
+          activeTasksBucket: msg.data.activeTasksBucket
+        });
+      }
     }
   });
+
+  // Aggregate stats from all nodes
+  let totalTasksMin = 0;
+  let activeTasks = 0;
+
+  nodeStats.forEach((stats) => {
+    totalTasksMin += parseBucketMin(stats.totalTasksBucket);
+    activeTasks += parseBucketMin(stats.activeTasksBucket);
+  });
+
+  // Count completed tasks from task_completed messages
+  const completedTaskIds = new Set();
+  messages.value.forEach(msg => {
+    if (msg.message_type === 'task_completed' && msg.data?.taskIdHash) {
+      completedTaskIds.add(msg.data.taskIdHash);
+    }
+  });
+
+  const completedTasks = completedTaskIds.size || totalTasksMin; // Use total as fallback
+  const successRate = totalTasksMin > 0 ? (completedTasks / totalTasksMin * 100) : 0;
 
   return {
     activeNodes: uniqueNodes.size || aggStats.activeNodes || activePeerCount.value,
     totalNodes: uniqueNodes.size || aggStats.totalNodes || 0,
-    totalTasks: totalTasks || aggStats.totalTasks || 0,
+    totalTasks: totalTasksMin || aggStats.totalTasks || 0,
     completedTasks: completedTasks || aggStats.completedTasks || 0,
     failedTasks: aggStats.failedTasks || 0,
     cachedTasks: aggStats.cachedTasks || 0,
     tasksLast24h: aggStats.tasksLast24h || 0,
     totalInvoices: aggStats.totalInvoices || 0,
     invoicesLast24h: aggStats.invoicesLast24h || 0,
-    successRate: aggStats.successRate || 0,
+    successRate: successRate || aggStats.successRate || 0,
     cacheHitRate: aggStats.cacheHitRate || 0,
     lastUpdated: aggStats.lastUpdated,
     status: uniqueNodes.size > 0 ? 'computed' : aggStats.status
