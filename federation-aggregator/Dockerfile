@@ -1,5 +1,5 @@
 # Federation Aggregator Dockerfile
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 # Install build dependencies for better-sqlite3
 RUN apk add --no-cache python3 make g++
@@ -8,12 +8,33 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY tsconfig.json ./
 
-# Install dependencies (use npm ci if lock file exists, otherwise npm install)
-RUN npm ci --omit=dev || npm install --omit=dev
+# Install all dependencies (including devDependencies for build)
+RUN npm ci || npm install
 
 # Copy source
 COPY src/ ./src/
+
+# Build TypeScript
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine
+
+# Install build dependencies for better-sqlite3 native module
+RUN apk add --no-cache python3 make g++
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install production dependencies only
+RUN npm ci --omit=dev || npm install --omit=dev
+
+# Copy built files from builder
+COPY --from=builder /app/dist ./dist
 
 # Create data directory
 RUN mkdir -p /data
@@ -31,4 +52,4 @@ RUN addgroup -g 1001 -S nodejs && \
 
 USER nodejs
 
-CMD ["node", "src/index.js"]
+CMD ["node", "dist/index.js"]

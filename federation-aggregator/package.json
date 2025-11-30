@@ -3,15 +3,24 @@
   "version": "1.0.0",
   "description": "Federation aggregator service for TrueBit Monitor network statistics",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
   "scripts": {
-    "start": "node src/index.js",
-    "dev": "node --watch src/index.js"
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "better-sqlite3": "^9.4.3",
     "nats": "^2.19.0",
     "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.11.0",
+    "@types/ws": "^8.5.10",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
   },
   "engines": {
     "node": ">=18.0.0"

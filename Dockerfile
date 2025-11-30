@@ -14,7 +14,23 @@ COPY frontend/ ./
 # Build frontend
 RUN npm run build
 
-# Stage 2: Setup backend with built frontend
+# Stage 2: Build backend TypeScript
+FROM node:18-alpine AS backend-builder
+
+WORKDIR /app
+
+# Copy backend package files
+COPY backend/package*.json ./
+RUN npm install
+
+# Copy backend source and tsconfig
+COPY backend/src ./src
+COPY backend/tsconfig.json ./
+
+# Build TypeScript
+RUN npm run build
+
+# Stage 3: Production image
 FROM node:18-alpine
 
 WORKDIR /app
@@ -23,8 +39,8 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm install --production
 
-# Copy backend source
-COPY backend/src ./src
+# Copy built backend from stage 2
+COPY --from=backend-builder /app/dist ./dist
 
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /app/frontend/dist ./public
@@ -46,4 +62,4 @@ ENV HOST=0.0.0.0
 
 # Start the server with entrypoint script
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
-CMD ["node", "src/index.js"]
+CMD ["node", "dist/index.js"]
