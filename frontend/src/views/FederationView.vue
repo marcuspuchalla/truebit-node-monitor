@@ -1,5 +1,15 @@
 <template>
   <div class="federation-view">
+    <!-- Warning Banner -->
+    <div class="warning-banner">
+      This is an unofficial community monitor for the TrueBit network. Not affiliated with TrueBit AG.
+    </div>
+
+    <!-- Work in Progress Banner -->
+    <div class="info-banner">
+      This project is a work in progress and is being actively developed. Features may change on a daily basis.
+    </div>
+
     <div class="header">
       <h1>TrueBit Network</h1>
       <p class="subtitle">Global network status and statistics</p>
@@ -504,6 +514,28 @@ function formatTime(timestamp) {
   padding: 2rem;
   max-width: 1000px;
   margin: 0 auto;
+}
+
+.warning-banner {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.info-banner {
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  color: #1e40af;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
 }
 
 .header {
