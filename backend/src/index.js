@@ -30,6 +30,9 @@ dotenv.config();
 const app = express();
 const server = createServer(app);
 
+// Trust first proxy (Traefik/nginx) - required for rate limiting behind reverse proxy
+app.set('trust proxy', 1);
+
 // Configuration
 const PORT = process.env.PORT || 8090;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -74,10 +77,11 @@ app.use(cors({
   credentials: true
 }));
 
-// Rate limiting - 100 requests per 15 minutes per IP
+// Rate limiting - 500 requests per minute per IP
+// Higher limit needed because frontend makes many parallel requests
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  windowMs: 60 * 1000, // 1 minute
+  max: 500,
   message: { error: 'Too many requests, please try again later' },
   standardHeaders: true,
   legacyHeaders: false
