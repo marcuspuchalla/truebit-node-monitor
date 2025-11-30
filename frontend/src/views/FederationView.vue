@@ -141,11 +141,11 @@
           </div>
           <div class="detail-row" v-if="selectedNodeStats">
             <span class="detail-label">Active Tasks</span>
-            <span class="detail-value">{{ selectedNodeStats.activeTasksBucket || '0' }}</span>
+            <span class="detail-value">{{ selectedNodeStats.activeTasks ?? selectedNodeStats.activeTasksBucket ?? '0' }}</span>
           </div>
           <div class="detail-row" v-if="selectedNodeStats">
             <span class="detail-label">Total Tasks</span>
-            <span class="detail-value">{{ selectedNodeStats.totalTasksBucket || '0' }}</span>
+            <span class="detail-value">{{ selectedNodeStats.totalTasks ?? selectedNodeStats.totalTasksBucket ?? '0' }}</span>
           </div>
         </div>
       </div>
@@ -255,6 +255,9 @@ const networkStatsData = computed(() => {
       if (!existing || msgTime > existing.time) {
         nodeStats.set(nodeId, {
           time: msgTime,
+          // Prefer exact counts if available, fall back to bucket parsing
+          totalTasks: msg.data.totalTasks,
+          activeTasks: msg.data.activeTasks,
           totalTasksBucket: msg.data.totalTasksBucket,
           activeTasksBucket: msg.data.activeTasksBucket
         });
@@ -263,12 +266,17 @@ const networkStatsData = computed(() => {
   });
 
   // Aggregate stats from all nodes
-  let totalTasksMin = 0;
-  let activeTasks = 0;
+  let totalTasksSum = 0;
+  let activeTasksSum = 0;
 
   nodeStats.forEach((stats) => {
-    totalTasksMin += parseBucketMin(stats.totalTasksBucket);
-    activeTasks += parseBucketMin(stats.activeTasksBucket);
+    // Use exact counts if available, otherwise parse bucket minimum
+    totalTasksSum += (typeof stats.totalTasks === 'number')
+      ? stats.totalTasks
+      : parseBucketMin(stats.totalTasksBucket);
+    activeTasksSum += (typeof stats.activeTasks === 'number')
+      ? stats.activeTasks
+      : parseBucketMin(stats.activeTasksBucket);
   });
 
   // Count completed tasks from task_completed messages
@@ -279,13 +287,13 @@ const networkStatsData = computed(() => {
     }
   });
 
-  const completedTasks = completedTaskIds.size || totalTasksMin; // Use total as fallback
-  const successRate = totalTasksMin > 0 ? (completedTasks / totalTasksMin * 100) : 0;
+  const completedTasks = completedTaskIds.size || totalTasksSum; // Use total as fallback
+  const successRate = totalTasksSum > 0 ? (completedTasks / totalTasksSum * 100) : 0;
 
   return {
     activeNodes: uniqueNodes.size || aggStats.activeNodes || activePeerCount.value,
     totalNodes: uniqueNodes.size || aggStats.totalNodes || 0,
-    totalTasks: totalTasksMin || aggStats.totalTasks || 0,
+    totalTasks: totalTasksSum || aggStats.totalTasks || 0,
     completedTasks: completedTasks || aggStats.completedTasks || 0,
     failedTasks: aggStats.failedTasks || 0,
     cachedTasks: aggStats.cachedTasks || 0,

@@ -141,9 +141,11 @@ class FederationAnonymizer {
       data: {
         // Only high-level status, no system details
         status: nodeStatus.connected ? 'online' : 'offline',
-        // Bucket active tasks (not exact count)
+        // Exact counts for network aggregation
+        activeTasks: nodeStatus.activeTasks || 0,
+        totalTasks: nodeStatus.totalTasks || 0,
+        // Bucketed versions for distribution analysis (privacy-preserving)
         activeTasksBucket: this.bucketActiveTasks(nodeStatus.activeTasks || 0),
-        // Bucket total tasks processed (no exact count)
         totalTasksBucket: this.bucketTotalTasks(nodeStatus.totalTasks || 0)
       }
     };
