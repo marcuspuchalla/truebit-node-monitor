@@ -150,6 +150,36 @@ class FederationAnonymizer {
   }
 
   /**
+   * Anonymize node joined event (sent when node connects to federation)
+   */
+  anonymizeNodeJoined(): AnonymizedMessage {
+    return {
+      version: '1.0',
+      type: 'node_joined',
+      nodeId: this.nodeId,
+      timestamp: this.roundTimestamp(new Date()),
+      data: {
+        status: 'online'
+      }
+    };
+  }
+
+  /**
+   * Anonymize node left event (sent when node disconnects from federation)
+   */
+  anonymizeNodeLeft(): AnonymizedMessage {
+    return {
+      version: '1.0',
+      type: 'node_left',
+      nodeId: this.nodeId,
+      timestamp: this.roundTimestamp(new Date()),
+      data: {
+        status: 'offline'
+      }
+    };
+  }
+
+  /**
    * Anonymize invoice created event
    */
   anonymizeInvoice(invoice: InvoiceData): AnonymizedMessage {

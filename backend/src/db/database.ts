@@ -722,6 +722,52 @@ class TruebitDatabase {
     return stmt.run(nodeId);
   }
 
+  /**
+   * Get peers that haven't been seen for a specified number of minutes
+   * @param minutesThreshold - Consider peers stale if not seen for this many minutes
+   * @returns Array of stale peer node IDs
+   */
+  getStalePeers(minutesThreshold: number = 5): string[] {
+    const cutoffDate = new Date();
+    cutoffDate.setMinutes(cutoffDate.getMinutes() - minutesThreshold);
+
+    const stmt = this.db!.prepare(`
+      SELECT node_id FROM federation_peers
+      WHERE is_blocked = 0
+        AND last_seen < ?
+      ORDER BY last_seen ASC
+    `);
+    const rows = stmt.all(cutoffDate.toISOString()) as { node_id: string }[];
+    return rows.map(row => row.node_id);
+  }
+
+  /**
+   * Remove a peer from the peers table (used when node explicitly leaves)
+   */
+  removePeer(nodeId: string): Database.RunResult {
+    const stmt = this.db!.prepare(`
+      DELETE FROM federation_peers
+      WHERE node_id = ?
+    `);
+    return stmt.run(nodeId);
+  }
+
+  /**
+   * Get active peers count (seen within the last X minutes)
+   */
+  getActivePeerCount(minutesThreshold: number = 2): number {
+    const cutoffDate = new Date();
+    cutoffDate.setMinutes(cutoffDate.getMinutes() - minutesThreshold);
+
+    const stmt = this.db!.prepare(`
+      SELECT COUNT(*) as count FROM federation_peers
+      WHERE is_blocked = 0
+        AND last_seen >= ?
+    `);
+    const row = stmt.get(cutoffDate.toISOString()) as { count: number };
+    return row.count;
+  }
+
   // Federation Statistics
   insertFederationStat(statType: string, statValue: number, nodeCount: number = 1): Database.RunResult {
     const stmt = this.db!.prepare(`

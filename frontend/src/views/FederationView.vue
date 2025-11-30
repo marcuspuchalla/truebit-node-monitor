@@ -288,8 +288,12 @@ const statusLabel = computed(() => {
   return 'Connecting...';
 });
 
+// Filter out heartbeats - only show join/leave/task events
 const recentMessages = computed(() => {
-  return (messages.value || []).slice(0, 10);
+  const importantTypes = ['node_joined', 'node_left', 'task_received', 'task_completed', 'invoice_created'];
+  return (messages.value || [])
+    .filter(msg => importantTypes.includes(msg.message_type))
+    .slice(0, 15);
 });
 
 let refreshInterval = null;
@@ -381,6 +385,9 @@ function getMessageIcon(type) {
     'task_received': '📥',
     'task_completed': '✅',
     'heartbeat': '💓',
+    'node_joined': '🟢',
+    'node_left': '🔴',
+    'invoice_created': '💰',
     'node_stats': '📊',
     'task_stats': '📈'
   };
@@ -392,6 +399,9 @@ function getMessageTitle(type) {
     'task_received': 'Task Received',
     'task_completed': 'Task Completed',
     'heartbeat': 'Node Heartbeat',
+    'node_joined': 'Node Joined Network',
+    'node_left': 'Node Left Network',
+    'invoice_created': 'Invoice Created',
     'node_stats': 'Node Statistics',
     'task_stats': 'Task Statistics'
   };
@@ -403,6 +413,9 @@ function getMessageTypeClass(type) {
     'task_received': 'type-received',
     'task_completed': 'type-completed',
     'heartbeat': 'type-heartbeat',
+    'node_joined': 'type-joined',
+    'node_left': 'type-left',
+    'invoice_created': 'type-invoice',
     'node_stats': 'type-stats',
     'task_stats': 'type-stats'
   };
@@ -722,6 +735,18 @@ function formatTime(timestamp) {
 
 .activity-icon.type-stats {
   background: #e0e7ff;
+}
+
+.activity-icon.type-joined {
+  background: #d1fae5;
+}
+
+.activity-icon.type-left {
+  background: #fee2e2;
+}
+
+.activity-icon.type-invoice {
+  background: #fef3c7;
 }
 
 /* Modal styles */

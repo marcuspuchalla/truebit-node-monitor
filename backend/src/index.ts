@@ -498,12 +498,61 @@ async function start(): Promise<void> {
             }
           };
 
+          // Publish node joined event
+          await federation.client!.publishNodeJoined();
+          console.log('🟢 Node joined event published to federation');
+
           // Publish initial heartbeat immediately
           await publishHeartbeat();
 
           // Set up interval for subsequent heartbeats
           federation.heartbeatInterval = setInterval(publishHeartbeat, HEARTBEAT_INTERVAL);
           console.log(`   ✓ Heartbeat interval started (every ${HEARTBEAT_INTERVAL / 1000}s)`);
+
+          // Set up stale peer cleanup (every 5 minutes)
+          // This removes peers that haven't sent a heartbeat in 5+ minutes
+          const STALE_CHECK_INTERVAL = 5 * 60 * 1000; // 5 minutes
+          const STALE_THRESHOLD_MINUTES = 5; // Consider stale after 5 minutes without heartbeat
+          const BATCH_SIZE = 5; // Process 5 stale peers at a time
+          const BATCH_DELAY = 1000; // 1 second between batches
+
+          const cleanupStalePeers = async () => {
+            try {
+              const stalePeers = db.getStalePeers(STALE_THRESHOLD_MINUTES);
+
+              if (stalePeers.length === 0) {
+                return;
+              }
+
+              console.log(`🧹 Found ${stalePeers.length} stale peers, cleaning up...`);
+
+              // Process in batches to avoid overwhelming the system
+              for (let i = 0; i < stalePeers.length; i += BATCH_SIZE) {
+                const batch = stalePeers.slice(i, i + BATCH_SIZE);
+
+                for (const nodeId of batch) {
+                  db.removePeer(nodeId);
+                  console.log(`   Removed stale peer: ${nodeId.slice(0, 17)}...`);
+                }
+
+                // Delay between batches if more remain
+                if (i + BATCH_SIZE < stalePeers.length) {
+                  await new Promise(resolve => setTimeout(resolve, BATCH_DELAY));
+                }
+              }
+
+              console.log(`✅ Cleaned up ${stalePeers.length} stale peers`);
+            } catch (error) {
+              console.error('Failed to cleanup stale peers:', (error as Error).message);
+            }
+          };
+
+          // Run initial cleanup after a short delay
+          setTimeout(cleanupStalePeers, 30000); // 30 seconds after startup
+
+          // Then run periodically
+          setInterval(cleanupStalePeers, STALE_CHECK_INTERVAL);
+          console.log(`   ✓ Stale peer cleanup scheduled (every ${STALE_CHECK_INTERVAL / 60000}m)`);
         } catch (error) {
           console.error('⚠️  Failed to connect to federation:', (error as Error).message);
         }
@@ -690,25 +739,39 @@ async function start(): Promise<void> {
       console.log(`   💾 Database: ${DB_PATH}\n`);
     });
 
-    // Cleanup on exit
-    process.on('SIGINT', async () => {
-      console.log('\n🛑 Shutting down...');
+    // Graceful shutdown handler
+    const gracefulShutdown = async (signal: string) => {
+      console.log(`\n🛑 Shutting down (${signal})...`);
       logFileReader.stopTailing();
       if (federation.heartbeatInterval) clearInterval(federation.heartbeatInterval);
-      if (federation.client) await federation.client.disconnect();
-      db.close();
-      wsServer.close();
-      process.exit(0);
-    });
 
-    process.on('SIGTERM', async () => {
-      console.log('\n🛑 Shutting down...');
-      logFileReader.stopTailing();
-      if (federation.heartbeatInterval) clearInterval(federation.heartbeatInterval);
-      if (federation.client) await federation.client.disconnect();
+      // Publish node_left event before disconnecting
+      if (federation.client && federation.client.connected) {
+        try {
+          console.log('🔴 Publishing node left event...');
+          await federation.client.publishNodeLeft();
+          // Small delay to ensure message is sent
+          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          console.error('Failed to publish node left:', (error as Error).message);
+        }
+        await federation.client.disconnect();
+      }
+
       db.close();
       wsServer.close();
       process.exit(0);
+    };
+
+    // Cleanup on exit
+    process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+
+    // Also handle uncaught exceptions gracefully
+    process.on('uncaughtException', async (error) => {
+      console.error('Uncaught exception:', error);
+      await gracefulShutdown('uncaughtException');
     });
 
   } catch (error) {

@@ -154,6 +154,20 @@ export function createFederationRouter(
             } catch (error) {
               console.error('Failed to update network stats:', (error as Error).message);
             }
+          },
+          nodeJoined: (data: unknown) => {
+            const nodeId = (data as { nodeId?: string }).nodeId;
+            console.log('🟢 Federation: Node joined:', nodeId?.slice(0, 17));
+            if (nodeId) {
+              db.upsertFederationPeer(nodeId);
+            }
+          },
+          nodeLeft: (data: unknown) => {
+            const nodeId = (data as { nodeId?: string }).nodeId;
+            console.log('🔴 Federation: Node left:', nodeId?.slice(0, 17));
+            if (nodeId) {
+              db.removePeer(nodeId);
+            }
           }
         });
 

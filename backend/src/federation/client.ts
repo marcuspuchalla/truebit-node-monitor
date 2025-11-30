@@ -52,6 +52,8 @@ interface FederationHandlers {
   taskCompleted?: (data: unknown) => void;
   heartbeat?: (data: unknown) => void;
   networkStats?: (data: unknown) => void;
+  nodeJoined?: (data: unknown) => void;
+  nodeLeft?: (data: unknown) => void;
   all?: (data: unknown, subject: string) => void;
 }
 
@@ -265,6 +267,22 @@ class FederationClient extends EventEmitter {
   }
 
   /**
+   * Publish node joined event (call when connecting to federation)
+   */
+  async publishNodeJoined(): Promise<boolean> {
+    const anonymized = this.anonymizer.anonymizeNodeJoined();
+    return this.publish('truebit.nodes.joined', anonymized);
+  }
+
+  /**
+   * Publish node left event (call before disconnecting from federation)
+   */
+  async publishNodeLeft(): Promise<boolean> {
+    const anonymized = this.anonymizer.anonymizeNodeLeft();
+    return this.publish('truebit.nodes.left', anonymized);
+  }
+
+  /**
    * Publish anonymized invoice created event
    */
   async publishInvoice(invoice: InvoiceData): Promise<boolean> {
@@ -390,6 +408,8 @@ class FederationClient extends EventEmitter {
     await this.subscribe('truebit.tasks.completed', handlers.taskCompleted);
     await this.subscribe('truebit.heartbeat', handlers.heartbeat);
     await this.subscribe('truebit.stats.aggregated', handlers.networkStats);
+    await this.subscribe('truebit.nodes.joined', handlers.nodeJoined);
+    await this.subscribe('truebit.nodes.left', handlers.nodeLeft);
     await this.subscribe('truebit.>', handlers.all); // Wildcard for all messages
   }
 
