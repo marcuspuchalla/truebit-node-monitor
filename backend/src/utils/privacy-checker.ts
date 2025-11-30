@@ -100,6 +100,14 @@ class PrivacyViolationDetector {
       const matches = dataStr.match(config.pattern);
 
       if (matches && matches.length > 0) {
+        // Skip UUID check if it's in a nodeId field (nodeId is intentionally a random UUID)
+        if (type === 'executionId') {
+          const location = this.findLocation(data, matches[0]);
+          if (location === 'nodeId' || location.endsWith('.nodeId')) {
+            continue; // nodeId is allowed to be a UUID
+          }
+        }
+
         violations.push({
           type,
           description: config.description,
