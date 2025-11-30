@@ -625,16 +625,36 @@ class TruebitDatabase {
   }
 
   // Federation Messages
-  insertFederationMessage(message: FederationMessage): Database.RunResult {
+  insertFederationMessage(message: FederationMessage): Database.RunResult | null {
+    const messageType = message.type;
+    const senderNodeId = message.nodeId || message.sender_node_id;
+    const receivedAt = message.timestamp || new Date().toISOString();
+
+    // Deduplicate: Check if same message type from same node within 2 seconds already exists
+    const checkStmt = this.db!.prepare(`
+      SELECT id FROM federation_messages
+      WHERE message_type = ?
+        AND sender_node_id = ?
+        AND datetime(received_at) >= datetime(?, '-2 seconds')
+        AND datetime(received_at) <= datetime(?, '+2 seconds')
+      LIMIT 1
+    `);
+
+    const existing = checkStmt.get(messageType, senderNodeId, receivedAt, receivedAt);
+    if (existing) {
+      // Duplicate message, skip insertion
+      return null;
+    }
+
     const stmt = this.db!.prepare(`
       INSERT INTO federation_messages (message_type, sender_node_id, received_at, data)
       VALUES (?, ?, ?, ?)
     `);
 
     return stmt.run(
-      message.type,
-      message.nodeId || message.sender_node_id,
-      message.timestamp || new Date().toISOString(),
+      messageType,
+      senderNodeId,
+      receivedAt,
       JSON.stringify(message.data || message)
     );
   }
@@ -750,6 +770,24 @@ class TruebitDatabase {
       WHERE node_id = ?
     `);
     return stmt.run(nodeId);
+  }
+
+  /**
+   * Clear all federation data (messages, peers, stats) for a fresh start
+   * Preserves settings (enabled state, node ID, etc.)
+   */
+  clearFederationData(): { messages: number; peers: number; stats: number; networkCache: number } {
+    const messagesResult = this.db!.prepare('DELETE FROM federation_messages').run();
+    const peersResult = this.db!.prepare('DELETE FROM federation_peers').run();
+    const statsResult = this.db!.prepare('DELETE FROM federation_stats').run();
+    const networkCacheResult = this.db!.prepare('DELETE FROM network_stats_cache').run();
+
+    return {
+      messages: messagesResult.changes,
+      peers: peersResult.changes,
+      stats: statsResult.changes,
+      networkCache: networkCacheResult.changes
+    };
   }
 
   /**

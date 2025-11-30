@@ -35,6 +35,7 @@ export interface NodeStatusData {
   connected: boolean;
   activeTasks?: number;
   totalTasks?: number;
+  totalInvoices?: number;
 }
 
 export interface InvoiceData {
@@ -144,6 +145,7 @@ class FederationAnonymizer {
         // Exact counts for network aggregation
         activeTasks: nodeStatus.activeTasks || 0,
         totalTasks: nodeStatus.totalTasks || 0,
+        totalInvoices: nodeStatus.totalInvoices || 0,
         // Bucketed versions for distribution analysis (privacy-preserving)
         activeTasksBucket: this.bucketActiveTasks(nodeStatus.activeTasks || 0),
         totalTasksBucket: this.bucketTotalTasks(nodeStatus.totalTasks || 0)

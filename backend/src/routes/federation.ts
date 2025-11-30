@@ -392,6 +392,24 @@ export function createFederationRouter(
     }
   });
 
+  // Clear all federation data (for fresh start)
+  router.post('/reset', async (req: Request, res: Response) => {
+    try {
+      console.log('🗑️ Clearing federation data...');
+      const result = db.clearFederationData();
+
+      console.log(`   Deleted: ${result.messages} messages, ${result.peers} peers, ${result.stats} stats, ${result.networkCache} network cache entries`);
+
+      res.json({
+        success: true,
+        message: 'Federation data cleared',
+        deleted: result
+      });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
   return router;
 }
 

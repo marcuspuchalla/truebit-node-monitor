@@ -87,11 +87,11 @@
     </div>
 
     <!-- Active Peers -->
-    <div class="section" v-if="peers.length > 0">
+    <div class="section" v-if="activePeers.length > 0">
       <h2>Active Nodes</h2>
       <div class="peers-grid">
-        <div v-for="peer in peers" :key="peer.node_id" class="peer-card" @click="openNodeModal(peer)">
-          <div class="peer-status" :class="{ online: isNodeOnline(peer) }"></div>
+        <div v-for="peer in activePeers" :key="peer.node_id" class="peer-card" @click="openNodeModal(peer)">
+          <div class="peer-status online"></div>
           <div class="peer-info">
             <div class="peer-id">{{ formatNodeId(peer.node_id) }}</div>
             <div class="peer-meta">
@@ -233,20 +233,20 @@ const networkStatsData = computed(() => {
   }
 
   // Otherwise, compute from available data
-  const uniqueNodes = new Set();
   const nodeStats = new Map(); // Track latest stats per node
 
-  // Count unique nodes from peers
+  // Count only ACTIVE peers (seen within last 2 minutes)
+  const activeNodeIds = new Set();
   peers.value.forEach(peer => {
-    uniqueNodes.add(peer.node_id);
+    if (isNodeOnline(peer)) {
+      activeNodeIds.add(peer.node_id);
+    }
   });
 
   // Get stats from heartbeat messages - track per-node to avoid duplicates
+  // Only consider heartbeats from active nodes (within 2 min window)
   messages.value.forEach(msg => {
-    if (msg.sender_node_id) {
-      uniqueNodes.add(msg.sender_node_id);
-    }
-    if (msg.message_type === 'heartbeat' && msg.data) {
+    if (msg.message_type === 'heartbeat' && msg.data && activeNodeIds.has(msg.sender_node_id)) {
       const nodeId = msg.sender_node_id;
       const existing = nodeStats.get(nodeId);
       const msgTime = new Date(msg.received_at);
@@ -258,6 +258,7 @@ const networkStatsData = computed(() => {
           // Prefer exact counts if available, fall back to bucket parsing
           totalTasks: msg.data.totalTasks,
           activeTasks: msg.data.activeTasks,
+          totalInvoices: msg.data.totalInvoices,
           totalTasksBucket: msg.data.totalTasksBucket,
           activeTasksBucket: msg.data.activeTasksBucket
         });
@@ -268,6 +269,7 @@ const networkStatsData = computed(() => {
   // Aggregate stats from all nodes
   let totalTasksSum = 0;
   let activeTasksSum = 0;
+  let totalInvoicesSum = 0;
 
   nodeStats.forEach((stats) => {
     // Use exact counts if available, otherwise parse bucket minimum
@@ -277,6 +279,9 @@ const networkStatsData = computed(() => {
     activeTasksSum += (typeof stats.activeTasks === 'number')
       ? stats.activeTasks
       : parseBucketMin(stats.activeTasksBucket);
+    totalInvoicesSum += (typeof stats.totalInvoices === 'number')
+      ? stats.totalInvoices
+      : 0;
   });
 
   // Count completed tasks from task_completed messages
@@ -291,19 +296,19 @@ const networkStatsData = computed(() => {
   const successRate = totalTasksSum > 0 ? (completedTasks / totalTasksSum * 100) : 0;
 
   return {
-    activeNodes: uniqueNodes.size || aggStats.activeNodes || activePeerCount.value,
-    totalNodes: uniqueNodes.size || aggStats.totalNodes || 0,
+    activeNodes: activeNodeIds.size || aggStats.activeNodes || activePeerCount.value,
+    totalNodes: peers.value.length || aggStats.totalNodes || 0,
     totalTasks: totalTasksSum || aggStats.totalTasks || 0,
     completedTasks: completedTasks || aggStats.completedTasks || 0,
     failedTasks: aggStats.failedTasks || 0,
     cachedTasks: aggStats.cachedTasks || 0,
     tasksLast24h: aggStats.tasksLast24h || 0,
-    totalInvoices: aggStats.totalInvoices || 0,
+    totalInvoices: totalInvoicesSum || aggStats.totalInvoices || 0,
     invoicesLast24h: aggStats.invoicesLast24h || 0,
     successRate: successRate || aggStats.successRate || 0,
     cacheHitRate: aggStats.cacheHitRate || 0,
     lastUpdated: aggStats.lastUpdated,
-    status: uniqueNodes.size > 0 ? 'computed' : aggStats.status
+    status: activeNodeIds.size > 0 ? 'computed' : aggStats.status
   };
 });
 
@@ -388,6 +393,11 @@ function isNodeOnline(peer) {
   const diffMs = now - lastSeen;
   return diffMs < 120000; // 2 minutes
 }
+
+// Computed property for only active (online) peers
+const activePeers = computed(() => {
+  return peers.value.filter(peer => isNodeOnline(peer));
+});
 
 // Format node ID for display
 function formatNodeId(nodeId) {

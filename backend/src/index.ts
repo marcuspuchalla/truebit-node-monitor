@@ -484,11 +484,13 @@ async function start(): Promise<void> {
               // Get node status from database
               const nodeStatus = db.getNodeStatus();
               const taskStats = db.getTaskStats();
+              const invoiceCount = db.getInvoiceCount();
 
               const heartbeatData = {
                 connected: federation.client.connected,
                 activeTasks: activeTasks.size,
-                totalTasks: taskStats?.total || 0
+                totalTasks: taskStats?.total || 0,
+                totalInvoices: invoiceCount
               };
 
               await federation.client.publishHeartbeat(heartbeatData);

@@ -3,7 +3,11 @@
  * Subscribes to all federation messages and publishes aggregated stats
  */
 
-import { connect, NatsConnection, StringCodec, Subscription } from 'nats';
+import { connect, NatsConnection, StringCodec, Subscription } from 'nats.ws';
+import WebSocket from 'ws';
+
+// Provide WebSocket implementation for nats.ws in Node.js
+(globalThis as unknown as { WebSocket: typeof WebSocket }).WebSocket = WebSocket;
 
 type MessageHandler = (data: FederationMessage, subject: string) => void;
 
@@ -42,7 +46,8 @@ class AggregatorNatsClient {
         maxReconnectAttempts: -1, // Infinite
         reconnectTimeWait: 2000,
         pingInterval: 30000,
-        maxPingOut: 3
+        maxPingOut: 3,
+        timeout: 30000 // 30 second connection timeout
       });
 
       this.connected = true;
