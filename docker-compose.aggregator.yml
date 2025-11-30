@@ -21,8 +21,8 @@ services:
     restart: unless-stopped
     environment:
       - NODE_ENV=production
-      # Connect to NATS via public WSS URL
-      - NATS_URL=wss://f.tru.watch:9086
+      # Connect to NATS via internal Docker network (both on same network)
+      - NATS_URL=ws://nats-seed:9086
       - DB_PATH=/data/aggregator.db
       - PUBLISH_INTERVAL=30000
       - RETENTION_DAYS=30
