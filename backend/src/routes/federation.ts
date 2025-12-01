@@ -171,6 +171,47 @@ export function createFederationRouter(
           }
         });
 
+        // Publish node_joined event to announce our presence
+        await federation.client.publishNodeJoined();
+        console.log('🟢 Node joined event published to federation');
+
+        // Start heartbeat interval
+        const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+        const publishHeartbeat = async (): Promise<void> => {
+          if (!federation.client || !federation.client.isHealthy()) {
+            return;
+          }
+
+          try {
+            const taskStats = db.getTaskStats();
+            const invoiceCount = db.getInvoiceCount();
+
+            const heartbeatData = {
+              connected: federation.client.connected,
+              activeTasks: 0, // We don't have activeTasks map here, but that's ok
+              totalTasks: taskStats?.total || 0,
+              totalInvoices: invoiceCount
+            };
+
+            await federation.client.publishHeartbeat(heartbeatData);
+            console.log('💓 Heartbeat published to federation');
+          } catch (error) {
+            console.error('Failed to publish heartbeat:', (error as Error).message);
+          }
+        };
+
+        // Publish initial heartbeat immediately
+        await publishHeartbeat();
+
+        // Clear any existing heartbeat interval
+        if (federation.heartbeatInterval) {
+          clearInterval(federation.heartbeatInterval);
+        }
+
+        // Set up interval for subsequent heartbeats
+        federation.heartbeatInterval = setInterval(publishHeartbeat, HEARTBEAT_INTERVAL);
+        console.log(`   ✓ Heartbeat interval started (every ${HEARTBEAT_INTERVAL / 1000}s)`);
+
         const settings = db.getFederationSettings();
         console.log('📤 Sending success response, DB enabled:', settings?.enabled);
         res.json({ success: true, message: 'Federation enabled', connected: true });
@@ -191,6 +232,13 @@ export function createFederationRouter(
       if (!federation.client) {
         res.status(500).json({ error: 'Federation client not initialized' });
         return;
+      }
+
+      // Clear heartbeat interval
+      if (federation.heartbeatInterval) {
+        clearInterval(federation.heartbeatInterval);
+        federation.heartbeatInterval = undefined;
+        console.log('   ✓ Heartbeat interval stopped');
       }
 
       // Update settings
