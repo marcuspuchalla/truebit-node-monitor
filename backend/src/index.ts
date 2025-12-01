@@ -424,13 +424,17 @@ async function start(): Promise<void> {
       // Set up federation message handlers
       federation.client.on('message', ({ subject, data }: { subject: string; data: { nodeId?: string; type?: string } }) => {
         try {
+          // Skip messages without nodeId (e.g., network_stats from aggregator)
+          // These are handled by specific callbacks
+          if (!data.nodeId) {
+            return;
+          }
+
           // Store received message
           db.insertFederationMessage(data as unknown as import('./db/database.js').FederationMessage);
 
           // Update peer information
-          if (data.nodeId) {
-            db.upsertFederationPeer(data.nodeId);
-          }
+          db.upsertFederationPeer(data.nodeId);
 
           // Broadcast to WebSocket clients (optional)
           wsServer.broadcast('federation_message', data as unknown as Record<string, unknown>);
