@@ -96,10 +96,11 @@ function logAuditEvent(event: string, req: express.Request, details?: Record<str
 }
 
 // Security Middleware - Helmet with CSP enabled
-// Disable HSTS when not behind HTTPS proxy (direct HTTP access)
+// Disable HSTS and upgrade-insecure-requests when not behind HTTPS proxy
 const isHttps = process.env.HTTPS_ENABLED === 'true';
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false, // Disable defaults to have full control
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vue needs unsafe-inline/eval
@@ -110,7 +111,9 @@ app.use(helmet({
       frameAncestors: ["'none'"], // Prevent clickjacking
       formAction: ["'self'"],
       baseUri: ["'self'"],
-      // Only upgrade insecure requests when behind HTTPS
+      objectSrc: ["'none'"],
+      scriptSrcAttr: ["'none'"],
+      // Only upgrade insecure requests when behind HTTPS - critical for HTTP-only deployments
       ...(isHttps ? { upgradeInsecureRequests: [] } : {})
     }
   },
