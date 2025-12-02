@@ -1,6 +1,6 @@
 {
   "name": "truebit-node-monitor",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Privacy-first monitoring solution for TrueBit computation nodes",
   "private": true,
   "workspaces": [

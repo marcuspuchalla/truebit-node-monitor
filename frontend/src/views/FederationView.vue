@@ -2,7 +2,7 @@
   <div class="federation-view">
     <!-- Warning Banner -->
     <div class="warning-banner">
-      This is an unofficial community monitor for the TrueBit network. Not affiliated with TrueBit AG.
+      This is an unofficial community monitor for the Truebit network. Not affiliated with Truebit Co.
     </div>
 
     <!-- Work in Progress Banner -->
