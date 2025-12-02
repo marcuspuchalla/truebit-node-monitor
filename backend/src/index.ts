@@ -96,6 +96,8 @@ function logAuditEvent(event: string, req: express.Request, details?: Record<str
 }
 
 // Security Middleware - Helmet with CSP enabled
+// Disable HSTS when not behind HTTPS proxy (direct HTTP access)
+const isHttps = process.env.HTTPS_ENABLED === 'true';
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -107,15 +109,20 @@ app.use(helmet({
       connectSrc: ["'self'", "ws:", "wss:"], // WebSocket connections
       frameAncestors: ["'none'"], // Prevent clickjacking
       formAction: ["'self'"],
-      baseUri: ["'self'"]
+      baseUri: ["'self'"],
+      // Only upgrade insecure requests when behind HTTPS
+      ...(isHttps ? { upgradeInsecureRequests: [] } : {})
     }
   },
   crossOriginEmbedderPolicy: false, // Required for some Vue features
-  hsts: {
+  crossOriginOpenerPolicy: false, // Disable for HTTP compatibility
+  originAgentCluster: false, // Disable for HTTP compatibility
+  // Only enable HSTS when behind HTTPS proxy
+  hsts: isHttps ? {
     maxAge: 31536000, // 1 year
     includeSubDomains: true,
     preload: true
-  }
+  } : false
 }));
 
 // CORS configuration - only allow specified origins
