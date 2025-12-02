@@ -80,7 +80,7 @@ import { useNodeStore } from './stores/node';
 import { useTasksStore } from './stores/tasks';
 import { useInvoicesStore } from './stores/invoices';
 
-const { setProgress } = usePreloader();
+const { setProgress, checkSessionAuth } = usePreloader();
 const nodeStore = useNodeStore();
 const tasksStore = useTasksStore();
 const invoicesStore = useInvoicesStore();
@@ -100,7 +100,10 @@ onMounted(async () => {
   await invoicesStore.fetchInvoices();
   setProgress(90);
 
-  // Complete loading
+  // Complete loading - this will show the password form
   setProgress(100);
+
+  // Check if user was already authenticated in this session
+  await checkSessionAuth();
 });
 </script>

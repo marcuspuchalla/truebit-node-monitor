@@ -548,6 +548,23 @@ app.use('/api/invoices', createInvoicesRouter(db));
 app.use('/api/logs', createLogsRouter(db));
 // Federation route is registered in start() after client is created
 
+// App authentication endpoint - verifies the task data password for app access
+app.post('/api/auth/verify', express.json(), (req, res) => {
+  const { password } = req.body;
+
+  if (!password) {
+    return res.status(400).json({ success: false, message: 'Password required' });
+  }
+
+  if (password === TASK_DATA_PASSWORD) {
+    logAuditEvent('AUTH_SUCCESS', req, { type: 'app_login' });
+    return res.json({ success: true, message: 'Authentication successful' });
+  } else {
+    logAuditEvent('AUTH_FAILED', req, { type: 'app_login' });
+    return res.status(401).json({ success: false, message: 'Invalid password' });
+  }
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({

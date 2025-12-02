@@ -9,14 +9,46 @@
 
           <div class="text-content">
             <h1 class="title">TrueBit Node Monitor</h1>
-            <p class="subtitle">Loading application...</p>
+            <p class="subtitle" v-if="!loadingComplete">Loading application...</p>
+            <p class="subtitle" v-else>Enter password to continue</p>
           </div>
 
-          <div class="progress-container">
+          <!-- Loading progress bar -->
+          <div v-if="!loadingComplete" class="progress-container">
             <div class="progress-bar">
               <div class="progress-fill" :style="{ width: progress + '%' }"></div>
             </div>
             <span class="progress-text">{{ Math.round(progress) }}%</span>
+          </div>
+
+          <!-- Password form (shown after loading completes) -->
+          <div v-else class="auth-container">
+            <form @submit.prevent="handleSubmit" class="auth-form">
+              <div class="input-group">
+                <input
+                  ref="passwordInput"
+                  v-model="password"
+                  type="password"
+                  placeholder="Enter your node password"
+                  class="password-input"
+                  :class="{ 'error': authError }"
+                  :disabled="isSubmitting"
+                  autocomplete="current-password"
+                />
+              </div>
+              <p v-if="authError" class="error-message">{{ authError }}</p>
+              <button
+                type="submit"
+                class="submit-button"
+                :disabled="isSubmitting || !password"
+              >
+                {{ isSubmitting ? 'Verifying...' : 'Unlock' }}
+              </button>
+            </form>
+            <p class="help-text">
+              Find your password in the container logs:<br>
+              <code>docker logs truebit-node-monitor | grep "🔑"</code>
+            </p>
           </div>
         </div>
       </div>
@@ -25,9 +57,30 @@
 </template>
 
 <script setup>
+import { ref, watch, nextTick } from 'vue'
 import { usePreloader } from '../composables/usePreloader'
 
-const { showPreloader, progress } = usePreloader()
+const { showPreloader, progress, loadingComplete, authError, authenticate } = usePreloader()
+
+const password = ref('')
+const isSubmitting = ref(false)
+const passwordInput = ref(null)
+
+// Focus password input when loading completes
+watch(loadingComplete, async (complete) => {
+  if (complete) {
+    await nextTick()
+    passwordInput.value?.focus()
+  }
+})
+
+async function handleSubmit() {
+  if (!password.value || isSubmitting.value) return
+
+  isSubmitting.value = true
+  await authenticate(password.value)
+  isSubmitting.value = false
+}
 </script>
 
 <style scoped>
@@ -127,6 +180,100 @@ const { showPreloader, progress } = usePreloader()
   font-size: 0.875rem;
   font-weight: 600;
   color: #3b82f6;
+}
+
+/* Auth form styles */
+.auth-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.input-group {
+  width: 100%;
+}
+
+.password-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.password-input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.password-input.error {
+  border-color: #ef4444;
+}
+
+.password-input:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin: 0;
+  text-align: center;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.submit-button:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.submit-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.help-text {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.help-text code {
+  display: block;
+  background: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+  word-break: break-all;
 }
 
 /* Fade out transition */
