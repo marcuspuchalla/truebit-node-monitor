@@ -27,11 +27,42 @@ By using this software, you acknowledge that:
 
 ## Privacy Guarantees
 
-- **Wallet Completely Private** - Never accessed, stored, or shared
-- **Task Data Local-Only** - Input/output never leaves your machine
-- **IP Address Hidden** - Network-level privacy via NATS protocol
-- **No Node Fingerprinting** - Metrics bucketed into ranges
-- **Complete User Control** - Opt-in federation with granular settings
+### Absolute Guarantees (Cryptographically Enforced)
+
+| Guarantee | Implementation | Verification |
+|-----------|---------------|--------------|
+| **Wallet Address Never Transmitted** | Privacy validator blocks any data matching wallet pattern | Check `backend/src/utils/privacy-validator.ts` |
+| **Private Keys Inaccessible** | Docker socket mounted read-only, secrets directory not mounted | Check Docker compose volumes |
+| **Task Input/Output Local-Only** | Input/output data stripped before federation transmission | Check `backend/src/federation/anonymizer.ts` |
+| **IP Address Hidden** | NATS leaf node protocol - peers see server IP, not yours | Architecture design |
+
+### Strong Guarantees (Defense in Depth)
+
+| Guarantee | Implementation |
+|-----------|---------------|
+| **SHA256 Anonymization** | All identifiers hashed with per-node salt before transmission |
+| **Metric Bucketing** | Values bucketed into 5-8 ranges to prevent fingerprinting (e.g., "1-10", "10-50") |
+| **Timestamp Rounding** | Timestamps rounded to 5-minute intervals to prevent timing correlation |
+| **Random Node ID** | UUID generated per installation, no hardware fingerprinting |
+| **Opt-in Federation** | Federation disabled by default, explicit user action required |
+
+### What Data IS Shared (When Federation Enabled)
+
+- Hashed task identifiers (not original IDs)
+- Task type categories (e.g., "wasm", "docker")
+- Bucketed metrics (execution time ranges, gas usage ranges)
+- Node status (online/offline)
+- Anonymized statistics for network-wide aggregation
+
+### What Data is NEVER Shared
+
+- Wallet addresses
+- Private keys
+- Task input/output data
+- Your IP address
+- Exact metric values
+- Container logs content
+- Any data that could identify your node or link to your wallet
 
 ---
 
@@ -187,6 +218,8 @@ docker compose -f docker-compose.aggregator.yml up -d
 
 ## Environment Variables
 
+### Basic Configuration
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NODE_ENV` | `production` | Environment mode |
@@ -195,9 +228,45 @@ docker compose -f docker-compose.aggregator.yml up -d
 | `DB_PATH` | `/app/data/truebit-monitor.db` | Database file path |
 | `LOG_RETENTION_DAYS` | `30` | Days to keep log history |
 | `FEDERATION_NATS_URL` | `wss://f.tru.watch:9086` | NATS server URL |
+| `ALLOWED_ORIGINS` | `*` | Allowed CORS origins |
+
+### Security Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_KEY` | (none) | **IMPORTANT**: Set this to enable API authentication. Without it, anyone with network access can query your backend. |
+| `TASK_DATA_PASSWORD` | (none) | Password to protect task input/output data. If set, users must enter this password to view sensitive task data in the web UI. |
 | `WS_AUTH_REQUIRED` | `false` | Require WebSocket authentication |
 | `WS_AUTH_TOKEN` | (random) | WebSocket authentication token |
-| `ALLOWED_ORIGINS` | `*` | Allowed CORS origins |
+| `WS_MAX_CONNECTIONS` | `100` | Maximum total WebSocket connections |
+| `WS_MAX_PER_IP` | `5` | Maximum WebSocket connections per IP address |
+| `WS_AUTH_TIMEOUT` | `30000` | Milliseconds before unauthenticated connections are closed |
+
+### Security Recommendations
+
+**For production deployments, you should:**
+
+1. **Set `API_KEY`** - This protects your backend API from unauthorized access:
+   ```bash
+   export API_KEY="your-secure-random-key-here"
+   ```
+   Then include the key in requests:
+   ```bash
+   curl -H "Authorization: Bearer your-secure-random-key-here" http://localhost:8090/api/status
+   ```
+
+2. **Set `TASK_DATA_PASSWORD`** - This protects your task input/output data from being viewed by others:
+   ```bash
+   export TASK_DATA_PASSWORD="your-task-data-password"
+   ```
+   When viewing task details in the web UI, you'll be prompted to enter this password to view input/output data.
+
+3. **Restrict `ALLOWED_ORIGINS`** - Only allow your own domain:
+   ```bash
+   export ALLOWED_ORIGINS="https://your-domain.com"
+   ```
+
+4. **Use HTTPS** - Deploy behind a reverse proxy (Traefik, nginx) with TLS certificates.
 
 ---
 

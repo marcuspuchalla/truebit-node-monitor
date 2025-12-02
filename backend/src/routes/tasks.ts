@@ -19,14 +19,21 @@ interface TaskRow {
   gas_used: number | null;
   exit_code: number | null;
   cached: number | null;
+  input_data: string | null;
+  output_data: string | null;
+}
+
+interface TasksRouterConfig {
+  taskDataPassword?: string;
 }
 
 /**
  * Format task data for local API responses
  * Note: For federation, the anonymizer strips sensitive data separately
+ * Input/output data is LOCAL ONLY and never sent to federation
  */
-function formatTaskForAPI(task: TaskRow): Record<string, unknown> {
-  return {
+function formatTaskForAPI(task: TaskRow, includeInputOutput = false): Record<string, unknown> {
+  const formatted: Record<string, unknown> = {
     id: task.id,
     execution_id: task.execution_id,
     chain_id: task.chain_id,
@@ -43,10 +50,33 @@ function formatTaskForAPI(task: TaskRow): Record<string, unknown> {
     exit_code: task.exit_code,
     cached: task.cached
   };
+
+  // Include input/output data for individual task view (LOCAL ONLY - never sent to federation)
+  if (includeInputOutput) {
+    if (task.input_data) {
+      try {
+        formatted.inputData = JSON.parse(task.input_data);
+      } catch {
+        formatted.inputData = task.input_data;
+      }
+    }
+    if (task.output_data) {
+      try {
+        formatted.outputData = JSON.parse(task.output_data);
+      } catch {
+        formatted.outputData = task.output_data;
+      }
+    }
+  }
+
+  return formatted;
 }
 
-export function createTasksRouter(db: TruebitDatabase): Router {
-  // Get all tasks (paginated)
+export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig = {}): Router {
+  const { taskDataPassword } = config;
+  const requiresAuth = !!taskDataPassword;
+
+  // Get all tasks (paginated) - does NOT include input/output data
   router.get('/', (req: Request, res: Response) => {
     try {
       const limit = parseInt(req.query.limit as string) || 50;
@@ -68,7 +98,7 @@ export function createTasksRouter(db: TruebitDatabase): Router {
     }
   });
 
-  // Get specific task
+  // Get specific task - basic info without sensitive data
   router.get('/:executionId', (req: Request, res: Response) => {
     try {
       const task = db.getTask(req.params.executionId) as TaskRow | undefined;
@@ -78,10 +108,77 @@ export function createTasksRouter(db: TruebitDatabase): Router {
         return;
       }
 
-      res.json(formatTaskForAPI(task));
+      // Return basic task info without input/output
+      // Also indicate if sensitive data is available and whether auth is required
+      const response = formatTaskForAPI(task, false);
+      response.hasSensitiveData = !!(task.input_data || task.output_data);
+      response.sensitiveDataRequiresAuth = requiresAuth;
+
+      res.json(response);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
+  });
+
+  // Get sensitive task data (input/output) - requires password if TASK_DATA_PASSWORD is set
+  router.get('/:executionId/data', (req: Request, res: Response) => {
+    try {
+      // Check password if required
+      if (requiresAuth) {
+        const providedPassword = req.headers['x-task-data-password'] as string ||
+                                 req.query.password as string;
+
+        if (!providedPassword || providedPassword !== taskDataPassword) {
+          res.status(401).json({
+            error: 'Authentication required',
+            message: 'Please provide the task data password via X-Task-Data-Password header or password query parameter'
+          });
+          return;
+        }
+      }
+
+      const task = db.getTask(req.params.executionId) as TaskRow | undefined;
+
+      if (!task) {
+        res.status(404).json({ error: 'Task not found' });
+        return;
+      }
+
+      // Return only the sensitive data
+      const sensitiveData: Record<string, unknown> = {
+        execution_id: task.execution_id
+      };
+
+      if (task.input_data) {
+        try {
+          sensitiveData.inputData = JSON.parse(task.input_data);
+        } catch {
+          sensitiveData.inputData = task.input_data;
+        }
+      }
+
+      if (task.output_data) {
+        try {
+          sensitiveData.outputData = JSON.parse(task.output_data);
+        } catch {
+          sensitiveData.outputData = task.output_data;
+        }
+      }
+
+      res.json(sensitiveData);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Check if task data authentication is required
+  router.get('/auth/status', (req: Request, res: Response) => {
+    res.json({
+      authRequired: requiresAuth,
+      message: requiresAuth
+        ? 'Task input/output data requires authentication. Set X-Task-Data-Password header or password query parameter.'
+        : 'Task data is accessible without authentication. Set TASK_DATA_PASSWORD environment variable to enable protection.'
+    });
   });
 
   // Get task statistics

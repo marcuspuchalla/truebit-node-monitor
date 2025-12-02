@@ -86,8 +86,6 @@ const tasksStore = useTasksStore();
 const invoicesStore = useInvoicesStore();
 
 onMounted(async () => {
-  console.log('TrueBit Monitor loading...');
-
   setProgress(10);
 
   // Load node status
@@ -104,7 +102,5 @@ onMounted(async () => {
 
   // Complete loading
   setProgress(100);
-
-  console.log('TrueBit Monitor loaded');
 });
 </script>

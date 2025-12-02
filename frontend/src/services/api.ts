@@ -44,8 +44,10 @@ export interface Task {
   execution_id: string;
   status: string;
   task_type?: string;
+  task_hash?: string;
   chain_id?: string;
   block_number?: number;
+  block_hash?: string;
   elapsed_ms?: number;
   gas_limit?: number;
   gas_used?: number;
@@ -56,6 +58,13 @@ export interface Task {
   received_at?: string;
   started_at?: string;
   completed_at?: string;
+  inputData?: Record<string, unknown>;
+  outputData?: Record<string, unknown>;
+  input_data?: string; // JSON string from database
+  output_data?: string; // JSON string from database
+  // New fields for sensitive data access control
+  hasSensitiveData?: boolean;
+  sensitiveDataRequiresAuth?: boolean;
 }
 
 export interface TaskStats {

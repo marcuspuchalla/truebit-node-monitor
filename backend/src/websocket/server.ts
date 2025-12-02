@@ -6,10 +6,16 @@ import type { IncomingMessage } from 'http';
 // Generate a secure token for WebSocket authentication
 const WS_AUTH_TOKEN = process.env.WS_AUTH_TOKEN || crypto.randomBytes(32).toString('hex');
 
+// Security limits
+const MAX_CONNECTIONS = parseInt(process.env.WS_MAX_CONNECTIONS || '100', 10);
+const MAX_CONNECTIONS_PER_IP = parseInt(process.env.WS_MAX_PER_IP || '5', 10);
+const AUTH_TIMEOUT_MS = parseInt(process.env.WS_AUTH_TIMEOUT || '30000', 10); // 30 seconds to authenticate
+
 interface ClientInfo {
   authenticated: boolean;
   connectedAt: Date;
   ip: string | undefined;
+  authTimeout?: ReturnType<typeof setTimeout>;
 }
 
 interface WSMessage {
@@ -21,11 +27,28 @@ class TruebitWebSocketServer {
   private wss: WebSocketServer;
   private clients: Map<WebSocket, ClientInfo>;
   private authRequired: boolean;
+  private connectionsByIp: Map<string, number>;
 
   constructor(server: Server) {
+    this.connectionsByIp = new Map();
+
     this.wss = new WebSocketServer({
       server,
       verifyClient: (info: { origin?: string; req: IncomingMessage }, callback: (result: boolean, code?: number, message?: string) => void) => {
+        // Check total connection limit
+        if (this.clients && this.clients.size >= MAX_CONNECTIONS) {
+          console.warn('⚠️ WebSocket connection rejected: max connections reached');
+          return callback(false, 503, 'Server at capacity');
+        }
+
+        // Check per-IP connection limit
+        const clientIp = info.req.socket.remoteAddress || 'unknown';
+        const currentIpConnections = this.connectionsByIp.get(clientIp) || 0;
+        if (currentIpConnections >= MAX_CONNECTIONS_PER_IP) {
+          console.warn(`⚠️ WebSocket connection rejected: too many connections from ${clientIp}`);
+          return callback(false, 429, 'Too many connections');
+        }
+
         // Check origin header for CORS-like protection
         const origin = info.origin || info.req.headers.origin;
         const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
@@ -50,11 +73,26 @@ class TruebitWebSocketServer {
 
     this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
       const clientId = crypto.randomBytes(8).toString('hex');
+      const clientIp = req.socket.remoteAddress || 'unknown';
+
+      // Track connection count by IP
+      this.connectionsByIp.set(clientIp, (this.connectionsByIp.get(clientIp) || 0) + 1);
+
       const clientInfo: ClientInfo = {
         authenticated: !this.authRequired, // Auto-authenticated if auth not required
         connectedAt: new Date(),
-        ip: req.socket.remoteAddress
+        ip: clientIp
       };
+
+      // Set auth timeout if authentication is required
+      if (this.authRequired) {
+        clientInfo.authTimeout = setTimeout(() => {
+          if (!clientInfo.authenticated) {
+            console.warn(`⚠️ WebSocket client ${clientId.slice(0, 8)}... auth timeout - disconnecting`);
+            ws.close(4001, 'Authentication timeout');
+          }
+        }, AUTH_TIMEOUT_MS);
+      }
 
       console.log(`🔌 WebSocket client connected: ${clientId.slice(0, 8)}...`);
       this.clients.set(ws, clientInfo);
@@ -67,6 +105,11 @@ class TruebitWebSocketServer {
           if (data.type === 'auth') {
             if (data.token === WS_AUTH_TOKEN) {
               clientInfo.authenticated = true;
+              // Clear auth timeout on successful auth
+              if (clientInfo.authTimeout) {
+                clearTimeout(clientInfo.authTimeout);
+                clientInfo.authTimeout = undefined;
+              }
               ws.send(JSON.stringify({
                 type: 'auth_success',
                 timestamp: new Date().toISOString()
@@ -96,11 +139,33 @@ class TruebitWebSocketServer {
 
       ws.on('close', () => {
         console.log(`🔌 WebSocket client disconnected: ${clientId.slice(0, 8)}...`);
+        // Clear auth timeout if pending
+        if (clientInfo.authTimeout) {
+          clearTimeout(clientInfo.authTimeout);
+        }
+        // Decrement IP connection count
+        const currentCount = this.connectionsByIp.get(clientIp) || 1;
+        if (currentCount <= 1) {
+          this.connectionsByIp.delete(clientIp);
+        } else {
+          this.connectionsByIp.set(clientIp, currentCount - 1);
+        }
         this.clients.delete(ws);
       });
 
       ws.on('error', (error: Error) => {
         console.error('WebSocket error:', error.message);
+        // Clear auth timeout if pending
+        if (clientInfo.authTimeout) {
+          clearTimeout(clientInfo.authTimeout);
+        }
+        // Decrement IP connection count
+        const currentCount = this.connectionsByIp.get(clientIp) || 1;
+        if (currentCount <= 1) {
+          this.connectionsByIp.delete(clientIp);
+        } else {
+          this.connectionsByIp.set(clientIp, currentCount - 1);
+        }
         this.clients.delete(ws);
       });
 

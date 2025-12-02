@@ -336,8 +336,35 @@ class AggregatorDatabase {
     return { total, last24h };
   }
 
+  // Whitelist of allowed columns and tables to prevent SQL injection
+  private static readonly ALLOWED_COLUMNS = new Set([
+    'execution_time_bucket',
+    'gas_used_bucket',
+    'steps_computed_bucket',
+    'memory_used_bucket',
+    'chain_id',
+    'task_type'
+  ]);
+
+  private static readonly ALLOWED_TABLES = new Set([
+    'aggregated_tasks',
+    'aggregated_invoices'
+  ]);
+
   getDistribution(column: string, table = 'aggregated_tasks'): Record<string, number> {
     if (!this.db) return {};
+
+    // Security: Validate column and table names against whitelist
+    if (!AggregatorDatabase.ALLOWED_COLUMNS.has(column)) {
+      console.error(`Security: Invalid column name rejected: ${column}`);
+      return {};
+    }
+    if (!AggregatorDatabase.ALLOWED_TABLES.has(table)) {
+      console.error(`Security: Invalid table name rejected: ${table}`);
+      return {};
+    }
+
+    // Safe to use since we validated against whitelist
     const stmt = this.db.prepare(`
       SELECT ${column} as bucket, COUNT(*) as count
       FROM ${table}

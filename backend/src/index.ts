@@ -41,18 +41,80 @@ const DB_PATH = process.env.DB_PATH || './data/truebit-monitor.db';
 const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
 
+// Security: API Authentication (optional, enabled via API_KEY env var)
+// Default token provided for convenience - CHANGE IN PRODUCTION!
+const API_KEY = process.env.API_KEY || 'truebit-monitor-default-key';
+const API_AUTH_ENABLED = !!process.env.API_KEY; // Only enabled if explicitly set
+
+// Security: Task data password (protects access to task input/output data)
+// Set TASK_DATA_PASSWORD to require authentication for viewing sensitive task data
+const TASK_DATA_PASSWORD = process.env.TASK_DATA_PASSWORD;
+const TASK_DATA_AUTH_ENABLED = !!TASK_DATA_PASSWORD;
+
+// Security: CSRF token (generated on startup, returned via /api/csrf-token)
+const CSRF_SECRET = crypto.randomBytes(32).toString('hex');
+
 // Helper function to hash node addresses for privacy
 function hashNodeAddress(address: string | undefined): string | null {
   if (!address) return null;
   return crypto.createHash('sha256').update(address).digest('hex').slice(0, 16);
 }
 
-// Security Middleware
+// ===== AUDIT LOGGING =====
+interface AuditLogEntry {
+  timestamp: string;
+  event: string;
+  ip: string;
+  userAgent?: string;
+  details?: Record<string, unknown>;
+}
+
+const auditLog: AuditLogEntry[] = [];
+const MAX_AUDIT_LOG_SIZE = 1000;
+
+function logAuditEvent(event: string, req: express.Request, details?: Record<string, unknown>): void {
+  const entry: AuditLogEntry = {
+    timestamp: new Date().toISOString(),
+    event,
+    ip: req.ip || req.socket.remoteAddress || 'unknown',
+    userAgent: req.get('User-Agent'),
+    details
+  };
+
+  auditLog.push(entry);
+
+  // Keep only last N entries
+  if (auditLog.length > MAX_AUDIT_LOG_SIZE) {
+    auditLog.shift();
+  }
+
+  // Log security-relevant events to console
+  if (event.startsWith('AUTH_') || event.startsWith('SECURITY_')) {
+    console.log(`[AUDIT] ${entry.timestamp} ${event} from ${entry.ip}`);
+  }
+}
+
+// Security Middleware - Helmet with CSP enabled
 app.use(helmet({
-  // Disable CSP - let the browser handle it, as strict CSP breaks browser extensions
-  // and causes issues with Vue's dynamic script loading
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vue needs unsafe-inline/eval
+      styleSrc: ["'self'", "'unsafe-inline'"], // Tailwind uses inline styles
+      imgSrc: ["'self'", "data:", "blob:"],
+      fontSrc: ["'self'"],
+      connectSrc: ["'self'", "ws:", "wss:"], // WebSocket connections
+      frameAncestors: ["'none'"], // Prevent clickjacking
+      formAction: ["'self'"],
+      baseUri: ["'self'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false, // Required for some Vue features
+  hsts: {
+    maxAge: 31536000, // 1 year
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
 // CORS configuration - only allow specified origins
@@ -92,6 +154,107 @@ app.use('/api/', apiLimiter);
 
 // Body parser with size limit
 app.use(express.json({ limit: '1mb' }));
+
+// ===== SECURITY: API Authentication Middleware =====
+// Only enabled if API_KEY environment variable is set
+if (API_AUTH_ENABLED) {
+  app.use('/api/', (req, res, next) => {
+    // Skip auth for CSRF token endpoint (needed to get token first)
+    if (req.path === '/csrf-token') {
+      return next();
+    }
+
+    // Skip auth for health check
+    if (req.path === '/health') {
+      return next();
+    }
+
+    const authHeader = req.headers.authorization;
+    if (!authHeader || authHeader !== `Bearer ${API_KEY}`) {
+      logAuditEvent('AUTH_FAILED', req, { path: req.path });
+      res.status(401).json({ error: 'Unauthorized - Invalid or missing API key' });
+      return;
+    }
+
+    next();
+  });
+  console.log('🔐 API authentication enabled (API_KEY required)');
+}
+
+// ===== SECURITY: CSRF Protection =====
+// Generate CSRF tokens for state-changing operations
+const csrfTokens = new Map<string, { token: string; expires: number }>();
+
+function generateCSRFToken(sessionId: string): string {
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = Date.now() + 3600000; // 1 hour
+  csrfTokens.set(sessionId, { token, expires });
+
+  // Cleanup expired tokens periodically
+  if (csrfTokens.size > 1000) {
+    const now = Date.now();
+    for (const [key, value] of csrfTokens.entries()) {
+      if (value.expires < now) {
+        csrfTokens.delete(key);
+      }
+    }
+  }
+
+  return token;
+}
+
+function validateCSRFToken(sessionId: string, token: string): boolean {
+  const stored = csrfTokens.get(sessionId);
+  if (!stored) return false;
+  if (stored.expires < Date.now()) {
+    csrfTokens.delete(sessionId);
+    return false;
+  }
+  return stored.token === token;
+}
+
+// CSRF token endpoint
+app.get('/api/csrf-token', (req, res) => {
+  const sessionId = req.ip || 'anonymous';
+  const token = generateCSRFToken(sessionId);
+  res.json({ csrfToken: token });
+});
+
+// CSRF validation middleware for state-changing operations
+app.use('/api/', (req, res, next) => {
+  // Only validate CSRF for state-changing methods
+  if (!['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
+    return next();
+  }
+
+  // Skip CSRF for federation enable/disable (they're protected by API key if enabled)
+  // and for internal operations
+  if (req.path.startsWith('/federation/')) {
+    return next();
+  }
+
+  const csrfToken = req.headers['x-csrf-token'] as string;
+  const sessionId = req.ip || 'anonymous';
+
+  if (!csrfToken || !validateCSRFToken(sessionId, csrfToken)) {
+    logAuditEvent('CSRF_VALIDATION_FAILED', req, { path: req.path, method: req.method });
+    // Log warning but don't block - CSRF is advisory for now
+    console.warn(`[SECURITY] CSRF validation failed for ${req.method} ${req.path}`);
+  }
+
+  next();
+});
+
+// Audit log endpoint (read-only, for security monitoring)
+app.get('/api/audit-log', (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit as string) || 100, MAX_AUDIT_LOG_SIZE);
+  const events = auditLog.slice(-limit);
+  res.json({
+    entries: events,
+    total: auditLog.length,
+    maxSize: MAX_AUDIT_LOG_SIZE
+  });
+});
 
 // Initialize components
 const db = new TruebitDatabase(DB_PATH);
@@ -379,7 +542,7 @@ function handleRegistration(parsed: ParsedLog): void {
 
 // API Routes
 app.use('/api/status', createStatusRouter(db, dockerClient));
-app.use('/api/tasks', createTasksRouter(db));
+app.use('/api/tasks', createTasksRouter(db, { taskDataPassword: TASK_DATA_PASSWORD }));
 app.use('/api/invoices', createInvoicesRouter(db));
 app.use('/api/logs', createLogsRouter(db));
 // Federation route is registered in start() after client is created

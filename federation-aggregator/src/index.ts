@@ -37,14 +37,132 @@ interface FederationMessage {
   };
 }
 
+// ===== INPUT VALIDATION (Minimal) =====
+// Basic validation to prevent malformed data from being processed
+
+const MAX_STRING_LENGTH = 256;
+const HASH_PATTERN = /^[a-f0-9]{8,64}$/i;
+const NODE_ID_PATTERN = /^node-[a-f0-9-]{36}$/i;
+const BUCKET_PATTERN = /^[\d\-<>KMG]+$/;
+
+function isValidString(value: unknown, maxLength = MAX_STRING_LENGTH): value is string {
+  return typeof value === 'string' && value.length <= maxLength;
+}
+
+function isValidHash(value: unknown): boolean {
+  return isValidString(value, 64) && HASH_PATTERN.test(value as string);
+}
+
+function isValidNodeId(value: unknown): boolean {
+  return isValidString(value, 50) && NODE_ID_PATTERN.test(value as string);
+}
+
+function isValidBucket(value: unknown): boolean {
+  return isValidString(value, 20) && BUCKET_PATTERN.test(value as string);
+}
+
+function validateMessage(data: unknown, requiredFields: string[] = []): data is FederationMessage {
+  if (!data || typeof data !== 'object') {
+    console.warn('[VALIDATION] Message is not an object');
+    return false;
+  }
+
+  const msg = data as Record<string, unknown>;
+
+  // Validate nodeId if present
+  if (msg.nodeId !== undefined && !isValidNodeId(msg.nodeId)) {
+    console.warn('[VALIDATION] Invalid nodeId format');
+    return false;
+  }
+
+  // Validate data object if present
+  if (msg.data !== undefined) {
+    if (typeof msg.data !== 'object' || msg.data === null) {
+      console.warn('[VALIDATION] Invalid data field');
+      return false;
+    }
+
+    const dataObj = msg.data as Record<string, unknown>;
+
+    // Validate hashes
+    if (dataObj.taskIdHash !== undefined && !isValidHash(dataObj.taskIdHash)) {
+      console.warn('[VALIDATION] Invalid taskIdHash');
+      return false;
+    }
+    if (dataObj.invoiceIdHash !== undefined && !isValidHash(dataObj.invoiceIdHash)) {
+      console.warn('[VALIDATION] Invalid invoiceIdHash');
+      return false;
+    }
+
+    // Validate buckets
+    const bucketFields = ['executionTimeBucket', 'gasUsedBucket', 'stepsComputedBucket',
+                          'memoryUsedBucket', 'totalTasksBucket', 'activeTasksBucket'];
+    for (const field of bucketFields) {
+      if (dataObj[field] !== undefined && !isValidBucket(dataObj[field])) {
+        console.warn(`[VALIDATION] Invalid ${field}`);
+        return false;
+      }
+    }
+
+    // Validate strings
+    const stringFields = ['chainId', 'taskType', 'status', 'operation'];
+    for (const field of stringFields) {
+      if (dataObj[field] !== undefined && !isValidString(dataObj[field], 64)) {
+        console.warn(`[VALIDATION] Invalid ${field}`);
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
 // Configuration
 const config = {
   natsUrl: process.env.NATS_URL || 'wss://f.tru.watch:9086',
   dbPath: process.env.DB_PATH || '/data/aggregator.db',
   publishInterval: parseInt(process.env.PUBLISH_INTERVAL || '30000', 10), // 30 seconds
   cleanupInterval: parseInt(process.env.CLEANUP_INTERVAL || '86400000', 10), // 24 hours
-  retentionDays: parseInt(process.env.RETENTION_DAYS || '30', 10)
+  retentionDays: parseInt(process.env.RETENTION_DAYS || '30', 10),
+  rateLimitPerNode: parseInt(process.env.RATE_LIMIT_PER_NODE || '10', 10), // Messages per second per node
+  rateLimitWindow: parseInt(process.env.RATE_LIMIT_WINDOW || '1000', 10) // 1 second window
 };
+
+// ===== RATE LIMITING =====
+// Track message counts per node to prevent flooding
+const nodeMessageCounts = new Map<string, { count: number; windowStart: number }>();
+
+function isRateLimited(nodeId: string): boolean {
+  if (!nodeId) return false;
+
+  const now = Date.now();
+  const entry = nodeMessageCounts.get(nodeId);
+
+  if (!entry || now - entry.windowStart >= config.rateLimitWindow) {
+    // New window or first message
+    nodeMessageCounts.set(nodeId, { count: 1, windowStart: now });
+    return false;
+  }
+
+  entry.count++;
+
+  if (entry.count > config.rateLimitPerNode) {
+    console.warn(`[SECURITY] Rate limit exceeded for node ${nodeId.slice(0, 12)}... (${entry.count} msgs/s)`);
+    return true;
+  }
+
+  return false;
+}
+
+// Cleanup old rate limit entries periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [nodeId, entry] of nodeMessageCounts.entries()) {
+    if (now - entry.windowStart > config.rateLimitWindow * 10) {
+      nodeMessageCounts.delete(nodeId);
+    }
+  }
+}, 60000); // Cleanup every minute
 
 // Global instances
 let db: AggregatorDatabase;
@@ -53,65 +171,113 @@ let publishTimer: ReturnType<typeof setInterval>;
 let cleanupTimer: ReturnType<typeof setInterval>;
 
 // Message handlers
-function handleTaskReceived(data: FederationMessage, _subject: string): void {
+function handleTaskReceived(data: unknown, _subject: string): void {
+  // Validate message structure
+  if (!validateMessage(data)) {
+    return;
+  }
+
+  const msg = data as FederationMessage;
+
+  // Rate limit check
+  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+    return;
+  }
+
   try {
-    console.log(`Task received: ${data.data?.taskIdHash?.slice(0, 12)}...`);
+    console.log(`Task received: ${msg.data?.taskIdHash?.slice(0, 12)}...`);
 
     db.upsertTask({
-      taskIdHash: data.data?.taskIdHash,
-      chainId: data.data?.chainId,
-      taskType: data.data?.taskType
+      taskIdHash: msg.data?.taskIdHash,
+      chainId: msg.data?.chainId,
+      taskType: msg.data?.taskType
     });
   } catch (error) {
     console.error('Error handling task received:', (error as Error).message);
   }
 }
 
-function handleTaskCompleted(data: FederationMessage, _subject: string): void {
+function handleTaskCompleted(data: unknown, _subject: string): void {
+  // Validate message structure
+  if (!validateMessage(data)) {
+    return;
+  }
+
+  const msg = data as FederationMessage;
+
+  // Rate limit check
+  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+    return;
+  }
+
   try {
-    console.log(`Task completed: ${data.data?.taskIdHash?.slice(0, 12)}...`);
+    console.log(`Task completed: ${msg.data?.taskIdHash?.slice(0, 12)}...`);
 
     db.updateTaskCompleted({
-      taskIdHash: data.data?.taskIdHash,
-      status: data.data?.status || 'completed',
-      success: data.data?.success,
-      executionTimeBucket: data.data?.executionTimeBucket,
-      gasUsedBucket: data.data?.gasUsedBucket,
-      cached: data.data?.cached
+      taskIdHash: msg.data?.taskIdHash,
+      status: msg.data?.status || 'completed',
+      success: msg.data?.success,
+      executionTimeBucket: msg.data?.executionTimeBucket,
+      gasUsedBucket: msg.data?.gasUsedBucket,
+      cached: msg.data?.cached
     });
   } catch (error) {
     console.error('Error handling task completed:', (error as Error).message);
   }
 }
 
-function handleInvoiceCreated(data: FederationMessage, _subject: string): void {
+function handleInvoiceCreated(data: unknown, _subject: string): void {
+  // Validate message structure
+  if (!validateMessage(data)) {
+    return;
+  }
+
+  const msg = data as FederationMessage;
+
+  // Rate limit check
+  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+    return;
+  }
+
   try {
-    console.log(`Invoice created: ${data.data?.invoiceIdHash?.slice(0, 12)}...`);
+    console.log(`Invoice created: ${msg.data?.invoiceIdHash?.slice(0, 12)}...`);
 
     db.upsertInvoice({
-      invoiceIdHash: data.data?.invoiceIdHash,
-      taskIdHash: data.data?.taskIdHash,
-      chainId: data.data?.chainId,
-      stepsComputedBucket: data.data?.stepsComputedBucket,
-      memoryUsedBucket: data.data?.memoryUsedBucket,
-      operation: data.data?.operation
+      invoiceIdHash: msg.data?.invoiceIdHash,
+      taskIdHash: msg.data?.taskIdHash,
+      chainId: msg.data?.chainId,
+      stepsComputedBucket: msg.data?.stepsComputedBucket,
+      memoryUsedBucket: msg.data?.memoryUsedBucket,
+      operation: msg.data?.operation
     });
   } catch (error) {
     console.error('Error handling invoice created:', (error as Error).message);
   }
 }
 
-function handleHeartbeat(data: FederationMessage, _subject: string): void {
+function handleHeartbeat(data: unknown, _subject: string): void {
+  // Validate message structure
+  if (!validateMessage(data)) {
+    return;
+  }
+
+  const msg = data as FederationMessage;
+
+  // Rate limit check
+  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+    return;
+  }
+
   try {
-    const nodeId = data.nodeId?.slice(0, 12) || 'unknown';
+    const nodeId = msg.nodeId?.slice(0, 12) || 'unknown';
     console.log(`Heartbeat from: ${nodeId}...`);
 
     // Heartbeat data is nested inside data.data from the anonymizer
     db.upsertNode({
-      nodeId: data.nodeId || 'unknown',
-      status: (data.data as { status?: string })?.status || 'online',
-      totalTasksBucket: data.data?.totalTasksBucket,
-      activeTasksBucket: data.data?.activeTasksBucket
+      nodeId: msg.nodeId || 'unknown',
+      status: (msg.data as { status?: string })?.status || 'online',
+      totalTasksBucket: msg.data?.totalTasksBucket,
+      activeTasksBucket: msg.data?.activeTasksBucket
     });
   } catch (error) {
     console.error('Error handling heartbeat:', (error as Error).message);

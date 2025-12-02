@@ -123,7 +123,6 @@ export const useFederationStore = defineStore('federation', {
       this.error = null;
       try {
         const response = await federationAPI.getSettings();
-        console.log('Store: fetchSettings response:', response);
         this.settings = response;
       } catch (error) {
         this.error = (error as Error).message;
@@ -153,15 +152,9 @@ export const useFederationStore = defineStore('federation', {
     // Enable federation
     async enableFederation(): Promise<void> {
       try {
-        console.log('Store: calling federationAPI.enable()');
-        const result = await federationAPI.enable();
-        console.log('Store: enable result:', result);
-        console.log('Store: fetching settings...');
+        await federationAPI.enable();
         await this.fetchSettings();
-        console.log('Store: settings after enable:', this.settings);
-        console.log('Store: fetching status...');
         await this.fetchStatus();
-        console.log('Store: status after enable:', this.status);
       } catch (error) {
         this.error = (error as Error).message;
         console.error('Failed to enable federation:', error);
@@ -187,7 +180,6 @@ export const useFederationStore = defineStore('federation', {
       this.statusLoading = true;
       try {
         const response = await federationAPI.getStatus();
-        console.log('Store: fetchStatus response:', response);
         this.status = response;
       } catch (error) {
         this.error = (error as Error).message;

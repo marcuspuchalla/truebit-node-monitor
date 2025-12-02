@@ -5,6 +5,9 @@ interface WebSocketMessage {
   data?: unknown;
 }
 
+// Only log in development mode
+const DEBUG = import.meta.env.MODE === 'development';
+
 class WebSocketClient {
   private ws: WebSocket | null = null;
   private listeners: Map<string, EventCallback[]> = new Map();
@@ -27,7 +30,7 @@ class WebSocketClient {
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = (): void => {
-        console.log('WebSocket connected');
+        if (DEBUG) console.log('WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
         this.emit('connected', { timestamp: new Date() });
@@ -49,7 +52,7 @@ class WebSocketClient {
       };
 
       this.ws.onclose = (): void => {
-        console.log('WebSocket disconnected');
+        if (DEBUG) console.log('WebSocket disconnected');
         this.isConnecting = false;
         this.emit('disconnected', { timestamp: new Date() });
         this.attemptReconnect(wsUrl);
@@ -68,7 +71,7 @@ class WebSocketClient {
     }
 
     this.reconnectAttempts++;
-    console.log(`Reconnecting... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+    if (DEBUG) console.log(`Reconnecting... (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
 
     setTimeout(() => {
       this.connect(url);
