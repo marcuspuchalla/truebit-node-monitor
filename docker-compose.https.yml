@@ -58,6 +58,8 @@ services:
       - DB_PATH=/app/data/truebit-monitor.db
       - LOG_RETENTION_DAYS=30
       - ALLOWED_ORIGINS=https://${DOMAIN}
+      # Security: Change this password to protect task input/output data
+      - TASK_DATA_PASSWORD=6LDNbYqI6LqiwylXBzeXVfxa2zhrwDDX
     volumes:
       # CRITICAL: Mount host Docker socket (READ-ONLY)
       - /var/run/docker.sock:/var/run/docker.sock:ro
