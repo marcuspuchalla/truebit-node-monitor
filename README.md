@@ -235,7 +235,7 @@ docker compose -f docker-compose.aggregator.yml up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `API_KEY` | (none) | **IMPORTANT**: Set this to enable API authentication. Without it, anyone with network access can query your backend. |
-| `TASK_DATA_PASSWORD` | (none) | Password to protect task input/output data. If set, users must enter this password to view sensitive task data in the web UI. |
+| `TASK_DATA_PASSWORD` | (auto-generated) | Password to protect task input/output data. If not set, a random password is generated at startup and displayed in the logs. |
 | `WS_AUTH_REQUIRED` | `false` | Require WebSocket authentication |
 | `WS_AUTH_TOKEN` | (random) | WebSocket authentication token |
 | `WS_MAX_CONNECTIONS` | `100` | Maximum total WebSocket connections |
@@ -255,11 +255,17 @@ docker compose -f docker-compose.aggregator.yml up -d
    curl -H "Authorization: Bearer your-secure-random-key-here" http://localhost:8090/api/status
    ```
 
-2. **Set `TASK_DATA_PASSWORD`** - This protects your task input/output data from being viewed by others:
-   ```bash
-   export TASK_DATA_PASSWORD="your-task-data-password"
-   ```
-   When viewing task details in the web UI, you'll be prompted to enter this password to view input/output data.
+2. **Task Data Password** - Task input/output data is always password-protected:
+   - If `TASK_DATA_PASSWORD` is not set, a random password is generated at startup
+   - **Check your container logs** to find the auto-generated password:
+     ```bash
+     docker logs truebit-node-monitor | grep "🔑"
+     ```
+   - Or set your own password:
+     ```bash
+     export TASK_DATA_PASSWORD="your-task-data-password"
+     ```
+   - When viewing task details in the web UI, you'll be prompted to enter this password.
 
 3. **Restrict `ALLOWED_ORIGINS`** - Only allow your own domain:
    ```bash

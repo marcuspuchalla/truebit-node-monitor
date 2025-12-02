@@ -47,9 +47,10 @@ const API_KEY = process.env.API_KEY || 'truebit-monitor-default-key';
 const API_AUTH_ENABLED = !!process.env.API_KEY; // Only enabled if explicitly set
 
 // Security: Task data password (protects access to task input/output data)
-// Set TASK_DATA_PASSWORD to require authentication for viewing sensitive task data
-const TASK_DATA_PASSWORD = process.env.TASK_DATA_PASSWORD;
-const TASK_DATA_AUTH_ENABLED = !!TASK_DATA_PASSWORD;
+// If not set via env var, generate a random one and display it at startup
+const TASK_DATA_PASSWORD_FROM_ENV = process.env.TASK_DATA_PASSWORD;
+const TASK_DATA_PASSWORD = TASK_DATA_PASSWORD_FROM_ENV || crypto.randomBytes(24).toString('base64');
+const TASK_DATA_AUTH_ENABLED = true; // Always enabled - password is either from env or auto-generated
 
 // Security: CSRF token (generated on startup, returned via /api/csrf-token)
 const CSRF_SECRET = crypto.randomBytes(32).toString('hex');
@@ -905,7 +906,19 @@ async function start(): Promise<void> {
       console.log(`   📡 API Server: http://${HOST}:${PORT}`);
       console.log(`   🔌 WebSocket: ws://${HOST}:${PORT}`);
       console.log(`   🐳 Container: ${CONTAINER_NAME}`);
-      console.log(`   💾 Database: ${DB_PATH}\n`);
+      console.log(`   💾 Database: ${DB_PATH}`);
+
+      // Display task data password (important for node operators to know)
+      console.log();
+      console.log('   🔐 Task Data Password Protection: ENABLED');
+      if (TASK_DATA_PASSWORD_FROM_ENV) {
+        console.log('   📝 Password: (set via TASK_DATA_PASSWORD env var)');
+      } else {
+        console.log('   ⚠️  Auto-generated password (save this!):');
+        console.log(`   🔑 ${TASK_DATA_PASSWORD}`);
+        console.log('   💡 Set TASK_DATA_PASSWORD env var to use your own password');
+      }
+      console.log();
     });
 
     // Graceful shutdown handler
