@@ -24,7 +24,7 @@ import PrivacyViolationDetector from '../utils/privacy-checker.js';
 // Default public federation server
 // Community note: If the maintainer stops maintaining this project, the community
 // can fork and set up their own federation server by changing this URL.
-const DEFAULT_NATS_SERVER = process.env.FEDERATION_NATS_URL || 'wss://f.tru.watch:9086';
+const DEFAULT_NATS_SERVER = process.env.FEDERATION_NATS_URL || 'wss://f.tru.watch';
 
 interface FederationClientConfig {
   servers?: string[];

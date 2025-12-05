@@ -22,7 +22,7 @@ services:
     environment:
       - NODE_ENV=production
       # Connect to NATS via internal Docker network (both on same network)
-      - NATS_URL=ws://nats-seed:9086
+      - NATS_URL=ws://nats-seed:443
       - DB_PATH=/data/aggregator.db
       - PUBLISH_INTERVAL=30000
       - RETENTION_DAYS=30

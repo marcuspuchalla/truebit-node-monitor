@@ -23,7 +23,7 @@ services:
       - DB_PATH=/app/data/truebit-monitor.db
       - LOG_RETENTION_DAYS=30
       # Use internal Docker network for NATS (both containers on same network)
-      - FEDERATION_NATS_URL=ws://nats-seed:9086
+      - FEDERATION_NATS_URL=ws://nats-seed:443
       # Optional: Set your own task data password. If not set, a random one is generated at startup.
       # - TASK_DATA_PASSWORD=your-secure-password-here
     volumes:
