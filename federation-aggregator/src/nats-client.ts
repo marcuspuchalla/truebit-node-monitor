@@ -32,7 +32,7 @@ class AggregatorNatsClient {
   public connected = false;
 
   constructor(options: AggregatorNatsClientOptions = {}) {
-    this.servers = options.servers || ['wss://f.tru.watch'];
+    this.servers = options.servers || ['wss://f.tru.watch:9086'];
   }
 
   async connect(): Promise<boolean> {

@@ -1,5 +1,5 @@
 # =============================================================================
-# TrueBit Federation NATS Server (Standard Ports)
+# TrueBit Federation NATS Server
 # =============================================================================
 #
 # Standard NATS Ports:
@@ -8,10 +8,18 @@
 #   443  - WebSocket (no TLS internally, Traefik handles TLS)
 #
 # External access:
-#   wss://f.tru.watch -> Traefik (TLS) -> container:443
+#   wss://f.tru.watch:9086 -> Traefik (TLS on port 9086) -> container:443
+#
+# Traefik Configuration Required:
+#   Add to Traefik proxy command section in Coolify:
+#     - '--entrypoints.natsws.address=:9086'
+#   Add to Traefik ports:
+#     - '9086:9086'
+#
+# NOTE: We use a dedicated port (9086) with HTTP router for WebSocket.
+# This ensures proper WebSocket upgrade handling and avoids HTTP/2 ALPN
+# negotiation issues with Firefox and iOS Safari.
 # =============================================================================
-
-version: '3.8'
 
 services:
   nats-seed:
@@ -47,12 +55,16 @@ services:
 
     labels:
       - traefik.enable=true
-      - traefik.http.routers.truebit-nats.rule=Host(`f.tru.watch`)
-      - traefik.http.routers.truebit-nats.entrypoints=https
-      - traefik.http.routers.truebit-nats.tls=true
-      - traefik.http.routers.truebit-nats.tls.certresolver=letsencrypt
-      - traefik.http.services.truebit-nats.loadbalancer.server.port=443
       - traefik.docker.network=coolify
+
+      # WebSocket router (wss://f.tru.watch:9086)
+      # Uses dedicated entrypoint to avoid HTTP/2 ALPN issues
+      - traefik.http.routers.truebit-nats-ws.rule=Host(`f.tru.watch`)
+      - traefik.http.routers.truebit-nats-ws.entrypoints=natsws
+      - traefik.http.routers.truebit-nats-ws.tls=true
+      - traefik.http.routers.truebit-nats-ws.tls.certresolver=letsencrypt
+      - traefik.http.routers.truebit-nats-ws.service=truebit-nats-ws
+      - traefik.http.services.truebit-nats-ws.loadbalancer.server.port=443
 
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]

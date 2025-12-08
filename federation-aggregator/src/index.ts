@@ -119,7 +119,7 @@ function validateMessage(data: unknown, requiredFields: string[] = []): data is 
 
 // Configuration
 const config = {
-  natsUrl: process.env.NATS_URL || 'wss://f.tru.watch',
+  natsUrl: process.env.NATS_URL || 'wss://f.tru.watch:9086',
   dbPath: process.env.DB_PATH || '/data/aggregator.db',
   publishInterval: parseInt(process.env.PUBLISH_INTERVAL || '30000', 10), // 30 seconds
   cleanupInterval: parseInt(process.env.CLEANUP_INTERVAL || '86400000', 10), // 24 hours

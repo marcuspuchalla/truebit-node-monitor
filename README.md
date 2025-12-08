@@ -319,7 +319,7 @@ curl -X POST http://localhost:8090/api/federation/disable
                                    │ Federation (optional, WSS)
                                    ▼
                     ┌──────────────────────────────┐
-                    │   NATS Server (f.tru.watch)  │
+                    │ NATS Server (f.tru.watch:9086) │
                     └──────────────┬───────────────┘
                                    │
                     ┌──────────────▼───────────────┐

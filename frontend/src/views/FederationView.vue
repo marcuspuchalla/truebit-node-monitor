@@ -337,7 +337,7 @@ const selectedNodeStats = computed(() => {
 const errorMessage = ref('');
 
 // Public federation server URL
-const serverUrl = 'wss://f.tru.watch';
+const serverUrl = 'wss://f.tru.watch:9086';
 
 const isConnected = computed(() => status.value?.connected || false);
 

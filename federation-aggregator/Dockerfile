@@ -41,7 +41,7 @@ RUN mkdir -p /data
 
 # Environment defaults
 ENV NODE_ENV=production
-ENV NATS_URL=wss://f.tru.watch
+ENV NATS_URL=wss://f.tru.watch:9086
 ENV DB_PATH=/data/aggregator.db
 ENV PUBLISH_INTERVAL=30000
 

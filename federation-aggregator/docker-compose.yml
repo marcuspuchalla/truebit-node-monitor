@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
     environment:
       # Connect to local NATS (if on same machine) or remote
-      - NATS_URL=${NATS_URL:-wss://f.tru.watch}
+      - NATS_URL=${NATS_URL:-wss://f.tru.watch:9086}
       - DB_PATH=/data/aggregator.db
       - PUBLISH_INTERVAL=${PUBLISH_INTERVAL:-30000}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}

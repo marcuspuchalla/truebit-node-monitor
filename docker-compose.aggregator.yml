@@ -1,7 +1,8 @@
 # Federation Aggregator for Coolify
 #
 # This service collects statistics from all TrueBit Monitor nodes and publishes aggregated data.
-# It connects to the NATS server via the public WSS endpoint.
+# It connects to the NATS server via internal Docker network (ws://nats-seed:443).
+# External clients connect via wss://f.tru.watch:9086.
 #
 # Prerequisites:
 #   - NATS server must be running (deploy/docker-compose.federation.yml)

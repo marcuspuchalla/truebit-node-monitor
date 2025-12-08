@@ -113,7 +113,7 @@ export function createFederationRouter(
 
       // Update settings - enable with all sharing on
       // Also save the default NATS server URL
-      const defaultNatsUrl = process.env.FEDERATION_NATS_URL || 'wss://f.tru.watch';
+      const defaultNatsUrl = process.env.FEDERATION_NATS_URL || 'wss://f.tru.watch:9086';
       db.updateFederationSettings({
         enabled: true,
         shareTasks: true,

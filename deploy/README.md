@@ -20,7 +20,7 @@ Go to **Server → Proxy → Configuration** and add the custom entrypoint to Tr
 ```yaml
 command:
   # ... existing commands ...
-  - '--entrypoints.truebitnats.address=:9086'
+  - '--entrypoints.natsws.address=:9086'
 ```
 
 ### 2. Expose Port 9086 in Traefik
@@ -100,7 +100,7 @@ The inline configuration creates:
 port: 4222           # TCP client port
 http_port: 8222      # HTTP monitoring
 websocket {
-  port: 9086         # WebSocket port
+  port: 443          # WebSocket port (internal, Traefik routes 9086 -> 443)
   no_tls: true       # TLS handled by Traefik
 }
 jetstream {
@@ -120,7 +120,7 @@ docker network inspect coolify | grep truebit-federation-nats
 
 ### 404 Not Found
 
-Traefik entrypoint not configured. Check Traefik has `--entrypoints.truebitnats.address=:9086`.
+Traefik entrypoint not configured. Check Traefik has `--entrypoints.natsws.address=:9086`.
 
 ### Connection Refused on Port 9086
 
@@ -140,7 +140,7 @@ Browser (wss://f.tru.watch:9086)
          │
          ▼ (plain WebSocket)
     ┌─────────┐
-    │  NATS   │  Port 9086 (no_tls: true)
+    │  NATS   │  Port 443 (no_tls: true)
     │ Server  │  JetStream enabled
     └─────────┘
 ```
