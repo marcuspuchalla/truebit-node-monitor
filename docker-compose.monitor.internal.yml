@@ -1,11 +1,11 @@
-# TrueBit Node Monitor - Coolify Deployment
+# TrueBit Node Monitor - Internal Federation (Same Server as NATS)
 #
-# This is the main docker-compose file for deploying the monitor via Coolify.
-# It connects to the public federation server at wss://f.tru.watch
+# Use this if you're running the NATS federation server on the same server.
+# This uses the internal Docker network for faster communication.
 #
-# After deployment:
-#   1. Go to the Federation page in the UI
-#   2. Click "Enable Federation" to start sharing anonymized statistics
+# Prerequisites:
+#   - NATS server deployed via deploy/docker-compose.federation.yml
+#   - Both containers on the 'truebit-federation-network'
 
 services:
   monitor:
@@ -18,6 +18,7 @@ services:
       - "8090"
     networks:
       - coolify
+      - truebit-federation-network
     labels:
       - "traefik.docker.network=coolify"
     environment:
@@ -28,10 +29,8 @@ services:
       - DOCKER_SOCKET_PATH=/var/run/docker.sock
       - DB_PATH=/app/data/truebit-monitor.db
       - LOG_RETENTION_DAYS=30
-      # Federation: Connect to the public TrueBit federation network
-      # This allows your node to share anonymized statistics with the network
-      # Enable federation in the UI after deployment (Federation page)
-      - FEDERATION_NATS_URL=wss://f.tru.watch
+      # Internal connection to NATS on same Docker network
+      - FEDERATION_NATS_URL=ws://nats-seed:443
       # Optional: Set your own task data password. If not set, a random one is generated at startup.
       # - TASK_DATA_PASSWORD=your-secure-password-here
     volumes:
@@ -47,3 +46,6 @@ volumes:
 networks:
   coolify:
     external: true
+  truebit-federation-network:
+    external: true
+    name: truebit-federation-network
