@@ -227,7 +227,7 @@ docker compose -f docker-compose.aggregator.yml up -d
 | `CONTAINER_NAME` | `runner-node` | Name of TrueBit node container |
 | `DB_PATH` | `/app/data/truebit-monitor.db` | Database file path |
 | `LOG_RETENTION_DAYS` | `30` | Days to keep log history |
-| `FEDERATION_NATS_URL` | `wss://f.tru.watch:9086` | NATS server URL |
+| `FEDERATION_NATS_URL` | `wss://f.tru.watch` | NATS server URL |
 | `ALLOWED_ORIGINS` | `*` | Allowed CORS origins |
 
 ### Security Configuration
@@ -319,7 +319,7 @@ curl -X POST http://localhost:8090/api/federation/disable
                                    │ Federation (optional, WSS)
                                    ▼
                     ┌──────────────────────────────┐
-                    │ NATS Server (f.tru.watch:9086) │
+                    │    NATS Server (f.tru.watch)   │
                     └──────────────┬───────────────┘
                                    │
                     ┌──────────────▼───────────────┐

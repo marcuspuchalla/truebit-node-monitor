@@ -7,7 +7,7 @@ This document outlines the implementation plan for a centralized aggregation sys
 ## Current State
 
 ### What We Have
-- **NATS Server**: Running at `wss://f.tru.watch:9086`
+- **NATS Server**: Running at `wss://f.tru.watch`
 - **Client Nodes**: Multiple TrueBit Monitor instances connecting as leaf nodes
 - **Message Types**: `task_received`, `task_completed`, `heartbeat`
 - **Anonymization**: SHA256 hashing, timestamp rounding, metrics bucketing
@@ -87,7 +87,7 @@ This is the **primary structured data source** already being read by `eventdb-re
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
-│                         NATS Server (f.tru.watch:9086)                  │
+│                          NATS Server (f.tru.watch)                      │
 │                                                                         │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────────┐  │
 │  │ truebit.    │  │ truebit.    │  │ truebit.    │  │ truebit.      │  │

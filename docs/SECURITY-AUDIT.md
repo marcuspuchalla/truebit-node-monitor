@@ -210,7 +210,7 @@ function isRateLimited(nodeId: string): boolean {
 
 **Issue**: Default NATS server hardcoded in source code:
 ```typescript
-const DEFAULT_NATS_SERVER = 'wss://f.tru.watch:9086';
+const DEFAULT_NATS_SERVER = 'wss://f.tru.watch';
 ```
 
 **Risk**: If domain is compromised, all nodes default to malicious server.

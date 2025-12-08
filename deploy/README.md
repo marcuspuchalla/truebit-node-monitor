@@ -5,7 +5,8 @@ NATS message broker with WebSocket support for TrueBit Monitor Federation, deplo
 ## Overview
 
 - **NATS Version**: 2.10-alpine
-- **WebSocket Port**: 9086 (with TLS via Traefik)
+- **External URL**: wss://f.tru.watch (standard HTTPS port 443)
+- **Internal Port**: 443 (WebSocket, no TLS - Traefik handles TLS)
 - **TCP Port**: 4222 (internal)
 - **HTTP Monitoring**: 8222 (internal)
 - **JetStream**: Enabled
@@ -13,36 +14,9 @@ NATS message broker with WebSocket support for TrueBit Monitor Federation, deplo
 
 ## Coolify Configuration
 
-### 1. Update Traefik Proxy Configuration
+No Traefik configuration changes required - uses standard HTTPS entrypoint.
 
-Go to **Server → Proxy → Configuration** and add the custom entrypoint to Traefik's command section:
-
-```yaml
-command:
-  # ... existing commands ...
-  - '--entrypoints.natsws.address=:9086'
-```
-
-### 2. Expose Port 9086 in Traefik
-
-In the same Traefik configuration, add port 9086 to the ports section:
-
-```yaml
-ports:
-  - '80:80'
-  - '443:443'
-  - '443:443/udp'
-  - '8080:8080'
-  - '9086:9086'    # <-- Add this line
-```
-
-### 3. Restart Traefik Proxy
-
-After making changes, restart the Traefik proxy:
-- Go to **Server → Proxy**
-- Click **Restart**
-
-### 4. Deploy NATS Service
+### Deploy NATS Service
 
 1. Go to **Projects** → Create new project or select existing
 2. Click **+ New** → **Docker Compose**
@@ -58,7 +32,7 @@ After making changes, restart the Traefik proxy:
 ### Test TLS Certificate
 
 ```bash
-openssl s_client -connect f.tru.watch:9086 -servername f.tru.watch </dev/null 2>&1 | head -20
+openssl s_client -connect f.tru.watch:443 -servername f.tru.watch </dev/null 2>&1 | head -20
 ```
 
 ### Test WebSocket Connection
@@ -69,7 +43,7 @@ curl -s --http1.1 -m 5 \
   -H "Upgrade: websocket" \
   -H "Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==" \
   -H "Sec-WebSocket-Version: 13" \
-  https://f.tru.watch:9086 -i | head -10
+  https://f.tru.watch -i | head -10
 ```
 
 Expected response:
@@ -89,7 +63,7 @@ docker exec truebit-federation-nats wget -qO- http://localhost:8222/healthz
 
 | Protocol | URL | Use Case |
 |----------|-----|----------|
-| WSS (TLS) | `wss://f.tru.watch:9086` | Browser/Frontend |
+| WSS (TLS) | `wss://f.tru.watch` | Browser/Frontend |
 | NATS TCP | `nats://localhost:4222` | Internal services |
 
 ## NATS Configuration
@@ -100,7 +74,7 @@ The inline configuration creates:
 port: 4222           # TCP client port
 http_port: 8222      # HTTP monitoring
 websocket {
-  port: 443          # WebSocket port (internal, Traefik routes 9086 -> 443)
+  port: 443          # WebSocket port (internal, Traefik routes 443 -> 443)
   no_tls: true       # TLS handled by Traefik
 }
 jetstream {
@@ -120,21 +94,16 @@ docker network inspect coolify | grep truebit-federation-nats
 
 ### 404 Not Found
 
-Traefik entrypoint not configured. Check Traefik has `--entrypoints.natsws.address=:9086`.
-
-### Connection Refused on Port 9086
-
-1. Check Traefik ports include 9086
-2. Restart Traefik proxy
+Check that the domain is correctly configured and DNS points to your server.
 
 ## Architecture
 
 ```
-Browser (wss://f.tru.watch:9086)
+Browser (wss://f.tru.watch)
          │
          ▼
     ┌─────────┐
-    │ Traefik │  Port 9086 (TLS termination)
+    │ Traefik │  Port 443 (TLS termination)
     │  Proxy  │  Let's Encrypt certificate
     └────┬────┘
          │
@@ -144,12 +113,3 @@ Browser (wss://f.tru.watch:9086)
     │ Server  │  JetStream enabled
     └─────────┘
 ```
-
-## Port Allocation
-
-To avoid conflicts with other NATS instances:
-
-| Service | WebSocket Port |
-|---------|----------------|
-| Other NATS | 9085 |
-| TrueBit Federation | 9086 |

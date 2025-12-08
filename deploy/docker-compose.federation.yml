@@ -2,23 +2,10 @@
 # TrueBit Federation NATS Server
 # =============================================================================
 #
-# Standard NATS Ports:
-#   4222 - Client connections (TCP)
-#   8222 - HTTP monitoring
-#   443  - WebSocket (no TLS internally, Traefik handles TLS)
+# External: wss://f.tru.watch (standard HTTPS port 443)
+# Internal: ws://nats-seed:443 via coolify network
 #
-# External access:
-#   wss://f.tru.watch:9086 -> Traefik (TLS on port 9086) -> container:443
-#
-# Traefik Configuration Required:
-#   Add to Traefik proxy command section in Coolify:
-#     - '--entrypoints.natsws.address=:9086'
-#   Add to Traefik ports:
-#     - '9086:9086'
-#
-# NOTE: We use a dedicated port (9086) with HTTP router for WebSocket.
-# This ensures proper WebSocket upgrade handling and avoids HTTP/2 ALPN
-# negotiation issues with Firefox and iOS Safari.
+# No Traefik configuration changes required - uses standard HTTPS entrypoint.
 # =============================================================================
 
 services:
@@ -57,10 +44,9 @@ services:
       - traefik.enable=true
       - traefik.docker.network=coolify
 
-      # WebSocket router (wss://f.tru.watch:9086)
-      # Uses dedicated entrypoint to avoid HTTP/2 ALPN issues
+      # WebSocket router (wss://f.tru.watch)
       - traefik.http.routers.truebit-nats-ws.rule=Host(`f.tru.watch`)
-      - traefik.http.routers.truebit-nats-ws.entrypoints=natsws
+      - traefik.http.routers.truebit-nats-ws.entrypoints=https
       - traefik.http.routers.truebit-nats-ws.tls=true
       - traefik.http.routers.truebit-nats-ws.tls.certresolver=letsencrypt
       - traefik.http.routers.truebit-nats-ws.service=truebit-nats-ws

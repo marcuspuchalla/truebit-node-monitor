@@ -6,7 +6,7 @@ A standalone service that collects anonymized statistics from all TrueBit Monito
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
-│                     NATS Server (f.tru.watch:9086)                  │
+│                       NATS Server (f.tru.watch)                     │
 │                                                                     │
 │  ┌──────────────────────────────────────────────────────────────┐  │
 │  │                  Federation Aggregator                        │  │
@@ -57,7 +57,7 @@ cd federation-aggregator
 npm install
 
 # Set environment variables
-export NATS_URL=wss://f.tru.watch:9086
+export NATS_URL=wss://f.tru.watch
 export DB_PATH=/data/aggregator.db
 
 # Run
@@ -68,7 +68,7 @@ npm start
 
 | Environment Variable | Default | Description |
 |---------------------|---------|-------------|
-| `NATS_URL` | `wss://f.tru.watch:9086` | NATS server URL |
+| `NATS_URL` | `wss://f.tru.watch` | NATS server URL |
 | `DB_PATH` | `/data/aggregator.db` | SQLite database path |
 | `PUBLISH_INTERVAL` | `30000` | Stats publish interval (ms) |
 | `RETENTION_DAYS` | `30` | Data retention period |
@@ -121,7 +121,7 @@ The aggregator uses SQLite with the following tables:
 
 ## Deployment Checklist
 
-1. [ ] NATS server is running at `wss://f.tru.watch:9086`
+1. [ ] NATS server is running at `wss://f.tru.watch`
 2. [ ] Deploy aggregator on same server as NATS (or with network access)
 3. [ ] Update TrueBit Monitor nodes to subscribe to stats (already done in code)
 4. [ ] Verify stats appear in Monitor UI under "Network" page
