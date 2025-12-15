@@ -7,41 +7,59 @@ import LogsView from '../views/LogsView.vue';
 import FederationView from '../views/FederationView.vue';
 import AboutView from '../views/AboutView.vue';
 
+// Extend route meta type
+declare module 'vue-router' {
+  interface RouteMeta {
+    requiresAuth?: boolean;
+    title?: string;
+  }
+}
+
 const routes: RouteRecordRaw[] = [
+  // Public routes - no auth required
   {
     path: '/',
     name: 'federation',
-    component: FederationView
-  },
-  {
-    path: '/dashboard',
-    name: 'dashboard',
-    component: Dashboard
-  },
-  {
-    path: '/tasks',
-    name: 'tasks',
-    component: TasksView
-  },
-  {
-    path: '/tasks/:id',
-    name: 'task-detail',
-    component: TaskDetail
-  },
-  {
-    path: '/invoices',
-    name: 'invoices',
-    component: InvoicesView
-  },
-  {
-    path: '/logs',
-    name: 'logs',
-    component: LogsView
+    component: FederationView,
+    meta: { requiresAuth: false, title: 'Network' }
   },
   {
     path: '/about',
     name: 'about',
-    component: AboutView
+    component: AboutView,
+    meta: { requiresAuth: false, title: 'About' }
+  },
+
+  // Protected routes - auth required
+  {
+    path: '/dashboard',
+    name: 'dashboard',
+    component: Dashboard,
+    meta: { requiresAuth: true, title: 'Dashboard' }
+  },
+  {
+    path: '/tasks',
+    name: 'tasks',
+    component: TasksView,
+    meta: { requiresAuth: true, title: 'Tasks' }
+  },
+  {
+    path: '/tasks/:id',
+    name: 'task-detail',
+    component: TaskDetail,
+    meta: { requiresAuth: true, title: 'Task Detail' }
+  },
+  {
+    path: '/invoices',
+    name: 'invoices',
+    component: InvoicesView,
+    meta: { requiresAuth: true, title: 'Invoices' }
+  },
+  {
+    path: '/logs',
+    name: 'logs',
+    component: LogsView,
+    meta: { requiresAuth: true, title: 'Logs' }
   }
 ];
 

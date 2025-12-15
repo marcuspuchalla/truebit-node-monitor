@@ -1,7 +1,13 @@
 <template>
   <div class="min-h-screen bg-gray-50">
-    <!-- Preloader -->
+    <!-- Preloader - only shows during initial load -->
     <Preloader />
+
+    <!-- Auth Modal - shows when accessing protected routes without auth -->
+    <AuthModal
+      :show="showAuthModal"
+      @authenticated="onAuthenticated"
+    />
 
     <nav class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -24,28 +30,48 @@
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 :class="$route.name === 'dashboard' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
-                Dashboard
+                <span class="flex items-center gap-1">
+                  Dashboard
+                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                  </svg>
+                </span>
               </router-link>
               <router-link
                 to="/tasks"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 :class="$route.name === 'tasks' || $route.name === 'task-detail' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
-                Tasks
+                <span class="flex items-center gap-1">
+                  Tasks
+                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                  </svg>
+                </span>
               </router-link>
               <router-link
                 to="/invoices"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 :class="$route.name === 'invoices' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
-                Invoices
+                <span class="flex items-center gap-1">
+                  Invoices
+                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                  </svg>
+                </span>
               </router-link>
               <router-link
                 to="/logs"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 :class="$route.name === 'logs' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
-                Logs
+                <span class="flex items-center gap-1">
+                  Logs
+                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                  </svg>
+                </span>
               </router-link>
               <router-link
                 to="/about"
@@ -56,7 +82,19 @@
               </router-link>
             </div>
           </div>
-          <div class="flex items-center">
+          <div class="flex items-center gap-3">
+            <!-- Auth status indicator -->
+            <button
+              v-if="isAuthenticated"
+              @click="handleLogout"
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors cursor-pointer"
+              title="Click to logout"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 mr-1.5">
+                <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+              </svg>
+              Authenticated
+            </button>
             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
               <span class="w-2 h-2 rounded-full mr-1.5 bg-green-500"></span>
               Connected
@@ -73,37 +111,46 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import Preloader from './components/Preloader.vue';
+import AuthModal from './components/AuthModal.vue';
 import { usePreloader } from './composables/usePreloader';
-import { useNodeStore } from './stores/node';
-import { useTasksStore } from './stores/tasks';
-import { useInvoicesStore } from './stores/invoices';
+import { useFederationStore } from './stores/federation';
 
-const { setProgress, checkSessionAuth } = usePreloader();
-const nodeStore = useNodeStore();
-const tasksStore = useTasksStore();
-const invoicesStore = useInvoicesStore();
+const route = useRoute();
+const router = useRouter();
+const { setProgress, checkStoredAuth, isAuthenticated, logout } = usePreloader();
+const federationStore = useFederationStore();
+
+// Show auth modal when accessing protected routes without auth
+const showAuthModal = computed(() => {
+  return route.meta.requiresAuth === true && !isAuthenticated.value;
+});
+
+// Handle successful authentication
+const onAuthenticated = () => {
+  // Auth modal will hide automatically since isAuthenticated becomes true
+};
+
+// Handle logout
+const handleLogout = () => {
+  logout();
+  // Redirect to home if on a protected route
+  if (route.meta.requiresAuth) {
+    router.push('/');
+  }
+};
 
 onMounted(async () => {
   setProgress(10);
 
-  // Load node status
-  await nodeStore.fetchStatus();
-  setProgress(40);
+  // Check if user was already authenticated
+  await checkStoredAuth();
+  setProgress(50);
 
-  // Load tasks
-  await tasksStore.fetchTasks();
-  setProgress(70);
-
-  // Load invoices
-  await invoicesStore.fetchInvoices();
-  setProgress(90);
-
-  // Complete loading - this will show the password form
+  // Initialize federation for public network stats
+  await federationStore.initialize();
   setProgress(100);
-
-  // Check if user was already authenticated in this session
-  await checkSessionAuth();
 });
 </script>
