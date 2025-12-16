@@ -9,6 +9,38 @@ const showPreloader = ref(true);
 const progress = ref(0);
 const loadingComplete = ref(false);
 
+// Hash password with challenge using Web Crypto API
+async function hashWithChallenge(challenge: string, password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(challenge + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Challenge-response authentication
+async function authenticateWithChallenge(password: string): Promise<boolean> {
+  // Step 1: Get challenge from server
+  const challengeResponse = await fetch('/api/auth/challenge');
+  if (!challengeResponse.ok) {
+    throw new Error('Failed to get authentication challenge');
+  }
+  const { challengeId, challenge } = await challengeResponse.json();
+
+  // Step 2: Hash password with challenge (password never sent over network)
+  const hash = await hashWithChallenge(challenge, password);
+
+  // Step 3: Send hash to server for verification
+  const verifyResponse = await fetch('/api/auth/verify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ challengeId, hash })
+  });
+
+  const data = await verifyResponse.json();
+  return verifyResponse.ok && data.success;
+}
+
 const hidePreloader = (): void => {
   showPreloader.value = false;
 };
@@ -30,15 +62,9 @@ const authenticate = async (password: string): Promise<boolean> => {
   authError.value = '';
 
   try {
-    const response = await fetch('/api/auth/verify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password })
-    });
+    const success = await authenticateWithChallenge(password);
 
-    const data = await response.json();
-
-    if (response.ok && data.success) {
+    if (success) {
       isAuthenticated.value = true;
       // Store in localStorage so user doesn't need to re-enter
       // This is "strictly necessary" storage for authentication - no cookie consent needed
@@ -46,7 +72,7 @@ const authenticate = async (password: string): Promise<boolean> => {
       localStorage.setItem('app_password', password);
       return true;
     } else {
-      authError.value = data.message || 'Invalid password';
+      authError.value = 'Invalid password';
       return false;
     }
   } catch (error) {
@@ -61,17 +87,11 @@ const checkStoredAuth = async (): Promise<boolean> => {
   const storedPassword = localStorage.getItem('app_password');
 
   if (wasAuthenticated === 'true' && storedPassword) {
-    // Verify the password is still valid
+    // Verify the password is still valid using challenge-response
     try {
-      const response = await fetch('/api/auth/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: storedPassword })
-      });
+      const success = await authenticateWithChallenge(storedPassword);
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (success) {
         isAuthenticated.value = true;
         return true;
       } else {

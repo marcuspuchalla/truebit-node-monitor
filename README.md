@@ -2,26 +2,58 @@
 
 A privacy-first monitoring dashboard for TrueBit computation nodes.
 
-## Disclaimer
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
+[![Docker](https://img.shields.io/badge/docker-%3E%3D20.10-blue)](https://www.docker.com/)
+
+## Important Notices
 
 **USE AT YOUR OWN RISK**: This software is provided "as is" without warranties. The authors are not responsible for any damages or losses.
 
-**NOT AFFILIATED WITH TRUEBIT**: This is an independent, community-developed tool and is not officially associated with TrueBit Foundation or any official TrueBit entities.
+**NOT AFFILIATED WITH TRUEBIT**: This is an independent, community-developed tool. It is not officially associated with TrueBit Foundation or any TrueBit entities.
+
+## What is TrueBit?
+
+[TrueBit](https://truebit.io/) is a decentralized computation protocol that enables trustless off-chain computation for Ethereum and other blockchains. Node operators run "solver" or "verifier" nodes that:
+
+- **Receive tasks**: Computation requests from smart contracts
+- **Execute computations**: Run WebAssembly code off-chain
+- **Submit results**: Return computation results on-chain
+- **Earn rewards**: Receive payment via invoices for completed work
+
+This monitor helps node operators track their node's activity, tasks, and earnings in real-time.
 
 ## Features
 
-- **Real-time Monitoring**: Track node activity, tasks, and invoices
-- **Privacy-First**: Optional federation with strong privacy guarantees
-- **Easy Deployment**: Docker-based with multiple deployment options
+- **Real-time Dashboard**: Monitor tasks, invoices, and node status
+- **Task History**: View completed tasks with execution metrics
+- **Invoice Tracking**: Track earnings and payment history
+- **Log Viewer**: Search and filter node logs
+- **Federation**: Optional anonymized network statistics sharing
+- **Privacy-First**: Strong privacy guarantees for federation data
+
+## Prerequisites
+
+- **Docker**: Version 20.10 or higher
+- **Docker Compose**: Version 2.0 or higher
+- **TrueBit Node**: Running `runner-node` container
+- **Operating System**: Linux, macOS, or Windows with WSL2
 
 ## Quick Start
 
-### Prerequisites
+### 1. Create Docker Network (if needed)
 
-- Docker and Docker Compose
-- TrueBit node running (`runner-node` container)
+The monitor needs to connect to the same network as your TrueBit node:
 
-### Deploy
+```bash
+# Check if the network exists
+docker network ls | grep truebit
+
+# If not, create it (or use your TrueBit node's network name)
+docker network create truebit_runner_node_default
+```
+
+### 2. Deploy the Monitor
 
 ```bash
 git clone https://github.com/marcuspuchalla/truebit-node-monitor.git
@@ -29,37 +61,67 @@ cd truebit-node-monitor
 docker compose -f docker-compose.standalone.yml up -d
 ```
 
-Access the dashboard at `http://localhost:8090`
+### 3. Get Your Password
 
-### Get Your Password
-
-Task data is password-protected. Find the auto-generated password in the logs:
+Dashboard access is password-protected. Find the auto-generated password:
 
 ```bash
-docker logs truebit-node-monitor | grep "🔑"
+docker logs truebit-node-monitor 2>&1 | grep -A1 "Password"
 ```
+
+### 4. Access the Dashboard
+
+Open `http://localhost:8090` in your browser.
+
+## Security Warning
+
+**Docker Socket Access**: This application requires access to the Docker socket to read container logs. The socket is mounted read-only (`:ro`), but be aware:
+
+- The container can list and inspect other containers
+- The container can read logs from other containers
+- This is necessary for monitoring functionality
+
+For maximum security:
+- Run in an isolated environment
+- Use HTTPS in production
+- Set strong passwords via environment variables
+- Review the source code before deployment
 
 ## Deployment Options
 
 | File | Use Case |
 |------|----------|
-| `docker-compose.standalone.yml` | Basic deployment on same server as TrueBit node |
-| `docker-compose.https.yml` | With automatic HTTPS via Traefik + Let's Encrypt |
+| `docker-compose.standalone.yml` | Basic deployment (same server as TrueBit node) |
+| `docker-compose.https.yml` | Production with HTTPS (Traefik + Let's Encrypt) |
 | `docker-compose.monitor.yml` | Coolify deployment |
 
-### HTTPS Deployment
+### Standalone Deployment
 
 ```bash
+docker compose -f docker-compose.standalone.yml up -d
+```
+
+### HTTPS Deployment (Production)
+
+```bash
+# Configure environment
 cp .env.example .env
-# Edit .env: set DOMAIN and ACME_EMAIL
+nano .env  # Set DOMAIN and ACME_EMAIL
+
+# Deploy
 docker compose -f docker-compose.https.yml up -d
 ```
 
 ### Coolify Deployment
 
-1. Create new service from Docker Compose
-2. Connect to this repository
-3. Select `docker-compose.monitor.yml`
+1. Create a new service in Coolify
+2. Select "Docker Compose" as deployment type
+3. Connect your GitHub repository
+4. Select `docker-compose.monitor.yml`
+5. Add required environment variables in Coolify dashboard
+6. Deploy
+
+**Note**: Ensure Docker socket access is enabled in Coolify settings.
 
 ## Configuration
 
@@ -68,45 +130,64 @@ docker compose -f docker-compose.https.yml up -d
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `CONTAINER_NAME` | `runner-node` | TrueBit node container name |
+| `TASK_DATA_PASSWORD` | (auto-generated) | Dashboard access password |
+| `API_KEY` | (none) | API authentication key |
 | `FEDERATION_NATS_URL` | `wss://f.tru.watch` | Federation server URL |
-| `TASK_DATA_PASSWORD` | (auto-generated) | Password for task data access |
-| `API_KEY` | (none) | Enable API authentication |
+| `HTTPS_ENABLED` | `false` | Enable HTTPS security headers |
+| `LOG_RETENTION_DAYS` | `30` | Days to keep log entries |
 
-### Security Recommendations
+See [.env.example](.env.example) for all options.
 
-For production:
+### Custom Container Name
 
-1. **Set `API_KEY`** to protect the API
-2. **Set `TASK_DATA_PASSWORD`** or note the auto-generated one from logs
-3. **Use HTTPS** via `docker-compose.https.yml` or a reverse proxy
+If your TrueBit node uses a different container name:
+
+```yaml
+environment:
+  - CONTAINER_NAME=my-truebit-node
+```
+
+### Custom Network
+
+If your TrueBit node uses a different network:
+
+```yaml
+networks:
+  truebit-network:
+    external: true
+    name: your-network-name
+```
 
 ## Federation
 
-Federation allows sharing anonymized network statistics. It's opt-in and disabled by default.
+Federation allows sharing **anonymized** statistics with other node operators. It's opt-in and disabled by default.
 
-### Enable via UI
+### Enable Federation
 
-Go to **Federation** page → Click **Enable Federation**
+**Via UI**: Navigate to the Network page (home) - federation connects automatically.
 
-### Enable via API
-
+**Via API**:
 ```bash
 curl -X POST http://localhost:8090/api/federation/enable
 ```
 
 ### Privacy Guarantees
 
-When federation is enabled:
+When federation is enabled, your data is anonymized before sharing:
 
 | Never Shared | Shared (Anonymized) |
 |--------------|---------------------|
-| Wallet addresses | Hashed task IDs |
+| Wallet addresses | Hashed task IDs (with per-node salt) |
 | Private keys | Task type categories |
-| Task input/output | Bucketed metrics |
+| Task input/output | Bucketed metrics (ranges, not exact values) |
 | Your IP address | Node online status |
 | Exact values | Aggregated statistics |
 
-All identifiers are SHA256 hashed with a per-node salt. Metrics are bucketed into ranges. Timestamps are rounded to 5-minute intervals.
+**Technical Details**:
+- All identifiers are SHA-256 hashed with a unique per-node salt
+- Metrics are bucketed into ranges (e.g., "100-500ms" instead of "342ms")
+- Timestamps are rounded to 5-minute intervals
+- Messages are validated to ensure no sensitive data leaks
 
 ## Architecture
 
@@ -115,8 +196,9 @@ All identifiers are SHA256 hashed with a per-node salt. Metrics are bucketed int
 │                    Your Server                          │
 │  ┌─────────────────┐     ┌─────────────────────────┐   │
 │  │  TrueBit Node   │────>│    TrueBit Monitor      │   │
-│  │  (runner-node)  │logs │  Backend + Frontend     │   │
-│  └─────────────────┘     │  SQLite Database        │   │
+│  │  (runner-node)  │logs │  Backend (Express.js)   │   │
+│  └─────────────────┘     │  Frontend (Vue.js)      │   │
+│                          │  Database (SQLite)      │   │
 │                          └───────────┬─────────────┘   │
 └──────────────────────────────────────┼─────────────────┘
                                        │ Federation (opt-in)
@@ -127,42 +209,134 @@ All identifiers are SHA256 hashed with a per-node salt. Metrics are bucketed int
                           └────────────────────────┘
 ```
 
-## Development
-
-```bash
-# Backend
-cd backend && npm install && npm run dev
-
-# Frontend
-cd frontend && npm install && npm run dev
-```
-
 ## Troubleshooting
 
 ### Monitor can't find TrueBit node
 
 ```bash
-# Verify runner-node is running
+# Check if runner-node is running
 docker ps | grep runner-node
 
-# Check monitor logs
-docker logs truebit-node-monitor
+# Check network connectivity
+docker network inspect truebit_runner_node_default
+
+# Verify container name matches
+docker logs truebit-node-monitor 2>&1 | grep "container"
+```
+
+### Network doesn't exist
+
+```bash
+# Create the network
+docker network create truebit_runner_node_default
+
+# Or find your TrueBit node's network
+docker inspect runner-node --format='{{range $k, $v := .NetworkSettings.Networks}}{{$k}}{{end}}'
+```
+
+### Permission denied for Docker socket
+
+```bash
+# Check socket permissions
+ls -la /var/run/docker.sock
+
+# On Linux, add user to docker group
+sudo usermod -aG docker $USER
 ```
 
 ### Federation not connecting
 
 ```bash
-# Check status
+# Check federation status
 curl http://localhost:8090/api/federation/status
 
-# Re-enable
+# Re-enable federation
 curl -X POST http://localhost:8090/api/federation/enable
 ```
 
-## License
+### Database Issues
 
-MIT License - See [LICENSE](LICENSE) file
+```bash
+# Check database location
+docker exec truebit-node-monitor ls -la /app/data/
+
+# Backup database
+docker cp truebit-node-monitor:/app/data/truebit-monitor.db ./backup.db
+```
+
+## Development
+
+### Prerequisites
+
+- Node.js 18+
+- npm 9+
+
+### Setup
+
+```bash
+# Clone repository
+git clone https://github.com/marcuspuchalla/truebit-node-monitor.git
+cd truebit-node-monitor
+
+# Install dependencies
+npm install
+
+# Backend development
+cd backend && npm run dev
+
+# Frontend development (new terminal)
+cd frontend && npm run dev
+```
+
+### Running Tests
+
+```bash
+cd backend && npm test
+```
+
+## Backup & Recovery
+
+### Backup Database
+
+```bash
+docker cp truebit-node-monitor:/app/data/truebit-monitor.db ./backup-$(date +%Y%m%d).db
+```
+
+### Restore Database
+
+```bash
+docker cp ./backup.db truebit-node-monitor:/app/data/truebit-monitor.db
+docker restart truebit-node-monitor
+```
+
+### Backup Federation Credentials
+
+Federation uses a unique node ID and salt. These are stored in the database. To maintain your node identity across reinstalls, backup your database or note the credentials from:
+
+```bash
+curl http://localhost:8090/api/federation/settings
+```
 
 ## Contributing
 
-Contributions welcome! Please submit issues and pull requests on GitHub.
+Contributions are welcome! Please:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `cd backend && npm test`
+5. Submit a pull request
+
+## Security
+
+To report security vulnerabilities, please email security issues privately rather than opening public issues. See [SECURITY.md](SECURITY.md) for details.
+
+## License
+
+MIT License - See [LICENSE](LICENSE) file.
+
+## Links
+
+- [TrueBit Official Website](https://truebit.io/)
+- [TrueBit Documentation](https://docs.truebit.io/)
+- [Report Issues](https://github.com/marcuspuchalla/truebit-node-monitor/issues)

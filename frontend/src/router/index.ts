@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router';
+import { ref } from 'vue';
 import Dashboard from '../views/Dashboard.vue';
 import TasksView from '../views/TasksView.vue';
 import TaskDetail from '../views/TaskDetail.vue';
@@ -6,6 +7,7 @@ import InvoicesView from '../views/InvoicesView.vue';
 import LogsView from '../views/LogsView.vue';
 import FederationView from '../views/FederationView.vue';
 import AboutView from '../views/AboutView.vue';
+import ProtectedRoute from '../views/ProtectedRoute.vue';
 
 // Extend route meta type
 declare module 'vue-router' {
@@ -13,6 +15,15 @@ declare module 'vue-router' {
     requiresAuth?: boolean;
     title?: string;
   }
+}
+
+// Shared auth state - will be synced with usePreloader
+export const isAuthenticated = ref(false);
+
+// Check localStorage on module load
+const storedAuth = localStorage.getItem('app_authenticated');
+if (storedAuth === 'true') {
+  isAuthenticated.value = true;
 }
 
 const routes: RouteRecordRaw[] = [
@@ -34,32 +45,37 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/dashboard',
     name: 'dashboard',
-    component: Dashboard,
-    meta: { requiresAuth: true, title: 'Dashboard' }
+    component: ProtectedRoute,
+    meta: { requiresAuth: true, title: 'Dashboard' },
+    props: { component: Dashboard }
   },
   {
     path: '/tasks',
     name: 'tasks',
-    component: TasksView,
-    meta: { requiresAuth: true, title: 'Tasks' }
+    component: ProtectedRoute,
+    meta: { requiresAuth: true, title: 'Tasks' },
+    props: { component: TasksView }
   },
   {
     path: '/tasks/:id',
     name: 'task-detail',
-    component: TaskDetail,
-    meta: { requiresAuth: true, title: 'Task Detail' }
+    component: ProtectedRoute,
+    meta: { requiresAuth: true, title: 'Task Detail' },
+    props: (route) => ({ component: TaskDetail, id: route.params.id })
   },
   {
     path: '/invoices',
     name: 'invoices',
-    component: InvoicesView,
-    meta: { requiresAuth: true, title: 'Invoices' }
+    component: ProtectedRoute,
+    meta: { requiresAuth: true, title: 'Invoices' },
+    props: { component: InvoicesView }
   },
   {
     path: '/logs',
     name: 'logs',
-    component: LogsView,
-    meta: { requiresAuth: true, title: 'Logs' }
+    component: ProtectedRoute,
+    meta: { requiresAuth: true, title: 'Logs' },
+    props: { component: LogsView }
   }
 ];
 

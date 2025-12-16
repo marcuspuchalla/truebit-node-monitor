@@ -39,6 +39,25 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Persist database
       - monitor-data:/app/data
+    # Health check
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8090/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '1.0'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    # Security options
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   monitor-data:

@@ -55,6 +55,20 @@ const TASK_DATA_AUTH_ENABLED = true; // Always enabled - password is either from
 // Security: CSRF token (generated on startup, returned via /api/csrf-token)
 const CSRF_SECRET = crypto.randomBytes(32).toString('hex');
 
+// Security: Challenge-response auth - store active challenges with expiration
+const authChallenges = new Map<string, { challenge: string; expiresAt: number }>();
+const CHALLENGE_EXPIRY_MS = 60000; // 1 minute
+
+// Cleanup expired challenges periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, value] of authChallenges.entries()) {
+    if (value.expiresAt < now) {
+      authChallenges.delete(key);
+    }
+  }
+}, 30000); // Cleanup every 30 seconds
+
 // Helper function to hash node addresses for privacy
 function hashNodeAddress(address: string | undefined): string | null {
   if (!address) return null;
@@ -558,31 +572,78 @@ app.use('/api/invoices', createInvoicesRouter(db));
 app.use('/api/logs', createLogsRouter(db));
 // Federation route is registered in start() after client is created
 
-// App authentication endpoint - verifies the task data password for app access
-app.post('/api/auth/verify', express.json(), (req, res) => {
-  const { password } = req.body;
+// Challenge-response authentication endpoints
+// Step 1: Client requests a challenge
+app.get('/api/auth/challenge', (req, res) => {
+  // Generate a unique challenge ID and random challenge
+  const challengeId = crypto.randomBytes(16).toString('hex');
+  const challenge = crypto.randomBytes(32).toString('hex');
 
-  if (!password) {
-    return res.status(400).json({ success: false, message: 'Password required' });
-  }
+  // Store the challenge with expiration
+  authChallenges.set(challengeId, {
+    challenge,
+    expiresAt: Date.now() + CHALLENGE_EXPIRY_MS
+  });
 
-  if (password === TASK_DATA_PASSWORD) {
-    logAuditEvent('AUTH_SUCCESS', req, { type: 'app_login' });
-    return res.json({ success: true, message: 'Authentication successful' });
-  } else {
-    logAuditEvent('AUTH_FAILED', req, { type: 'app_login' });
-    return res.status(401).json({ success: false, message: 'Invalid password' });
-  }
+  res.json({ challengeId, challenge });
 });
 
-// Health check
-app.get('/health', (req, res) => {
+// Step 2: Client sends hash of (challenge + password)
+app.post('/api/auth/verify', express.json(), (req, res) => {
+  const { challengeId, hash } = req.body;
+
+  // Validate input
+  if (!challengeId || !hash) {
+    return res.status(400).json({ success: false, message: 'Challenge ID and hash required' });
+  }
+
+  // Get and validate the challenge
+  const challengeData = authChallenges.get(challengeId);
+  if (!challengeData) {
+    logAuditEvent('AUTH_FAILED', req, { type: 'app_login', reason: 'invalid_challenge' });
+    return res.status(401).json({ success: false, message: 'Invalid or expired challenge' });
+  }
+
+  // Check if challenge has expired
+  if (challengeData.expiresAt < Date.now()) {
+    authChallenges.delete(challengeId);
+    logAuditEvent('AUTH_FAILED', req, { type: 'app_login', reason: 'expired_challenge' });
+    return res.status(401).json({ success: false, message: 'Challenge expired' });
+  }
+
+  // Remove the challenge (one-time use)
+  authChallenges.delete(challengeId);
+
+  // Compute expected hash: SHA-256(challenge + password)
+  const expectedHash = crypto
+    .createHash('sha256')
+    .update(challengeData.challenge + TASK_DATA_PASSWORD)
+    .digest('hex');
+
+  // Compare hashes using timing-safe comparison
+  const hashBuffer = Buffer.from(hash, 'hex');
+  const expectedBuffer = Buffer.from(expectedHash, 'hex');
+
+  if (hashBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(hashBuffer, expectedBuffer)) {
+    logAuditEvent('AUTH_FAILED', req, { type: 'app_login', reason: 'invalid_hash' });
+    return res.status(401).json({ success: false, message: 'Invalid password' });
+  }
+
+  logAuditEvent('AUTH_SUCCESS', req, { type: 'app_login' });
+  return res.json({ success: true, message: 'Authentication successful' });
+});
+
+// Health check endpoints (both /health and /api/health for Docker health checks)
+const healthHandler = (req: express.Request, res: express.Response) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     docker: dockerClient.container ? 'connected' : 'disconnected'
   });
-});
+};
+
+app.get('/health', healthHandler);
+app.get('/api/health', healthHandler);
 
 // Static files and catch-all are set up in start() after all API routes
 

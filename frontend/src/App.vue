@@ -3,12 +3,6 @@
     <!-- Preloader - only shows during initial load -->
     <Preloader />
 
-    <!-- Auth Modal - shows when accessing protected routes without auth -->
-    <AuthModal
-      :show="showAuthModal"
-      @authenticated="onAuthenticated"
-    />
-
     <nav class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
@@ -111,31 +105,25 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Preloader from './components/Preloader.vue';
-import AuthModal from './components/AuthModal.vue';
 import { usePreloader } from './composables/usePreloader';
 import { useFederationStore } from './stores/federation';
+import { isAuthenticated } from './router';
 
 const route = useRoute();
 const router = useRouter();
-const { setProgress, checkStoredAuth, isAuthenticated, logout } = usePreloader();
+const { setProgress, checkStoredAuth } = usePreloader();
 const federationStore = useFederationStore();
-
-// Show auth modal when accessing protected routes without auth
-const showAuthModal = computed(() => {
-  return route.meta.requiresAuth === true && !isAuthenticated.value;
-});
-
-// Handle successful authentication
-const onAuthenticated = () => {
-  // Auth modal will hide automatically since isAuthenticated becomes true
-};
 
 // Handle logout
 const handleLogout = () => {
-  logout();
+  // Clear auth storage
+  localStorage.removeItem('app_authenticated');
+  localStorage.removeItem('app_password');
+  // Update shared auth state
+  isAuthenticated.value = false;
   // Redirect to home if on a protected route
   if (route.meta.requiresAuth) {
     router.push('/');
@@ -145,8 +133,11 @@ const handleLogout = () => {
 onMounted(async () => {
   setProgress(10);
 
-  // Check if user was already authenticated
-  await checkStoredAuth();
+  // Check if user was already authenticated and verify the password
+  const wasAuth = await checkStoredAuth();
+  if (wasAuth) {
+    isAuthenticated.value = true;
+  }
   setProgress(50);
 
   // Initialize federation for public network stats

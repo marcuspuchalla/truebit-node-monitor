@@ -1,10 +1,11 @@
 <template>
-  <transition name="fade">
-    <div v-if="show" class="auth-overlay">
-      <div class="auth-modal">
+  <div class="protected-route">
+    <!-- Show auth screen if not authenticated -->
+    <div v-if="!isAuthenticated" class="auth-screen">
+      <div class="auth-card">
         <div class="auth-content">
           <div class="lock-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-12 h-12">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
               <path fill-rule="evenodd" d="M12 1.5a5.25 5.25 0 00-5.25 5.25v3a3 3 0 00-3 3v6.75a3 3 0 003 3h10.5a3 3 0 003-3v-6.75a3 3 0 00-3-3v-3c0-2.9-2.35-5.25-5.25-5.25zm3.75 8.25v-3a3.75 3.75 0 10-7.5 0v3h7.5z" clip-rule="evenodd" />
             </svg>
           </div>
@@ -40,89 +41,114 @@
             <code>docker logs truebit-node-monitor | grep "key"</code>
           </p>
 
-          <button class="back-link" @click="goBack">
+          <router-link to="/" class="back-link">
             Back to Network Overview
-          </button>
+          </router-link>
         </div>
       </div>
     </div>
-  </transition>
+
+    <!-- Render the actual component when authenticated -->
+    <component v-else :is="component" v-bind="$attrs" />
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { usePreloader } from '../composables/usePreloader';
+import { ref, computed, onMounted, nextTick, type Component } from 'vue';
+import { useRoute } from 'vue-router';
+import { isAuthenticated } from '../router';
 
-const props = defineProps<{
-  show: boolean;
+defineProps<{
+  component: Component;
 }>();
 
-const emit = defineEmits<{
-  (e: 'authenticated'): void;
-}>();
-
-const router = useRouter();
 const route = useRoute();
-const { authenticate, authError } = usePreloader();
 
 const password = ref('');
 const isSubmitting = ref(false);
+const authError = ref('');
 const passwordInput = ref<HTMLInputElement | null>(null);
 
 const pageName = computed(() => {
   return route.meta.title || 'this page';
 });
 
-// Focus password input when modal opens
-watch(() => props.show, async (show) => {
-  if (show) {
+onMounted(async () => {
+  if (!isAuthenticated.value) {
     await nextTick();
     passwordInput.value?.focus();
   }
 });
 
-onMounted(async () => {
-  if (props.show) {
-    await nextTick();
-    passwordInput.value?.focus();
-  }
-});
+// Hash password with challenge using Web Crypto API
+async function hashWithChallenge(challenge: string, password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(challenge + password);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 async function handleSubmit() {
   if (!password.value || isSubmitting.value) return;
 
+  authError.value = '';
   isSubmitting.value = true;
-  const success = await authenticate(password.value);
-  isSubmitting.value = false;
 
-  if (success) {
-    emit('authenticated');
+  try {
+    // Step 1: Get challenge from server
+    const challengeResponse = await fetch('/api/auth/challenge');
+    if (!challengeResponse.ok) {
+      throw new Error('Failed to get authentication challenge');
+    }
+    const { challengeId, challenge } = await challengeResponse.json();
+
+    // Step 2: Hash password with challenge (password never sent over network)
+    const hash = await hashWithChallenge(challenge, password.value);
+
+    // Step 3: Send hash to server for verification
+    const verifyResponse = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeId, hash })
+    });
+
+    const data = await verifyResponse.json();
+
+    if (verifyResponse.ok && data.success) {
+      // Store auth in localStorage (store password for re-verification)
+      localStorage.setItem('app_authenticated', 'true');
+      localStorage.setItem('app_password', password.value);
+      // Update the shared auth state
+      isAuthenticated.value = true;
+    } else {
+      authError.value = data.message || 'Invalid password';
+    }
+  } catch (error) {
+    authError.value = 'Connection error. Please try again.';
+  } finally {
+    isSubmitting.value = false;
   }
-}
-
-function goBack() {
-  router.push('/');
 }
 </script>
 
 <style scoped>
-.auth-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(4px);
+.protected-route {
+  min-height: calc(100vh - 200px);
+}
+
+.auth-screen {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
-  padding: 1rem;
+  min-height: calc(100vh - 200px);
+  padding: 2rem;
 }
 
-.auth-modal {
+.auth-card {
   background: white;
   border-radius: 1rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
   padding: 2rem;
   max-width: 400px;
   width: 100%;
@@ -249,11 +275,8 @@ function goBack() {
 }
 
 .back-link {
-  background: none;
-  border: none;
   color: #6b7280;
   font-size: 0.875rem;
-  cursor: pointer;
   padding: 0.5rem;
   margin-top: 0.5rem;
   text-decoration: underline;
@@ -262,16 +285,5 @@ function goBack() {
 
 .back-link:hover {
   color: #3b82f6;
-}
-
-/* Fade transition */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s ease;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>
