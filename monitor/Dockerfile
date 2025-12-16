@@ -35,6 +35,9 @@ FROM node:18-alpine
 
 WORKDIR /app
 
+# Install su-exec for dropping privileges after fixing permissions
+RUN apk add --no-cache su-exec
+
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001 -G nodejs
@@ -53,8 +56,8 @@ COPY --from=frontend-builder /app/frontend/dist ./public
 COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
 
-# Create data directory for SQLite database with proper ownership
-RUN mkdir -p /app/data && chown -R nodejs:nodejs /app/data
+# Create data directory for SQLite database
+RUN mkdir -p /app/data
 
 # Change ownership of app directory
 RUN chown -R nodejs:nodejs /app
@@ -71,9 +74,6 @@ ENV HOST=0.0.0.0
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8090/api/health || exit 1
 
-# Switch to non-root user
-USER nodejs
-
-# Start the server with entrypoint script
+# Entrypoint runs as root to fix volume permissions, then drops to nodejs user
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 CMD ["node", "dist/index.js"]
