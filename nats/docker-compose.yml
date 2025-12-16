@@ -1,0 +1,43 @@
+# NATS Server for TrueBit Federation
+#
+# This runs the NATS messaging server that enables communication between
+# monitors and aggregators.
+#
+# Usage:
+#   docker compose up -d
+#
+# For production with TLS, mount your certificates:
+#   volumes:
+#     - ./certs:/etc/nats/certs:ro
+#
+# And update nats.conf to enable TLS in the websocket section.
+
+services:
+  nats:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: truebit-federation-nats
+    restart: unless-stopped
+    ports:
+      # Client connections
+      - "4222:4222"
+      # HTTP monitoring
+      - "8222:8222"
+      # WebSocket (TLS)
+      - "443:443"
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf:ro
+      # For production, mount TLS certificates:
+      # - ./certs:/etc/nats/certs:ro
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8222/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
