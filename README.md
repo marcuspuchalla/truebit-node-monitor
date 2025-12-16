@@ -2,7 +2,7 @@
 
 A community-built monitoring dashboard for TrueBit computation nodes.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-%3E%3D20.10-blue)](https://www.docker.com/)
 
@@ -350,7 +350,7 @@ To report security vulnerabilities, please email security issues privately rathe
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Links
 
