@@ -1,10 +1,29 @@
 # TrueBit Node Monitor
 
-A privacy-first monitoring dashboard for TrueBit computation nodes.
+A community-built monitoring dashboard for TrueBit computation nodes.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/docker-%3E%3D20.10-blue)](https://www.docker.com/)
+
+## What is this?
+
+The TrueBit Node Monitor is a community tool that provides visibility into the TrueBit network. It allows node operators to:
+
+- **Monitor your own node**: Track tasks, invoices, and performance metrics on your local dashboard
+- **See network-wide statistics**: View how many nodes are currently online and how many tasks have been processed across the network
+
+**Important**: Network statistics only include nodes that have this monitor installed and have opted into federation. The more node operators who install this tool, the more complete the network picture becomes.
+
+## How it Works
+
+This repository contains everything needed to run the monitoring system:
+
+1. **Node Monitor** (required): A single Docker container that runs alongside your TrueBit node on the same server. It reads logs from your `runner-node` container and provides a local web dashboard.
+
+2. **Federation** (optional): When enabled, your monitor connects to a central aggregation server (`f.tru.watch`) that collects anonymized statistics from all participating nodes. This is how we can display network-wide metrics like total online nodes and completed tasks.
+
+You only need to run one container - the Node Monitor. The federation server is already running and available for all monitors to connect to.
 
 ## Important Notices
 
@@ -20,8 +39,6 @@ A privacy-first monitoring dashboard for TrueBit computation nodes.
 - **Execute computations**: Run WebAssembly code off-chain
 - **Submit results**: Return computation results on-chain
 - **Earn rewards**: Receive payment via invoices for completed work
-
-This monitor helps node operators track their node's activity, tasks, and earnings in real-time.
 
 ## Features
 
