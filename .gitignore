@@ -22,8 +22,8 @@ logs/
 # Build outputs
 dist/
 build/
-public/
-frontend/dist/
+# Don't ignore frontend/public - it contains static assets like logo.png
+# public/
 
 # IDE
 .vscode/
