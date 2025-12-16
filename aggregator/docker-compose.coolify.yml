@@ -5,18 +5,20 @@
 # External clients connect via wss://f.tru.watch.
 #
 # Prerequisites:
-#   - NATS server must be running (deploy/docker-compose.federation.yml)
+#   - NATS server must be running (nats/docker-compose.coolify.yml)
 #
 # What it does:
 #   - Subscribes to: truebit.tasks.*, truebit.invoices.*, truebit.heartbeat
 #   - Publishes to: truebit.stats.aggregated (every 30 seconds)
+#
+# Domain: None needed - this is a backend service with no HTTP endpoints
 
 version: '3.8'
 
 services:
   aggregator:
     build:
-      context: ./federation-aggregator
+      context: .
       dockerfile: Dockerfile
     container_name: truebit-federation-aggregator
     restart: unless-stopped
