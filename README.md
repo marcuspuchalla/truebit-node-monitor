@@ -126,6 +126,32 @@ Most users only need the monitor above. If you're running your own federation ne
 - [TrueBit Official](https://truebit.io/) | [TrueBit Docs](https://docs.truebit.io/)
 - [Report Issues](https://github.com/marcuspuchalla/truebit-node-monitor/issues) | [Contributing](CONTRIBUTING.md) | [Security](SECURITY.md)
 
+## Screenshots
+
+### Network Overview
+Global network statistics and federation activity.
+![Network Overview](screenshots/network.png)
+
+### Dashboard
+Node status, task summaries, and recent activity.
+![Dashboard](screenshots/dashboard.png)
+
+### Tasks
+Complete task history with execution details.
+![Tasks](screenshots/tasks.png)
+
+### Invoices
+Payroll and invoice tracking.
+![Invoices](screenshots/invoices.png)
+
+### Logs
+Real-time log viewer with filtering.
+![Logs](screenshots/logs.png)
+
+### About
+Information and security notices.
+![About](screenshots/about.png)
+
 ## License
 
 [GNU General Public License v3.0](LICENSE)
