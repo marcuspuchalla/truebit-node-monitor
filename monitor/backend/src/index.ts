@@ -147,28 +147,28 @@ app.use(helmet({
   } : false
 }));
 
-// CORS configuration - strict by default
-// Same-origin requests (no Origin header) are always allowed
-// Cross-origin requests require explicit ALLOWED_ORIGINS configuration
+// CORS configuration
+// By default, allows all origins since the monitor is typically accessed from its own domain
+// and sensitive endpoints are protected by authentication.
+// Set ALLOWED_ORIGINS env var to restrict (comma-separated list of allowed origins)
 app.use(cors({
   origin: (origin, callback) => {
     // Allow requests with no origin (same-origin, mobile apps, curl, direct IP access)
     if (!origin) return callback(null, true);
 
-    // If no allowed origins configured, only same-origin is allowed
-    if (ALLOWED_ORIGINS.length === 0) {
-      console.warn(`[SECURITY] CORS blocked cross-origin request from: ${origin} (no ALLOWED_ORIGINS configured)`);
-      callback(new Error('Cross-origin requests not allowed'));
+    // If ALLOWED_ORIGINS is configured, use whitelist mode
+    if (ALLOWED_ORIGINS.length > 0) {
+      if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed.replace(/\/$/, '')))) {
+        callback(null, true);
+      } else {
+        console.warn(`[SECURITY] CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'));
+      }
       return;
     }
 
-    // Check if origin matches any explicitly allowed origin
-    if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed.replace(/\/$/, '')))) {
-      callback(null, true);
-    } else {
-      console.warn(`[SECURITY] CORS blocked origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
-    }
+    // Default: allow all origins (monitor is accessed from its own domain)
+    callback(null, true);
   },
   credentials: true
 }));
