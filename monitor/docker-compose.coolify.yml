@@ -28,6 +28,10 @@ services:
       - DOCKER_SOCKET_PATH=/var/run/docker.sock
       - DB_PATH=/app/data/truebit-monitor.db
       - LOG_RETENTION_DAYS=30
+      # Disable CSP for Coolify (it injects tracking scripts that would be blocked)
+      - CSP_DISABLED=true
+      # Enable HTTPS security features (Coolify provides HTTPS via Traefik)
+      - HTTPS_ENABLED=true
       # Federation: Connect to the public TrueBit federation network
       # This allows your node to share anonymized statistics with the network
       # Enable federation in the UI after deployment (Federation page)

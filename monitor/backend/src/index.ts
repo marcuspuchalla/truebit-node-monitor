@@ -112,11 +112,13 @@ function logAuditEvent(event: string, req: express.Request, details?: Record<str
   }
 }
 
-// Security Middleware - Helmet with CSP enabled
-// Disable HSTS and upgrade-insecure-requests when not behind HTTPS proxy
+// Security Middleware - Helmet with CSP
+// CSP can be disabled via CSP_DISABLED=true for environments that inject tracking scripts
 const isHttps = process.env.HTTPS_ENABLED === 'true';
+const cspDisabled = process.env.CSP_DISABLED === 'true';
+
 app.use(helmet({
-  contentSecurityPolicy: {
+  contentSecurityPolicy: cspDisabled ? false : {
     useDefaults: false, // Disable defaults to have full control
     directives: {
       defaultSrc: ["'self'"],
