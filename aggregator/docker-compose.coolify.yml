@@ -6,6 +6,7 @@
 #
 # Prerequisites:
 #   - NATS server must be running (nats/docker-compose.coolify.yml)
+#   - NATS_AUTH_TOKEN must be set to the same value as the NATS server
 #
 # What it does:
 #   - Subscribes to: truebit.tasks.*, truebit.invoices.*, truebit.heartbeat
@@ -26,6 +27,9 @@ services:
       - NODE_ENV=production
       # Connect to NATS via internal Docker network (both on same network)
       - NATS_URL=ws://nats-seed:443
+      # NATS Authentication - must match NATS server config
+      - NATS_USER=aggregator
+      - NATS_AGGREGATOR_PASSWORD=${NATS_AGGREGATOR_PASSWORD:?NATS_AGGREGATOR_PASSWORD is required}
       - DB_PATH=/data/aggregator.db
       - PUBLISH_INTERVAL=30000
       - RETENTION_DAYS=30

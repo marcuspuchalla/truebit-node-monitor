@@ -21,10 +21,16 @@ interface FederationMessage {
 
 interface AggregatorNatsClientOptions {
   servers?: string[];
+  token?: string;
+  user?: string;
+  pass?: string;
 }
 
 class AggregatorNatsClient {
   private servers: string[];
+  private token: string | undefined;
+  private user: string | undefined;
+  private pass: string | undefined;
   private nc: NatsConnection | null = null;
   private sc = StringCodec();
   private subscriptions: Subscription[] = [];
@@ -33,6 +39,9 @@ class AggregatorNatsClient {
 
   constructor(options: AggregatorNatsClientOptions = {}) {
     this.servers = options.servers || ['wss://f.tru.watch'];
+    this.token = options.token;
+    this.user = options.user;
+    this.pass = options.pass;
   }
 
   async connect(): Promise<boolean> {
@@ -47,7 +56,10 @@ class AggregatorNatsClient {
         reconnectTimeWait: 2000,
         pingInterval: 30000,
         maxPingOut: 3,
-        timeout: 30000 // 30 second connection timeout
+        timeout: 30000, // 30 second connection timeout
+        // Authentication
+        ...(this.token && { token: this.token }),
+        ...(this.user && this.pass && { user: this.user, pass: this.pass })
       });
 
       this.connected = true;

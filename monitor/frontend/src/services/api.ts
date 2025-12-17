@@ -11,6 +11,27 @@ const api: AxiosInstance = axios.create({
   }
 });
 
+// Protected endpoints that require authentication
+const PROTECTED_ENDPOINTS = ['/logs', '/audit-log'];
+
+// Request interceptor to add auth header for protected endpoints
+api.interceptors.request.use((config) => {
+  // Check if this is a protected endpoint
+  const isProtected = PROTECTED_ENDPOINTS.some(endpoint =>
+    config.url?.startsWith(endpoint) || config.url?.includes(endpoint)
+  );
+
+  if (isProtected) {
+    // Get stored password from localStorage
+    const password = localStorage.getItem('app_password');
+    if (password) {
+      config.headers['X-Auth-Password'] = password;
+    }
+  }
+
+  return config;
+});
+
 // API response types
 export interface StatusResponse {
   node: NodeStatus;

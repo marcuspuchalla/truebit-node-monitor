@@ -39,7 +39,10 @@ const HOST = process.env.HOST || '0.0.0.0';
 const CONTAINER_NAME = process.env.CONTAINER_NAME || 'runner-node';
 const DB_PATH = process.env.DB_PATH || './data/truebit-monitor.db';
 const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
-const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+
+// CORS: Only allow same-origin by default. Set ALLOWED_ORIGINS env var for cross-origin access.
+// Example: ALLOWED_ORIGINS=https://tru.watch,https://www.tru.watch
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) || [];
 
 // Security: API Authentication (optional, enabled via API_KEY env var)
 // Default token provided for convenience - CHANGE IN PRODUCTION!
@@ -142,22 +145,26 @@ app.use(helmet({
   } : false
 }));
 
-// CORS configuration - only allow specified origins
+// CORS configuration - strict by default
+// Same-origin requests (no Origin header) are always allowed
+// Cross-origin requests require explicit ALLOWED_ORIGINS configuration
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps, curl, or direct IP access)
+    // Allow requests with no origin (same-origin, mobile apps, curl, direct IP access)
     if (!origin) return callback(null, true);
 
-    // Allow all if wildcard is set
-    if (ALLOWED_ORIGINS.includes('*')) {
-      return callback(null, true);
+    // If no allowed origins configured, only same-origin is allowed
+    if (ALLOWED_ORIGINS.length === 0) {
+      console.warn(`[SECURITY] CORS blocked cross-origin request from: ${origin} (no ALLOWED_ORIGINS configured)`);
+      callback(new Error('Cross-origin requests not allowed'));
+      return;
     }
 
-    // Check if origin matches any allowed origin
-    if (ALLOWED_ORIGINS.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+    // Check if origin matches any explicitly allowed origin
+    if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed.replace(/\/$/, '')))) {
       callback(null, true);
     } else {
-      console.warn(`CORS blocked origin: ${origin}`);
+      console.warn(`[SECURITY] CORS blocked origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -270,8 +277,21 @@ app.use('/api/', (req, res, next) => {
   next();
 });
 
-// Audit log endpoint (read-only, for security monitoring)
+// Audit log endpoint (read-only, for security monitoring) - PROTECTED
 app.get('/api/audit-log', (req, res) => {
+  // Require authentication
+  const providedPassword = req.headers['x-auth-password'] as string ||
+                           req.query.password as string;
+
+  if (!providedPassword || providedPassword !== TASK_DATA_PASSWORD) {
+    logAuditEvent('SECURITY_AUDIT_LOG_ACCESS_DENIED', req);
+    res.status(401).json({
+      error: 'Authentication required',
+      message: 'Audit log access requires authentication. Please login first.'
+    });
+    return;
+  }
+
   const limit = Math.min(parseInt(req.query.limit as string) || 100, MAX_AUDIT_LOG_SIZE);
   const events = auditLog.slice(-limit);
   res.json({
@@ -569,7 +589,7 @@ function handleRegistration(parsed: ParsedLog): void {
 app.use('/api/status', createStatusRouter(db, dockerClient));
 app.use('/api/tasks', createTasksRouter(db, { taskDataPassword: TASK_DATA_PASSWORD }));
 app.use('/api/invoices', createInvoicesRouter(db));
-app.use('/api/logs', createLogsRouter(db));
+app.use('/api/logs', createLogsRouter(db, { password: TASK_DATA_PASSWORD }));
 // Federation route is registered in start() after client is created
 
 // Challenge-response authentication endpoints
@@ -665,11 +685,26 @@ async function start(): Promise<void> {
       const fedSettings = db.getFederationSettings();
       if (!fedSettings) return;
 
+      // Parse credentials from nats_token (stored as "user:password" or just use env vars)
+      let natsUser: string | null = process.env.FEDERATION_NATS_USER || null;
+      let natsPass: string | null = process.env.FEDERATION_NATS_PASSWORD || null;
+
+      // If stored in DB as "user:password", parse it
+      if (fedSettings.nats_token && fedSettings.nats_token.includes(':')) {
+        const [user, pass] = fedSettings.nats_token.split(':');
+        natsUser = user;
+        natsPass = pass;
+      } else if (fedSettings.nats_token) {
+        // If just a token, use as-is
+        natsPass = fedSettings.nats_token;
+      }
+
       federation.client = new FederationClient({
         nodeId: fedSettings.node_id,
         salt: fedSettings.salt,
         servers: fedSettings.nats_servers ? JSON.parse(fedSettings.nats_servers) : [],
-        token: fedSettings.nats_token,
+        user: natsUser,
+        pass: natsPass,
         tls: !!fedSettings.tls_enabled
       });
 

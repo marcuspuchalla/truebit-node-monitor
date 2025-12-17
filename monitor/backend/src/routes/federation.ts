@@ -112,14 +112,19 @@ export function createFederationRouter(
       console.log('📥 Enable federation request received');
 
       // Update settings - enable with all sharing on
-      // Also save the default NATS server URL
+      // Also save the default NATS server URL and credentials from environment
       const defaultNatsUrl = process.env.FEDERATION_NATS_URL || 'wss://f.tru.watch';
+      const natsUser = process.env.FEDERATION_NATS_USER || 'monitor';
+      const natsPassword = process.env.FEDERATION_NATS_PASSWORD || null;
+
       db.updateFederationSettings({
         enabled: true,
         shareTasks: true,
         shareStats: true,
         privacyLevel: 'minimal',
-        natsServers: [defaultNatsUrl]
+        natsServers: [defaultNatsUrl],
+        // Store credentials for authentication (if provided)
+        natsToken: natsPassword ? `${natsUser}:${natsPassword}` : null
       });
 
       console.log('📝 Settings updated in DB');

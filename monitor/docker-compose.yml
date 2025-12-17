@@ -24,6 +24,10 @@ services:
       # This allows your node to share anonymized statistics with the network
       # Enable federation in the UI after deployment (Federation page)
       - FEDERATION_NATS_URL=wss://f.tru.watch
+      # NATS Authentication - contact federation operator for credentials
+      # Leave empty for public federation (if no auth required)
+      - FEDERATION_NATS_USER=${FEDERATION_NATS_USER:-monitor}
+      - FEDERATION_NATS_PASSWORD=${FEDERATION_NATS_PASSWORD:-}
       # Optional: Set your own task data password. If not set, a random one is generated at startup.
       # - TASK_DATA_PASSWORD=your-secure-password-here
     volumes:

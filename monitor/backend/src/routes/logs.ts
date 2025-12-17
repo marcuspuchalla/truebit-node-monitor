@@ -1,7 +1,5 @@
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request, Response, NextFunction } from 'express';
 import type TruebitDatabase from '../db/database.js';
-
-const router: Router = express.Router();
 
 interface LogRow {
   id: number;
@@ -15,7 +13,39 @@ interface LogRow {
   created_at: string;
 }
 
-export function createLogsRouter(db: TruebitDatabase): Router {
+interface LogsRouterConfig {
+  password?: string;
+}
+
+export function createLogsRouter(db: TruebitDatabase, config: LogsRouterConfig = {}): Router {
+  const router: Router = express.Router();
+  const { password } = config;
+  const requiresAuth = !!password;
+
+  // Authentication middleware for logs endpoint
+  const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+    if (!requiresAuth) {
+      next();
+      return;
+    }
+
+    const providedPassword = req.headers['x-auth-password'] as string ||
+                             req.query.password as string;
+
+    if (!providedPassword || providedPassword !== password) {
+      res.status(401).json({
+        error: 'Authentication required',
+        message: 'Logs access requires authentication. Please login first.'
+      });
+      return;
+    }
+
+    next();
+  };
+
+  // Apply auth middleware to all routes
+  router.use(authMiddleware);
+
   // Get logs (paginated, filterable)
   router.get('/', (req: Request, res: Response) => {
     try {

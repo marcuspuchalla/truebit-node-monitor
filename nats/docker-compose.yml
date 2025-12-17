@@ -4,6 +4,9 @@
 # monitors and aggregators.
 #
 # Usage:
+#   # Set the credentials (required for production!)
+#   export NATS_AGGREGATOR_PASSWORD=$(openssl rand -base64 32)
+#   export NATS_MONITOR_PASSWORD=$(openssl rand -base64 32)
 #   docker compose up -d
 #
 # For production with TLS, mount your certificates:
@@ -19,11 +22,19 @@ services:
       dockerfile: Dockerfile
     container_name: truebit-federation-nats
     restart: unless-stopped
+    environment:
+      # IMPORTANT: Set these in production!
+      # Generate with: openssl rand -base64 32
+      # NATS_AGGREGATOR_PASSWORD: Secret password for aggregator (keep secure!)
+      # NATS_MONITOR_PASSWORD: Password for monitors (can be shared with monitor nodes)
+      - NATS_AGGREGATOR_PASSWORD=${NATS_AGGREGATOR_PASSWORD:-aggregator-dev-password}
+      - NATS_MONITOR_PASSWORD=${NATS_MONITOR_PASSWORD:-monitor-dev-password}
     ports:
       # Client connections
       - "4222:4222"
-      # HTTP monitoring
-      - "8222:8222"
+      # HTTP monitoring - only expose locally, not to public
+      # Remove this line in production or bind to 127.0.0.1
+      - "127.0.0.1:8222:8222"
       # WebSocket (TLS)
       - "443:443"
     volumes:

@@ -5,6 +5,11 @@
 # External: wss://f.tru.watch (standard HTTPS port 443)
 # Internal: ws://nats-seed:443 via coolify network
 #
+# IMPORTANT: Set these environment variables in Coolify!
+#   NATS_AGGREGATOR_PASSWORD - Secret password for aggregator (keep secure!)
+#   NATS_MONITOR_PASSWORD    - Password for monitor nodes
+# Generate with: openssl rand -base64 32
+#
 # No Traefik configuration changes required - uses standard HTTPS entrypoint.
 # =============================================================================
 
@@ -14,14 +19,46 @@ services:
     container_name: truebit-federation-nats
     restart: unless-stopped
 
+    environment:
+      # IMPORTANT: Set these in Coolify environment variables!
+      - NATS_AGGREGATOR_PASSWORD=${NATS_AGGREGATOR_PASSWORD:?NATS_AGGREGATOR_PASSWORD is required}
+      - NATS_MONITOR_PASSWORD=${NATS_MONITOR_PASSWORD:?NATS_MONITOR_PASSWORD is required}
+
     entrypoint:
       - /bin/sh
       - '-c'
     command:
       - |
-        cat > /tmp/nats.conf << 'EOF'
+        cat > /tmp/nats.conf << EOF
         port: 4222
+        # Monitoring only on localhost for security
         http_port: 8222
+        http: "127.0.0.1:8222"
+
+        # Authentication & Authorization
+        authorization {
+          users = [
+            # Aggregator: Full permissions (internal service only)
+            {
+              user: aggregator
+              password: "${NATS_AGGREGATOR_PASSWORD}"
+              permissions: {
+                publish: ">"
+                subscribe: ">"
+              }
+            }
+            # Monitor: Limited permissions (external clients)
+            {
+              user: monitor
+              password: "${NATS_MONITOR_PASSWORD}"
+              permissions: {
+                publish: ["truebit.tasks.>", "truebit.invoices.>", "truebit.heartbeat", "truebit.nodes.>"]
+                subscribe: ["truebit.stats.aggregated", "truebit.>"]
+              }
+            }
+          ]
+        }
+
         websocket {
           port: 443
           no_tls: true
