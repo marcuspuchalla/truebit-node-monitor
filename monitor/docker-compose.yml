@@ -1,7 +1,5 @@
-version: '3.8'
-
-# Standalone deployment without Coolify/Traefik
-# Usage: docker compose -f docker-compose.standalone.yml up -d
+# TrueBit Node Monitor - VPS/AWS/Standalone Deployment
+# Usage: docker compose up -d
 
 services:
   monitor:

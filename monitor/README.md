@@ -2,50 +2,42 @@
 
 The Node Monitor is a dashboard that runs alongside your TrueBit node to track tasks, invoices, and performance metrics.
 
-## Quick Start
+## Deployment
 
-### Prerequisites
+### Option 1: Coolify
 
-- Docker 20.10 or higher
-- A running TrueBit node (`runner-node` container)
-- Same Docker network as your TrueBit node
+Use `docker-compose.coolify.yml` for Coolify deployments.
 
-### 1. Create Docker Network (if needed)
+1. Create a new project in Coolify
+2. Add a Docker Compose resource
+3. Set the repository URL
+4. Set **Base Directory**: `monitor`
+5. Set **Docker Compose File**: `docker-compose.coolify.yml`
+6. Deploy
+
+### Option 2: VPS / AWS / Any Server
+
+Use `docker-compose.yml` for standalone deployments.
 
 ```bash
-# Check if the network exists
-docker network ls | grep truebit
-
-# If not, create it
+# Create the Docker network (connects to your TrueBit node)
 docker network create truebit_runner_node_default
-```
 
-### 2. Deploy
+# Start the monitor
+docker compose up -d
 
-```bash
-cd monitor
-docker compose -f docker-compose.standalone.yml up -d
-```
-
-### 3. Get Your Password
-
-```bash
+# Get your login password
 docker logs truebit-node-monitor 2>&1 | grep -A1 "Password"
 ```
 
-### 4. Access Dashboard
+Open `http://your-server:8090` in your browser.
 
-Open `http://localhost:8090` in your browser.
-
-## Deployment Options
+## Docker Compose Files
 
 | File | Use Case |
 |------|----------|
-| `docker-compose.standalone.yml` | Basic deployment (same server as TrueBit node) |
-| `docker-compose.https.yml` | Production with HTTPS (Traefik + Let's Encrypt) |
+| `docker-compose.yml` | VPS, AWS, or any standalone server |
 | `docker-compose.coolify.yml` | Coolify deployment |
-
-For AWS and internal network deployments, see the additional docker-compose files.
 
 ## Configuration
 
@@ -58,11 +50,9 @@ For AWS and internal network deployments, see the additional docker-compose file
 | `FEDERATION_NATS_URL` | `wss://f.tru.watch` | Federation server URL |
 | `LOG_RETENTION_DAYS` | `30` | Days to keep log entries |
 
-See [.env.example](.env.example) for all options.
-
 ### Custom Container Name
 
-If your TrueBit node uses a different container name:
+If your TrueBit node uses a different container name, edit the docker-compose file:
 
 ```yaml
 environment:
@@ -82,52 +72,9 @@ networks:
 
 ## Federation
 
-Federation allows sharing anonymized statistics with other node operators. When enabled, your monitor connects to the [tru.watch](https://tru.watch) federation server (`f.tru.watch`) to display network-wide statistics like total online nodes and completed tasks.
+Federation allows sharing anonymized statistics with other node operators via [tru.watch](https://tru.watch). Enable it in the Federation page of the dashboard.
 
-### Enable Federation
-
-Navigate to the Network page in the UI - federation connects automatically.
-
-### Privacy
-
-When federation is enabled, your data is anonymized:
-
-- All identifiers are SHA-256 hashed with a unique per-node salt
-- Metrics are bucketed into ranges
-- Timestamps are rounded to 5-minute intervals
-- Wallet addresses and IPs are never shared
-
-### Use a Different Aggregator
-
-To connect to a different aggregation server:
-
-```yaml
-environment:
-  - FEDERATION_NATS_URL=wss://your-aggregator.example.com
-```
-
-## Security Warning
-
-**Docker Socket Access**: This application requires access to the Docker socket to read container logs. The socket is mounted read-only (`:ro`), but the container can list and inspect other containers.
-
-For maximum security:
-- Run in an isolated environment
-- Use HTTPS in production
-- Set strong passwords via environment variables
-
-## Development
-
-```bash
-# Install dependencies
-cd backend && npm install
-cd ../frontend && npm install
-
-# Run backend
-cd backend && npm run dev
-
-# Run frontend (separate terminal)
-cd frontend && npm run dev
-```
+**Privacy**: Your data is anonymized - identifiers are hashed, metrics are bucketed, timestamps rounded, and wallet addresses are never shared.
 
 ## Troubleshooting
 
@@ -141,16 +88,14 @@ docker ps | grep runner-node
 docker network inspect truebit_runner_node_default
 ```
 
+### Container name conflict
+
+```bash
+# Remove old container and restart
+docker rm -f truebit-node-monitor
+docker compose up -d
+```
+
 ### Permission denied for Docker socket
 
-```bash
-# On Linux, add user to docker group
-sudo usermod -aG docker $USER
-```
-
-### Federation not connecting
-
-```bash
-# Check federation status
-curl http://localhost:8090/api/federation/status
-```
+The entrypoint script handles this automatically. If issues persist, ensure the Docker socket is mounted correctly in the compose file.
