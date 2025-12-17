@@ -77,6 +77,10 @@ services:
       - coolify
       - truebit-network
 
+    # Explicitly expose WebSocket port for Traefik
+    expose:
+      - "443"
+
     labels:
       - traefik.enable=true
       - traefik.docker.network=coolify
@@ -87,7 +91,11 @@ services:
       - traefik.http.routers.truebit-nats-ws.tls=true
       - traefik.http.routers.truebit-nats-ws.tls.certresolver=letsencrypt
       - traefik.http.routers.truebit-nats-ws.service=truebit-nats-ws
+
+      # Backend service configuration
+      # Use HTTP scheme since NATS uses no_tls (Traefik handles TLS termination)
       - traefik.http.services.truebit-nats-ws.loadbalancer.server.port=443
+      - traefik.http.services.truebit-nats-ws.loadbalancer.server.scheme=http
 
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:8222/healthz"]
