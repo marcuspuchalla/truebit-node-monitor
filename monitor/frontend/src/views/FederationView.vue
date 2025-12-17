@@ -1,18 +1,8 @@
 <template>
   <div class="federation-view">
-    <!-- Warning Banner -->
-    <div class="warning-banner">
-      This is an unofficial community monitor for the Truebit network. Not affiliated with Truebit Co.
-    </div>
-
-    <!-- Work in Progress Banner -->
-    <div class="info-banner">
-      This project is a work in progress and is being actively developed. Features may change on a daily basis.
-    </div>
-
-    <div class="header">
-      <h1>TrueBit Network</h1>
-      <p class="subtitle">Global network status and statistics</p>
+    <!-- Work in Progress Banner - compact -->
+    <div class="wip-banner">
+      Work in progress - features may change
     </div>
 
     <!-- Connection Status -->
@@ -190,6 +180,12 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- Unofficial Community Notice -->
+    <div class="unofficial-notice">
+      Unofficial community monitor - not affiliated with Truebit Co.
+      <router-link to="/about" class="notice-link">Learn more</router-link>
     </div>
   </div>
 </template>
@@ -515,42 +511,37 @@ function formatTime(timestamp) {
   margin: 0 auto;
 }
 
-.warning-banner {
+.wip-banner {
+  background: #dbeafe;
+  border: 1px solid #3b82f6;
+  color: #1e40af;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.unofficial-notice {
   background: #fef3c7;
   border: 1px solid #f59e0b;
   color: #92400e;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  margin-bottom: 1rem;
+  margin-top: 2rem;
   text-align: center;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
-.info-banner {
-  background: #dbeafe;
-  border: 1px solid #3b82f6;
-  color: #1e40af;
-  padding: 0.75rem 1rem;
-  border-radius: 0.5rem;
-  margin-bottom: 1.5rem;
-  text-align: center;
-  font-size: 0.9rem;
+.unofficial-notice .notice-link {
+  margin-left: 0.5rem;
+  color: #92400e;
+  font-weight: 600;
+  text-decoration: underline;
 }
 
-.header {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-.header h1 {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-}
-
-.subtitle {
-  color: #6b7280;
-  font-size: 1.1rem;
+.unofficial-notice .notice-link:hover {
+  color: #78350f;
 }
 
 .status-card {
