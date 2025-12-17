@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="monitor/frontend/public/logo.png" alt="TrueBit Node Monitor" width="120" />
+</p>
+
 # TrueBit Node Monitor
 
 A community-built monitoring dashboard for TrueBit computation nodes.
