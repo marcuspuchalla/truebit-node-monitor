@@ -1,10 +1,12 @@
-<p align="center">
-  <img src="monitor/frontend/public/logo.png" alt="TrueBit Node Monitor" width="120" />
-</p>
-
-# TrueBit Node Monitor
-
-A community-built monitoring dashboard for TrueBit computation nodes.
+<table>
+  <tr>
+    <td><img src="monitor/frontend/public/logo.png" alt="Logo" width="60" /></td>
+    <td>
+      <strong>TrueBit Node Monitor</strong><br/>
+      <sub>A community-built monitoring dashboard for TrueBit computation nodes</sub>
+    </td>
+  </tr>
+</table>
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -58,9 +60,13 @@ Open `http://your-server:8090` in your browser.
 | `FEDERATION_NATS_URL` | `wss://f.tru.watch` | Federation server URL |
 | `LOG_RETENTION_DAYS` | `30` | Days to keep log history |
 
+<p align="center">
+  <img src="monitor/frontend/public/headerImg.png" alt="TrueBit Node Monitor Screenshot" width="640" />
+</p>
+
 ## Federation
 
-Your monitor can optionally share anonymized statistics with the [tru.watch](https://tru.watch) network. This is **opt-in** - enable it in the Federation page of the dashboard after deployment.
+Your monitor can optionally join the [tru.watch](https://tru.watch) federation network to see and share global statistics. On the Network page, click **"Join Network"** to participate or **"Leave Network"** to opt out. When joined, your node shares anonymized statistics with other nodes.
 
 ## Security & Privacy
 

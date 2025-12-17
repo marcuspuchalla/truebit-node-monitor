@@ -2,7 +2,7 @@
   <div class="federation-view">
     <!-- Work in Progress Banner - compact -->
     <div class="wip-banner">
-      Work in progress - features may change
+      Work in progress - features will change
     </div>
 
     <!-- Connection Status -->
@@ -11,6 +11,14 @@
       <div class="status-info">
         <span class="status-label">{{ statusLabel }}</span>
       </div>
+      <button
+        @click="toggleFederation"
+        class="federation-toggle"
+        :class="{ 'enabled': settings?.enabled }"
+        :disabled="isToggling"
+      >
+        {{ isToggling ? 'Updating...' : (settings?.enabled ? 'Leave Network' : 'Join Network') }}
+      </button>
     </div>
 
     <!-- Error Message -->
@@ -215,6 +223,27 @@ const {
 const selectedNode = ref(null);
 const selectedMessage = ref(null);
 
+// Toggle state
+const isToggling = ref(false);
+
+// Toggle federation on/off
+async function toggleFederation() {
+  isToggling.value = true;
+  try {
+    if (settings.value?.enabled) {
+      await federationStore.disableFederation();
+    } else {
+      await federationStore.enableFederation();
+    }
+    await federationStore.fetchStatus();
+  } catch (error) {
+    console.error('Federation toggle error:', error);
+    errorMessage.value = 'Failed to update federation status';
+  } finally {
+    isToggling.value = false;
+  }
+}
+
 // Parse bucket string to get minimum value (e.g., "1-10" -> 1, "0" -> 0, ">1K" -> 1000)
 function parseBucketMin(bucket) {
   if (!bucket || bucket === 'unknown') return 0;
@@ -363,27 +392,17 @@ const recentMessages = computed(() => {
 let refreshInterval = null;
 
 onMounted(async () => {
-  // Initialize and auto-enable federation
+  // Initialize federation store
   await federationStore.initialize();
 
-  // Auto-enable if not already enabled or not connected
-  if (!settings.value?.enabled || !status.value?.connected) {
-    try {
-      await federationStore.enableFederation();
-      // Refresh status after enabling
-      await federationStore.fetchStatus();
-    } catch (error) {
-      console.error('Federation enable error:', error);
-      errorMessage.value = 'Failed to connect to network';
-    }
-  }
-
-  // Refresh data periodically
+  // Refresh data periodically (only if enabled)
   refreshInterval = setInterval(() => {
-    federationStore.fetchStatus();
-    federationStore.fetchMessages();
-    federationStore.fetchPeers();
-    federationStore.fetchAggregatedNetworkStats();
+    if (settings.value?.enabled) {
+      federationStore.fetchStatus();
+      federationStore.fetchMessages();
+      federationStore.fetchPeers();
+      federationStore.fetchAggregatedNetworkStats();
+    }
   }, 5000);
 });
 
@@ -520,7 +539,7 @@ function formatTime(timestamp) {
 
 <style scoped>
 .federation-view {
-  padding: 2rem;
+  padding: 1rem 2rem 2rem 2rem;
   max-width: 1000px;
   margin: 0 auto;
 }
@@ -529,11 +548,11 @@ function formatTime(timestamp) {
   background: #dbeafe;
   border: 1px solid #3b82f6;
   color: #1e40af;
-  padding: 0.5rem 1rem;
+  padding: 0.375rem 1rem;
   border-radius: 0.375rem;
   margin-bottom: 1rem;
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
 }
 
 .unofficial-notice {
@@ -605,6 +624,37 @@ function formatTime(timestamp) {
 .status-label {
   font-weight: 600;
   font-size: 1.1rem;
+}
+
+.federation-toggle {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+}
+
+.federation-toggle:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.federation-toggle.enabled {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.federation-toggle.enabled:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.federation-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .error-banner {
