@@ -58,6 +58,21 @@ Open `http://your-server:8090` in your browser.
 
 Your monitor can optionally share anonymized statistics with the [tru.watch](https://tru.watch) network. This is **opt-in** - enable it in the Federation page of the dashboard after deployment.
 
+## Security & Privacy
+
+This monitor is **open source** - you can review the complete source code to verify:
+
+- No private keys are accessed or transmitted
+- No data is sent to external servers without your consent
+- Only log files are read for monitoring purposes
+- Docker socket is mounted read-only
+
+**Recommendations:**
+- Only use the official repository - do not run modified versions from untrusted sources
+- Review the source code before deploying to production
+- Use HTTPS in production environments
+- Set strong passwords via environment variables
+
 ---
 
 ## For Federation Operators

@@ -1,22 +1,29 @@
 <template>
   <div class="space-y-6">
     <div class="card">
-      <h1 class="text-2xl font-bold text-gray-900 mb-6">About TrueBit Monitor</h1>
-
-      <!-- Source Code -->
-      <div class="mb-8 p-4 bg-green-50 border-l-4 border-green-500 rounded">
-        <h2 class="text-lg font-semibold text-green-900 mb-2">Open Source</h2>
-        <p class="text-sm text-green-800 mb-3">
-          The complete source code for this monitor is available for review. You can inspect every line of code to verify that:
-        </p>
-        <ul class="list-disc ml-5 text-sm text-green-800 space-y-1 mb-3">
-          <li>No private keys are accessed or transmitted</li>
-          <li>No data is sent to external servers without consent</li>
-          <li>Only log files are read for monitoring purposes</li>
-        </ul>
-        <p class="text-sm text-green-800 font-semibold">
-          Only use the official repository. Do not download or run modified versions from untrusted sources.
-        </p>
+      <!-- What This Monitor Is For -->
+      <div class="mb-8">
+        <h2 class="text-lg font-semibold text-gray-900 mb-3">What This Monitor Is For</h2>
+        <div class="space-y-4 text-sm text-gray-700">
+          <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+              <span class="text-blue-600 font-bold">1</span>
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900">Network Statistics</p>
+              <p>See how many TrueBit nodes are currently online and how many tasks are being processed across the network.</p>
+            </div>
+          </div>
+          <div class="flex items-start gap-3">
+            <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+              <span class="text-green-600 font-bold">2</span>
+            </div>
+            <div>
+              <p class="font-semibold text-gray-900">Monitor Your Node</p>
+              <p>Keep an eye on your own TrueBit node to make sure it's running without problems - track tasks, invoices, and logs.</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- How It Works -->
@@ -28,13 +35,13 @@
           </p>
           <ol class="list-decimal ml-5 space-y-2">
             <li>
-              <strong>Read log files</strong> from the TrueBit node container at <code class="bg-gray-100 px-2 py-1 rounded">/app/logs/</code>
+              <strong>Read log files</strong> from the TrueBit node container
             </li>
             <li>
-              <strong>Read EventDB</strong> (structured task/invoice data) from <code class="bg-gray-100 px-2 py-1 rounded">/app/build/datadb/</code>
+              <strong>Read task/invoice data</strong> from the EventDB
             </li>
             <li>
-              <strong>Parse and display</strong> this information in an easy-to-read web interface
+              <strong>Display</strong> this information in an easy-to-read dashboard
             </li>
           </ol>
           <p class="mt-4 font-semibold">
@@ -43,27 +50,17 @@
         </div>
       </div>
 
-      <!-- Disclaimer -->
-      <div class="border-t pt-6">
-        <h2 class="text-lg font-semibold text-gray-900 mb-3">Disclaimer</h2>
-        <div class="bg-gray-50 p-4 rounded">
-          <p class="text-sm text-gray-700 leading-relaxed mb-3">
-            This software is provided "AS IS", without warranty of any kind, express or implied.
-            The authors assume no responsibility for any damages, losses, or issues that may arise from using this monitoring tool.
-          </p>
-          <p class="text-sm text-gray-700 leading-relaxed mb-3">
-            This project is an <strong>independent, community-developed</strong> tool and is not affiliated with TrueBit Foundation or any official TrueBit entities.
-          </p>
-          <p class="text-sm text-gray-700 leading-relaxed">
-            By using this monitor, you acknowledge and accept all risks associated with running third-party software.
-          </p>
-        </div>
+      <!-- Not Affiliated Notice -->
+      <div class="bg-gray-50 p-4 rounded border border-gray-200">
+        <p class="text-sm text-gray-600 text-center">
+          This is an <strong>independent, community-developed</strong> tool and is not affiliated with TrueBit Foundation or any official TrueBit entities.
+        </p>
       </div>
 
       <!-- Version & GitHub -->
       <div class="border-t pt-6 mt-6 flex items-center justify-between">
         <p class="text-xs text-gray-500">
-          TrueBit Monitor v0.0.1 (Unofficial Community Tool)
+          TrueBit Monitor v0.0.1
         </p>
         <a
           href="https://github.com/marcuspuchalla/truebit-node-monitor"
