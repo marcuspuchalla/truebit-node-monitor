@@ -9,16 +9,18 @@
           <div class="flex">
             <div class="flex-shrink-0 flex items-center gap-3">
               <img src="/logo.png" alt="TruBit Watch" class="h-10 w-auto" />
-              <h1 class="text-xl font-bold text-gray-900">TrueBit Node Monitor</h1>
+              <div class="flex flex-col">
+                <h1 class="text-xl font-bold text-gray-900">TrueBit Node Monitor</h1>
+                <span class="text-xs text-gray-400">Global Network Statistics</span>
+              </div>
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
               <router-link
                 to="/"
-                class="inline-flex flex-col items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
                 :class="$route.name === 'federation' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
               >
-                <span>Network</span>
-                <span class="text-xs text-gray-400 font-normal">Global Statistics</span>
+                Network
               </router-link>
               <router-link
                 to="/dashboard"

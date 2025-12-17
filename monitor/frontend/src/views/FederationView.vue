@@ -90,10 +90,13 @@
     <div class="section" v-if="activePeers.length > 0">
       <h2>Active Nodes</h2>
       <div class="peers-grid">
-        <div v-for="peer in activePeers" :key="peer.node_id" class="peer-card" @click="openNodeModal(peer)">
+        <div v-for="peer in activePeers" :key="peer.node_id" class="peer-card" :class="{ 'my-node': isMyNode(peer) }" @click="openNodeModal(peer)">
           <div class="peer-status online"></div>
           <div class="peer-info">
-            <div class="peer-id">{{ formatNodeId(peer.node_id) }}</div>
+            <div class="peer-id">
+              {{ formatNodeId(peer.node_id) }}
+              <span v-if="isMyNode(peer)" class="my-node-badge">You</span>
+            </div>
             <div class="peer-meta">
               <span class="peer-seen">Last seen: {{ formatTime(peer.last_seen) }}</span>
             </div>
@@ -399,9 +402,20 @@ function isNodeOnline(peer) {
   return diffMs < 120000; // 2 minutes
 }
 
-// Computed property for only active (online) peers
+// Check if a peer is "my node"
+function isMyNode(peer) {
+  return settings.value?.nodeId && peer.node_id === settings.value.nodeId;
+}
+
+// Computed property for only active (online) peers, with my node first
 const activePeers = computed(() => {
-  return peers.value.filter(peer => isNodeOnline(peer));
+  const online = peers.value.filter(peer => isNodeOnline(peer));
+  // Sort: my node first, then by last_seen
+  return online.sort((a, b) => {
+    if (isMyNode(a) && !isMyNode(b)) return -1;
+    if (!isMyNode(a) && isMyNode(b)) return 1;
+    return new Date(b.last_seen) - new Date(a.last_seen);
+  });
 });
 
 // Format node ID for display
@@ -784,6 +798,28 @@ function formatTime(timestamp) {
 .peer-arrow {
   font-size: 1.25rem;
   color: #9ca3af;
+}
+
+.peer-card.my-node {
+  background: #eff6ff;
+  border: 2px solid #3b82f6;
+}
+
+.peer-card.my-node:hover {
+  background: #dbeafe;
+}
+
+.my-node-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: #3b82f6;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  font-family: sans-serif;
+  vertical-align: middle;
 }
 
 /* Activity item improvements */
