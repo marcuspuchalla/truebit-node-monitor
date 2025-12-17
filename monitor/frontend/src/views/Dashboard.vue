@@ -27,21 +27,97 @@
     <TaskTable :tasks="tasksStore.recentTasks" title="Recent Tasks" :show-view-all="true" />
 
     <LogViewer :max-logs="50" :auto-scroll="true" />
+
+    <!-- Federation Settings -->
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <h3 class="text-sm font-medium text-gray-900">Network Participation</h3>
+          <p class="text-xs text-gray-500 mt-1">
+            {{ federationSettings?.enabled ? 'Sharing anonymized statistics with the network' : 'Not participating in network statistics' }}
+          </p>
+        </div>
+        <button
+          @click="toggleFederation"
+          class="federation-toggle"
+          :class="{ 'enabled': federationSettings?.enabled }"
+          :disabled="isToggling"
+        >
+          {{ isToggling ? 'Updating...' : (federationSettings?.enabled ? 'Leave Network' : 'Join Network') }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
+import { storeToRefs } from 'pinia';
 import NodeStatus from '../components/NodeStatus.vue';
 import TaskSummary from '../components/TaskSummary.vue';
 import TaskTable from '../components/TaskTable.vue';
 import LogViewer from '../components/LogViewer.vue';
 import InvoiceSummary from '../components/InvoiceSummary.vue';
 import { useTasksStore } from '../stores/tasks';
+import { useFederationStore } from '../stores/federation';
 
 const tasksStore = useTasksStore();
+const federationStore = useFederationStore();
+
+const { settings: federationSettings } = storeToRefs(federationStore);
+const isToggling = ref(false);
+
+async function toggleFederation() {
+  isToggling.value = true;
+  try {
+    if (federationSettings.value?.enabled) {
+      await federationStore.disableFederation();
+    } else {
+      await federationStore.enableFederation();
+    }
+    await federationStore.fetchStatus();
+  } catch (error) {
+    console.error('Federation toggle error:', error);
+  } finally {
+    isToggling.value = false;
+  }
+}
 
 onMounted(() => {
   tasksStore.fetchTasks({ limit: 10 });
+  federationStore.fetchSettings();
 });
 </script>
+
+<style scoped>
+.federation-toggle {
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+}
+
+.federation-toggle:hover:not(:disabled) {
+  background: #f3f4f6;
+}
+
+.federation-toggle.enabled {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+.federation-toggle.enabled:hover:not(:disabled) {
+  background: #fecaca;
+}
+
+.federation-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+</style>

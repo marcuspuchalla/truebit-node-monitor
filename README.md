@@ -66,7 +66,9 @@ Open `http://your-server:8090` in your browser.
 
 ## Federation
 
-Your monitor can optionally join the [tru.watch](https://tru.watch) federation network to see and share global statistics. On the Network page, click **"Join Network"** to participate or **"Leave Network"** to opt out. When joined, your node shares anonymized statistics with other nodes.
+Your monitor automatically participates in the [tru.watch](https://tru.watch) federation network to enable global network statistics - this is one of the main purposes of this tool: to give the community visibility into how many nodes are online and how many tasks are being processed across the entire network.
+
+If you prefer not to participate, you can opt out in the **Dashboard** (requires login) by clicking **"Leave Network"**. Your preference is saved and persists across restarts.
 
 ## Security & Privacy
 

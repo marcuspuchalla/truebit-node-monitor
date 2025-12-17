@@ -200,7 +200,7 @@ class TruebitDatabase {
     this.db!.exec(`
       CREATE TABLE IF NOT EXISTS federation_settings (
         id INTEGER PRIMARY KEY CHECK (id = 1),
-        enabled BOOLEAN DEFAULT 0,
+        enabled BOOLEAN DEFAULT 1,
         node_id TEXT,
         salt TEXT,
         privacy_level TEXT DEFAULT 'balanced',
@@ -569,7 +569,7 @@ class TruebitDatabase {
 
     const stmt = this.db!.prepare(`
       INSERT INTO federation_settings (id, enabled, node_id, salt, privacy_level)
-      VALUES (1, 0, ?, ?, 'balanced')
+      VALUES (1, 1, ?, ?, 'balanced')
     `);
     stmt.run(nodeId, salt);
     return this.getFederationSettings();
