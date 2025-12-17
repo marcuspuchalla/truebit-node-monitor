@@ -1,6 +1,6 @@
 <table>
   <tr>
-    <td><img src="monitor/frontend/public/logo.png" alt="Logo" width="60" /></td>
+    <td><img src="monitor/frontend/public/logo.png" alt="Logo" width="120" /></td>
     <td>
       <strong>TrueBit Node Monitor</strong><br/>
       <sub>A community-built monitoring dashboard for TrueBit computation nodes</sub>
