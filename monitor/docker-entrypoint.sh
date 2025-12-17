@@ -7,6 +7,22 @@ if [ -d "/app/data" ]; then
     chown -R nodejs:nodejs /app/data
 fi
 
+# Fix Docker socket permissions for nodejs user
+# The socket is mounted read-only but we need read access
+if [ -S "/var/run/docker.sock" ]; then
+    # Get the GID of the docker socket
+    DOCKER_GID=$(stat -c '%g' /var/run/docker.sock 2>/dev/null || stat -f '%g' /var/run/docker.sock 2>/dev/null)
+    # Add nodejs to a group with that GID (create if needed)
+    if [ -n "$DOCKER_GID" ]; then
+        # Check if group with this GID exists
+        if ! getent group "$DOCKER_GID" > /dev/null 2>&1; then
+            addgroup -g "$DOCKER_GID" docker 2>/dev/null || true
+        fi
+        # Add nodejs to the docker group
+        addgroup nodejs "$(getent group "$DOCKER_GID" | cut -d: -f1)" 2>/dev/null || true
+    fi
+fi
+
 # Inject analytics script if ANALYTICS_URL and ANALYTICS_WEBSITE_ID are set
 if [ -n "$ANALYTICS_URL" ] && [ -n "$ANALYTICS_WEBSITE_ID" ]; then
     echo "Injecting analytics script..."
