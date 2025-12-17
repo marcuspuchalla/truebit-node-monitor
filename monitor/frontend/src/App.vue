@@ -92,9 +92,27 @@
               </svg>
               Authenticated
             </button>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <!-- Federation connection status -->
+            <span
+              v-if="federationStore.status.connected"
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+            >
               <span class="w-2 h-2 rounded-full mr-1.5 bg-green-500"></span>
               Connected
+            </span>
+            <span
+              v-else-if="federationStore.settings.enabled"
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800"
+            >
+              <span class="w-2 h-2 rounded-full mr-1.5 bg-yellow-500 animate-pulse"></span>
+              Connecting
+            </span>
+            <span
+              v-else
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600"
+            >
+              <span class="w-2 h-2 rounded-full mr-1.5 bg-gray-400"></span>
+              Offline
             </span>
           </div>
         </div>
