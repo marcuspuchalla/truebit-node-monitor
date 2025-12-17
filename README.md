@@ -79,10 +79,27 @@ This monitor is **open source** - you can review the complete source code to ver
 - Only log files are read for monitoring purposes
 - Docker socket is mounted read-only
 
+### HTTPS vs HTTP
+
+| Access Method | Security Level | Notes |
+|--------------|----------------|-------|
+| **HTTPS** (recommended) | Full | Uses Web Crypto API for password hashing |
+| **HTTP** (fallback) | Reduced | Uses JavaScript SHA-256 fallback |
+
+**For best security**, use HTTPS by:
+- Deploying with Coolify (automatic HTTPS)
+- Using a reverse proxy (Nginx, Caddy, Traefik) with Let's Encrypt
+- Accessing via a domain with SSL certificate
+
+**If using HTTP** (IP address access without domain):
+- Authentication still works via JavaScript SHA-256 fallback
+- Password is never sent in plaintext
+- Consider setting `TASK_DATA_PASSWORD` environment variable for a persistent password
+
 **Recommendations:**
 - Only use the official repository - do not run modified versions from untrusted sources
 - Review the source code before deploying to production
-- Use HTTPS in production environments
+- Use HTTPS in production environments when possible
 - Set strong passwords via environment variables
 
 ---
