@@ -117,6 +117,8 @@ Most users only need the monitor above. If you're running your own federation ne
 
 ## Important Notices
 
+**EXPERIMENTAL SOFTWARE**: This is an experimental project. Features may change, break, or be removed without notice. The public federation servers (f.tru.watch, tru.watch) may be shut down at any time without warning.
+
 **USE AT YOUR OWN RISK**: This software is provided "as is" without warranties.
 
 **NOT AFFILIATED WITH TRUEBIT**: This is an independent, community-developed tool.
