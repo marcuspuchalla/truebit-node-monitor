@@ -24,7 +24,6 @@ interface TaskRow {
 }
 
 interface TasksRouterConfig {
-  taskDataPassword?: string;
   validateSessionToken?: (token: string) => boolean;
 }
 
@@ -74,25 +73,14 @@ function formatTaskForAPI(task: TaskRow, includeInputOutput = false): Record<str
 }
 
 export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig = {}): Router {
-  const { taskDataPassword, validateSessionToken } = config;
-  const requiresAuth = !!taskDataPassword;
+  const { validateSessionToken } = config;
+  const requiresAuth = !!validateSessionToken;
 
-  // Helper to validate authentication via password or session token
+  // Helper to validate authentication via session token
   const isAuthenticated = (req: Request): boolean => {
-    // Try session token first (preferred - no password stored on client)
+    if (!validateSessionToken) return false;
     const sessionToken = req.headers['x-session-token'] as string;
-    if (sessionToken && validateSessionToken && validateSessionToken(sessionToken)) {
-      return true;
-    }
-
-    // Fall back to password (backwards compatibility)
-    const providedPassword = req.headers['x-task-data-password'] as string ||
-                             req.headers['x-auth-password'] as string;
-    if (providedPassword && providedPassword === taskDataPassword) {
-      return true;
-    }
-
-    return false;
+    return !!(sessionToken && validateSessionToken(sessionToken));
   };
 
   // Get all tasks (paginated) - does NOT include input/output data
@@ -185,13 +173,17 @@ export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig
     }
   });
 
-  // Check if task data authentication is required
+  // Check if user is authenticated (used to validate session tokens)
   router.get('/auth/status', (req: Request, res: Response) => {
+    const authenticated = isAuthenticated(req);
     res.json({
+      authenticated,
       authRequired: requiresAuth,
-      message: requiresAuth
-        ? 'Task input/output data requires authentication. Set X-Task-Data-Password header or password query parameter.'
-        : 'Task data is accessible without authentication. Set TASK_DATA_PASSWORD environment variable to enable protection.'
+      message: authenticated
+        ? 'Session token is valid.'
+        : requiresAuth
+          ? 'Authentication required. Please login to get a session token.'
+          : 'Authentication not configured.'
     });
   });
 

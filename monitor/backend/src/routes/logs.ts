@@ -14,32 +14,23 @@ interface LogRow {
 }
 
 interface LogsRouterConfig {
-  password?: string;
   validateSessionToken?: (token: string) => boolean;
 }
 
 export function createLogsRouter(db: TruebitDatabase, config: LogsRouterConfig = {}): Router {
   const router: Router = express.Router();
-  const { password, validateSessionToken } = config;
-  const requiresAuth = !!password;
+  const { validateSessionToken } = config;
+  const requiresAuth = !!validateSessionToken;
 
-  // Authentication middleware for logs endpoint - accepts session token or password
+  // Authentication middleware for logs endpoint - requires session token
   const authMiddleware = (req: Request, res: Response, next: NextFunction): void => {
     if (!requiresAuth) {
       next();
       return;
     }
 
-    // Try session token first (preferred - no password stored on client)
     const sessionToken = req.headers['x-session-token'] as string;
-    if (sessionToken && validateSessionToken && validateSessionToken(sessionToken)) {
-      next();
-      return;
-    }
-
-    // Fall back to password (backwards compatibility)
-    const providedPassword = req.headers['x-auth-password'] as string;
-    if (providedPassword && providedPassword === password) {
+    if (sessionToken && validateSessionToken(sessionToken)) {
       next();
       return;
     }

@@ -641,15 +641,9 @@ function handleRegistration(parsed: ParsedLog): void {
 
 // API Routes
 app.use('/api/status', createStatusRouter(db, dockerClient));
-app.use('/api/tasks', createTasksRouter(db, {
-  taskDataPassword: TASK_DATA_PASSWORD,
-  validateSessionToken
-}));
+app.use('/api/tasks', createTasksRouter(db, { validateSessionToken }));
 app.use('/api/invoices', createInvoicesRouter(db));
-app.use('/api/logs', createLogsRouter(db, {
-  password: TASK_DATA_PASSWORD,
-  validateSessionToken
-}));
+app.use('/api/logs', createLogsRouter(db, { validateSessionToken }));
 // Federation route is registered in start() after client is created
 
 // Challenge-response authentication endpoints
