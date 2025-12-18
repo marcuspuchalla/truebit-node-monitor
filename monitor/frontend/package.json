@@ -1,8 +1,18 @@
 {
   "name": "truebit-node-monitor-frontend",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Frontend for TrueBit Node Monitor",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcuspuchalla/truebit-node-monitor.git",
+    "directory": "monitor/frontend"
+  },
+  "bugs": {
+    "url": "https://github.com/marcuspuchalla/truebit-node-monitor/issues"
+  },
+  "homepage": "https://github.com/marcuspuchalla/truebit-node-monitor#readme",
+  "license": "GPL-3.0",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",

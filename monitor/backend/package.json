@@ -1,9 +1,19 @@
 {
   "name": "truebit-node-monitor-backend",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Backend server for TrueBit Node Monitor",
   "main": "dist/index.js",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcuspuchalla/truebit-node-monitor.git",
+    "directory": "monitor/backend"
+  },
+  "bugs": {
+    "url": "https://github.com/marcuspuchalla/truebit-node-monitor/issues"
+  },
+  "homepage": "https://github.com/marcuspuchalla/truebit-node-monitor#readme",
+  "license": "GPL-3.0",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",

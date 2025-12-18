@@ -101,7 +101,7 @@
       <!-- Version & GitHub -->
       <div class="border-t pt-6 mt-6 flex items-center justify-between">
         <p class="text-xs text-gray-500">
-          TrueBit Monitor v0.0.1
+          TrueBit Monitor v0.1.0
         </p>
         <a
           href="https://github.com/marcuspuchalla/truebit-node-monitor"
