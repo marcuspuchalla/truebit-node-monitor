@@ -210,9 +210,12 @@ async function handleSubmit() {
     const data = await verifyResponse.json();
 
     if (verifyResponse.ok && data.success) {
-      // Store auth in localStorage (store password for re-verification)
+      // Store session token (not password!) in localStorage
+      // Session tokens are secure: random, expire in 24h, don't reveal password
       localStorage.setItem('app_authenticated', 'true');
-      localStorage.setItem('app_password', password.value);
+      localStorage.setItem('app_session_token', data.sessionToken);
+      // Remove any old password storage (migration)
+      localStorage.removeItem('app_password');
       // Update the shared auth state
       isAuthenticated.value = true;
     } else {

@@ -3,6 +3,7 @@ import { ref } from 'vue';
 // Auth state - shared across all components
 const isAuthenticated = ref(false);
 const authError = ref('');
+const sessionToken = ref<string | null>(null);
 
 // Loading state for initial app load
 const showPreloader = ref(true);
@@ -115,29 +116,6 @@ async function hashWithChallenge(challenge: string, password: string): Promise<s
   return sha256Fallback(message);
 }
 
-// Challenge-response authentication
-async function authenticateWithChallenge(password: string): Promise<boolean> {
-  // Step 1: Get challenge from server
-  const challengeResponse = await fetch('/api/auth/challenge');
-  if (!challengeResponse.ok) {
-    throw new Error('Failed to get authentication challenge');
-  }
-  const { challengeId, challenge } = await challengeResponse.json();
-
-  // Step 2: Hash password with challenge (password never sent over network)
-  const hash = await hashWithChallenge(challenge, password);
-
-  // Step 3: Send hash to server for verification
-  const verifyResponse = await fetch('/api/auth/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ challengeId, hash })
-  });
-
-  const data = await verifyResponse.json();
-  return verifyResponse.ok && data.success;
-}
-
 const hidePreloader = (): void => {
   showPreloader.value = false;
 };
@@ -159,14 +137,34 @@ const authenticate = async (password: string): Promise<boolean> => {
   authError.value = '';
 
   try {
-    const success = await authenticateWithChallenge(password);
+    // Step 1: Get challenge from server
+    const challengeResponse = await fetch('/api/auth/challenge');
+    if (!challengeResponse.ok) {
+      throw new Error('Failed to get authentication challenge');
+    }
+    const { challengeId, challenge } = await challengeResponse.json();
 
-    if (success) {
+    // Step 2: Hash password with challenge (password never sent over network)
+    const hash = await hashWithChallenge(challenge, password);
+
+    // Step 3: Send hash to server for verification
+    const verifyResponse = await fetch('/api/auth/verify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ challengeId, hash })
+    });
+
+    const data = await verifyResponse.json();
+
+    if (verifyResponse.ok && data.success) {
       isAuthenticated.value = true;
-      // Store in localStorage so user doesn't need to re-enter
-      // This is "strictly necessary" storage for authentication - no cookie consent needed
+      // Store session token (not password!) in memory and localStorage
+      // Session tokens are secure: they're random, expire, and don't reveal the password
+      sessionToken.value = data.sessionToken;
       localStorage.setItem('app_authenticated', 'true');
-      localStorage.setItem('app_password', password);
+      localStorage.setItem('app_session_token', data.sessionToken);
+      // Remove any old password storage (migration)
+      localStorage.removeItem('app_password');
       return true;
     } else {
       authError.value = 'Invalid password';
@@ -181,20 +179,29 @@ const authenticate = async (password: string): Promise<boolean> => {
 // Check if already authenticated (from localStorage)
 const checkStoredAuth = async (): Promise<boolean> => {
   const wasAuthenticated = localStorage.getItem('app_authenticated');
-  const storedPassword = localStorage.getItem('app_password');
+  const storedToken = localStorage.getItem('app_session_token');
 
-  if (wasAuthenticated === 'true' && storedPassword) {
-    // Verify the password is still valid using challenge-response
+  // Migration: clear old password storage if present
+  if (localStorage.getItem('app_password')) {
+    localStorage.removeItem('app_password');
+  }
+
+  if (wasAuthenticated === 'true' && storedToken) {
+    // Verify the session token is still valid by making a test API call
     try {
-      const success = await authenticateWithChallenge(storedPassword);
+      const response = await fetch('/api/tasks/auth/status', {
+        headers: { 'X-Session-Token': storedToken }
+      });
 
-      if (success) {
+      if (response.ok) {
         isAuthenticated.value = true;
+        sessionToken.value = storedToken;
         return true;
       } else {
-        // Password no longer valid, clear storage
+        // Session token no longer valid, clear storage
         localStorage.removeItem('app_authenticated');
-        localStorage.removeItem('app_password');
+        localStorage.removeItem('app_session_token');
+        sessionToken.value = null;
         isAuthenticated.value = false;
         return false;
       }
@@ -208,13 +215,22 @@ const checkStoredAuth = async (): Promise<boolean> => {
 // Logout - clear stored auth
 const logout = (): void => {
   isAuthenticated.value = false;
+  sessionToken.value = null;
   localStorage.removeItem('app_authenticated');
+  localStorage.removeItem('app_session_token');
+  // Migration cleanup
   localStorage.removeItem('app_password');
 };
 
-// Get stored password (for API calls that need it)
+// Get session token (for API calls that need authentication)
+const getSessionToken = (): string | null => {
+  return sessionToken.value || localStorage.getItem('app_session_token');
+};
+
+// Deprecated: kept for backwards compatibility during transition
 const getStoredPassword = (): string | null => {
-  return localStorage.getItem('app_password');
+  // Return session token instead - API now accepts both
+  return getSessionToken();
 };
 
 export const usePreloader = () => {
@@ -230,6 +246,7 @@ export const usePreloader = () => {
     authenticate,
     checkStoredAuth,
     logout,
-    getStoredPassword
+    getSessionToken,
+    getStoredPassword // Deprecated, use getSessionToken
   };
 };

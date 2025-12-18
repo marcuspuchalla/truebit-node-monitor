@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 
 // ES module equivalent of __dirname
@@ -62,12 +63,38 @@ const CSRF_SECRET = crypto.randomBytes(32).toString('hex');
 const authChallenges = new Map<string, { challenge: string; expiresAt: number }>();
 const CHALLENGE_EXPIRY_MS = 60000; // 1 minute
 
-// Cleanup expired challenges periodically
+// Security: Session tokens - issued on successful auth, used for protected API calls
+// This replaces storing plaintext passwords on the client
+const sessionTokens = new Map<string, { expiresAt: number }>();
+const SESSION_TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+// Generate a secure session token
+function generateSessionToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Validate a session token
+function validateSessionToken(token: string): boolean {
+  const session = sessionTokens.get(token);
+  if (!session) return false;
+  if (session.expiresAt < Date.now()) {
+    sessionTokens.delete(token);
+    return false;
+  }
+  return true;
+}
+
+// Cleanup expired challenges and sessions periodically
 setInterval(() => {
   const now = Date.now();
   for (const [key, value] of authChallenges.entries()) {
     if (value.expiresAt < now) {
       authChallenges.delete(key);
+    }
+  }
+  for (const [key, value] of sessionTokens.entries()) {
+    if (value.expiresAt < now) {
+      sessionTokens.delete(key);
     }
   }
 }, 30000); // Cleanup every 30 seconds
@@ -183,8 +210,22 @@ const apiLimiter = rateLimit({
   legacyHeaders: false
 });
 
+// Strict rate limiting for authentication endpoints
+// Prevents brute force attacks on password
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // Only 10 auth attempts per 15 minutes per IP
+  message: { error: 'Too many authentication attempts, please try again later' },
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: false // Count all requests, not just failures
+});
+
 // Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
+
+// Apply strict rate limiting to auth endpoints
+app.use('/api/auth/', authLimiter);
 
 // Body parser with size limit
 app.use(express.json({ limit: '1mb' }));
@@ -267,13 +308,21 @@ app.use('/api/', (req, res, next) => {
     return next();
   }
 
+  // Skip CSRF for auth endpoints (they have their own security: challenge-response)
+  if (req.path.startsWith('/auth/')) {
+    return next();
+  }
+
   const csrfToken = req.headers['x-csrf-token'] as string;
   const sessionId = req.ip || 'anonymous';
 
   if (!csrfToken || !validateCSRFToken(sessionId, csrfToken)) {
     logAuditEvent('CSRF_VALIDATION_FAILED', req, { path: req.path, method: req.method });
-    // Log warning but don't block - CSRF is advisory for now
-    console.warn(`[SECURITY] CSRF validation failed for ${req.method} ${req.path}`);
+    res.status(403).json({
+      error: 'CSRF validation failed',
+      message: 'Invalid or missing CSRF token. Please refresh the page and try again.'
+    });
+    return;
   }
 
   next();
@@ -281,11 +330,14 @@ app.use('/api/', (req, res, next) => {
 
 // Audit log endpoint (read-only, for security monitoring) - PROTECTED
 app.get('/api/audit-log', (req, res) => {
-  // Require authentication
-  const providedPassword = req.headers['x-auth-password'] as string ||
-                           req.query.password as string;
+  // Require authentication via session token or password
+  const sessionToken = req.headers['x-session-token'] as string;
+  const providedPassword = req.headers['x-auth-password'] as string;
 
-  if (!providedPassword || providedPassword !== TASK_DATA_PASSWORD) {
+  const isAuth = (sessionToken && validateSessionToken(sessionToken)) ||
+                 (providedPassword && providedPassword === TASK_DATA_PASSWORD);
+
+  if (!isAuth) {
     logAuditEvent('SECURITY_AUDIT_LOG_ACCESS_DENIED', req);
     res.status(401).json({
       error: 'Authentication required',
@@ -589,9 +641,15 @@ function handleRegistration(parsed: ParsedLog): void {
 
 // API Routes
 app.use('/api/status', createStatusRouter(db, dockerClient));
-app.use('/api/tasks', createTasksRouter(db, { taskDataPassword: TASK_DATA_PASSWORD }));
+app.use('/api/tasks', createTasksRouter(db, {
+  taskDataPassword: TASK_DATA_PASSWORD,
+  validateSessionToken
+}));
 app.use('/api/invoices', createInvoicesRouter(db));
-app.use('/api/logs', createLogsRouter(db, { password: TASK_DATA_PASSWORD }));
+app.use('/api/logs', createLogsRouter(db, {
+  password: TASK_DATA_PASSWORD,
+  validateSessionToken
+}));
 // Federation route is registered in start() after client is created
 
 // Challenge-response authentication endpoints
@@ -633,10 +691,8 @@ app.post('/api/auth/verify', express.json(), (req, res) => {
     return res.status(401).json({ success: false, message: 'Challenge expired' });
   }
 
-  // Remove the challenge (one-time use)
-  authChallenges.delete(challengeId);
-
   // Compute expected hash: SHA-256(challenge + password)
+  // NOTE: Do NOT delete challenge yet - delete AFTER verification to prevent timing attacks
   const expectedHash = crypto
     .createHash('sha256')
     .update(challengeData.challenge + TASK_DATA_PASSWORD)
@@ -647,12 +703,29 @@ app.post('/api/auth/verify', express.json(), (req, res) => {
   const expectedBuffer = Buffer.from(expectedHash, 'hex');
 
   if (hashBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(hashBuffer, expectedBuffer)) {
+    // Delete challenge on failure (one-time use)
+    authChallenges.delete(challengeId);
     logAuditEvent('AUTH_FAILED', req, { type: 'app_login', reason: 'invalid_hash' });
     return res.status(401).json({ success: false, message: 'Invalid password' });
   }
 
+  // Delete challenge on success (one-time use)
+  authChallenges.delete(challengeId);
+
+  // Generate session token for subsequent API calls
+  // This allows the client to make authenticated requests without storing the password
+  const sessionToken = generateSessionToken();
+  sessionTokens.set(sessionToken, {
+    expiresAt: Date.now() + SESSION_TOKEN_EXPIRY_MS
+  });
+
   logAuditEvent('AUTH_SUCCESS', req, { type: 'app_login' });
-  return res.json({ success: true, message: 'Authentication successful' });
+  return res.json({
+    success: true,
+    message: 'Authentication successful',
+    sessionToken, // Client stores this instead of password
+    expiresIn: SESSION_TOKEN_EXPIRY_MS
+  });
 });
 
 // Health check endpoints (both /health and /api/health for Docker health checks)
@@ -1039,9 +1112,26 @@ async function start(): Promise<void> {
       if (TASK_DATA_PASSWORD_FROM_ENV) {
         console.log('   📝 Password: (set via TASK_DATA_PASSWORD env var)');
       } else {
-        console.log('   ⚠️  Auto-generated password (save this!):');
-        console.log(`   🔑 ${TASK_DATA_PASSWORD}`);
-        console.log('   💡 Set TASK_DATA_PASSWORD env var to use your own password');
+        // Write auto-generated password to a secure file instead of logging to console
+        // This prevents password exposure in Docker logs, log aggregators, etc.
+        const dataDir = path.dirname(DB_PATH);
+        const passwordFile = path.join(dataDir, '.password');
+        try {
+          // Ensure data directory exists
+          if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+          }
+          // Write password with restrictive permissions (owner read/write only)
+          fs.writeFileSync(passwordFile, TASK_DATA_PASSWORD, { mode: 0o600 });
+          console.log(`   📝 Auto-generated password saved to: ${passwordFile}`);
+          console.log('   ⚠️  IMPORTANT: Back up this file! Password is NOT shown in logs.');
+          console.log('   💡 Or set TASK_DATA_PASSWORD env var to use your own password');
+        } catch (err) {
+          // Fallback: if we can't write the file, we must display the password
+          console.warn('   ⚠️  Could not write password file, displaying in log (less secure):');
+          console.log(`   🔑 ${TASK_DATA_PASSWORD}`);
+          console.log('   💡 Set TASK_DATA_PASSWORD env var to use your own password');
+        }
       }
       console.log();
     });

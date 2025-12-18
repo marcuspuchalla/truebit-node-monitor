@@ -25,6 +25,7 @@ interface TaskRow {
 
 interface TasksRouterConfig {
   taskDataPassword?: string;
+  validateSessionToken?: (token: string) => boolean;
 }
 
 /**
@@ -73,8 +74,26 @@ function formatTaskForAPI(task: TaskRow, includeInputOutput = false): Record<str
 }
 
 export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig = {}): Router {
-  const { taskDataPassword } = config;
+  const { taskDataPassword, validateSessionToken } = config;
   const requiresAuth = !!taskDataPassword;
+
+  // Helper to validate authentication via password or session token
+  const isAuthenticated = (req: Request): boolean => {
+    // Try session token first (preferred - no password stored on client)
+    const sessionToken = req.headers['x-session-token'] as string;
+    if (sessionToken && validateSessionToken && validateSessionToken(sessionToken)) {
+      return true;
+    }
+
+    // Fall back to password (backwards compatibility)
+    const providedPassword = req.headers['x-task-data-password'] as string ||
+                             req.headers['x-auth-password'] as string;
+    if (providedPassword && providedPassword === taskDataPassword) {
+      return true;
+    }
+
+    return false;
+  };
 
   // Get all tasks (paginated) - does NOT include input/output data
   router.get('/', (req: Request, res: Response) => {
@@ -120,21 +139,16 @@ export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig
     }
   });
 
-  // Get sensitive task data (input/output) - requires password if TASK_DATA_PASSWORD is set
+  // Get sensitive task data (input/output) - requires authentication if TASK_DATA_PASSWORD is set
   router.get('/:executionId/data', (req: Request, res: Response) => {
     try {
-      // Check password if required
-      if (requiresAuth) {
-        const providedPassword = req.headers['x-task-data-password'] as string ||
-                                 req.query.password as string;
-
-        if (!providedPassword || providedPassword !== taskDataPassword) {
-          res.status(401).json({
-            error: 'Authentication required',
-            message: 'Please provide the task data password via X-Task-Data-Password header or password query parameter'
-          });
-          return;
-        }
+      // Check authentication if required
+      if (requiresAuth && !isAuthenticated(req)) {
+        res.status(401).json({
+          error: 'Authentication required',
+          message: 'Please provide a valid session token via X-Session-Token header or authenticate via the login page'
+        });
+        return;
       }
 
       const task = db.getTask(req.params.executionId) as TaskRow | undefined;
