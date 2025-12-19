@@ -45,6 +45,14 @@ export interface LogEntry {
   data?: unknown;
 }
 
+export interface TaskArtifact {
+  executionId: string;
+  artifactType: string;
+  hash?: string | null;
+  path?: string | null;
+  sizeBytes?: number | null;
+}
+
 export interface NodeStatus {
   address?: string;
   version?: string;
@@ -180,6 +188,19 @@ class TruebitDatabase {
       )
     `);
 
+    // Task artifacts (e.g., wasm binaries, source snapshots)
+    this.db!.exec(`
+      CREATE TABLE IF NOT EXISTS task_artifacts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        execution_id TEXT NOT NULL,
+        artifact_type TEXT NOT NULL,
+        hash TEXT,
+        path TEXT,
+        size_bytes INTEGER,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Node status table (single row for current status)
     this.db!.exec(`
       CREATE TABLE IF NOT EXISTS node_status (
@@ -286,6 +307,10 @@ class TruebitDatabase {
       CREATE INDEX IF NOT EXISTS idx_tasks_received_at ON tasks(received_at);
       CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp);
       CREATE INDEX IF NOT EXISTS idx_logs_execution_id ON logs(execution_id);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_task_artifacts_unique
+      ON task_artifacts(execution_id, artifact_type, hash);
+      CREATE INDEX IF NOT EXISTS idx_task_artifacts_execution
+      ON task_artifacts(execution_id);
       CREATE INDEX IF NOT EXISTS idx_invoices_timestamp ON invoices(timestamp);
       CREATE INDEX IF NOT EXISTS idx_federation_messages_type ON federation_messages(message_type);
       CREATE INDEX IF NOT EXISTS idx_federation_messages_sender ON federation_messages(sender_node_id);
@@ -486,6 +511,33 @@ class TruebitDatabase {
 
     const stmt = this.db!.prepare(query);
     return stmt.all(...params);
+  }
+
+  // ===== TASK ARTIFACTS =====
+
+  upsertTaskArtifact(artifact: TaskArtifact): Database.RunResult {
+    const stmt = this.db!.prepare(`
+      INSERT OR REPLACE INTO task_artifacts (
+        execution_id, artifact_type, hash, path, size_bytes
+      ) VALUES (?, ?, ?, ?, ?)
+    `);
+
+    return stmt.run(
+      artifact.executionId,
+      artifact.artifactType,
+      artifact.hash || null,
+      artifact.path || null,
+      artifact.sizeBytes || null
+    );
+  }
+
+  getTaskArtifacts(executionId: string): unknown[] {
+    const stmt = this.db!.prepare(`
+      SELECT * FROM task_artifacts
+      WHERE execution_id = ?
+      ORDER BY created_at DESC
+    `);
+    return stmt.all(executionId);
   }
 
   // ===== NODE STATUS =====

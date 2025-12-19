@@ -1,6 +1,6 @@
 import Docker from 'dockerode';
 import { EventEmitter } from 'events';
-import type { Readable } from 'stream';
+import { PassThrough, type Readable } from 'stream';
 
 export interface ContainerInfo {
   id: string;
@@ -26,11 +26,41 @@ class DockerClient extends EventEmitter {
   private docker: Docker;
   public container: Docker.Container | null = null;
   private logStream: Readable | null = null;
+  private logStdout: Readable | null = null;
+  private logStderr: Readable | null = null;
 
   constructor(containerName: string, socketPath: string = '/var/run/docker.sock') {
     super();
     this.containerName = containerName;
     this.docker = new Docker({ socketPath });
+  }
+
+  /**
+   * Execute a command in the container (array-based, no shell)
+   */
+  private async execCommandArray(cmdArray: string[]): Promise<Buffer> {
+    if (!this.container) {
+      await this.initialize();
+    }
+
+    const exec = await this.container!.exec({
+      Cmd: cmdArray,
+      AttachStdout: true,
+      AttachStderr: true
+    });
+
+    const stream = await exec.start({ hijack: false, stdin: false }) as unknown as Readable;
+
+    return new Promise((resolve, reject) => {
+      const chunks: Buffer[] = [];
+      stream.on('data', (chunk: Buffer) => {
+        // Remove Docker stream header (8 bytes) when present
+        const data = chunk.length > 8 ? chunk.subarray(8) : chunk;
+        chunks.push(data);
+      });
+      stream.on('end', () => resolve(Buffer.concat(chunks)));
+      stream.on('error', reject);
+    });
   }
 
   /**
@@ -148,13 +178,20 @@ class DockerClient extends EventEmitter {
       }
       this.logStream = logResult;
 
-      // Emit log data
-      this.logStream.on('data', (chunk: Buffer) => {
-        // Docker prepends 8 bytes of header to each message
-        // Format: [STREAM_TYPE, 0, 0, 0, SIZE1, SIZE2, SIZE3, SIZE4, ...DATA]
+      // Demultiplex stdout/stderr (Docker multiplexes streams when TTY is false)
+      const stdout = new PassThrough();
+      const stderr = new PassThrough();
+      this.logStdout = stdout;
+      this.logStderr = stderr;
+      this.docker.modem.demuxStream(logResult, stdout, stderr);
+
+      const emitChunk = (chunk: Buffer): void => {
         const data = chunk.toString('utf8');
         this.emit('log', data);
-      });
+      };
+
+      stdout.on('data', emitChunk);
+      stderr.on('data', emitChunk);
 
       this.logStream.on('end', () => {
         this.emit('log-end');
@@ -237,8 +274,60 @@ class DockerClient extends EventEmitter {
     if (this.logStream) {
       this.logStream.destroy();
       this.logStream = null;
+      this.logStdout?.destroy();
+      this.logStderr?.destroy();
+      this.logStdout = null;
+      this.logStderr = null;
       console.log('Log stream stopped');
     }
+  }
+
+  /**
+   * Get file size in bytes (returns null if not found)
+   */
+  async statFileSize(path: string): Promise<number | null> {
+    try {
+      const result = await this.execCommandArray(['stat', '-c', '%s', path]);
+      const size = parseInt(result.toString('utf8').trim(), 10);
+      return Number.isFinite(size) ? size : null;
+    } catch {
+      try {
+        const result = await this.execCommandArray(['wc', '-c', path]);
+        const size = parseInt(result.toString('utf8').trim().split(/\s+/)[0], 10);
+        return Number.isFinite(size) ? size : null;
+      } catch {
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Find prepared wasm artifact by hash in cache
+   */
+  async findWasmArtifact(hash: string): Promise<{ path: string; sizeBytes: number | null } | null> {
+    const base = '/app/build/wasm-files/cache';
+    try {
+      const versionsBuf = await this.execCommandArray(['ls', '-1', base]);
+      const versions = versionsBuf.toString('utf8').split('\n').map(v => v.trim()).filter(Boolean);
+
+      for (const version of versions) {
+        const wasmPath = `${base}/${version}/${hash}/prepared.wasm`;
+        const size = await this.statFileSize(wasmPath);
+        if (size !== null) {
+          return { path: wasmPath, sizeBytes: size };
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Read a file from the container (bounded)
+   */
+  async readFile(path: string, maxBytes: number): Promise<Buffer> {
+    return this.execCommandArray(['head', '-c', String(maxBytes), path]);
   }
 
   /**

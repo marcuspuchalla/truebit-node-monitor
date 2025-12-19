@@ -145,25 +145,27 @@ class LogFileReader extends EventEmitter {
   /**
    * Tail the current log file for real-time updates
    */
-  async tailCurrentLog(): Promise<void> {
+  async tailCurrentLog(): Promise<boolean> {
     const logFile = await this.getCurrentLogFile();
 
     if (!logFile) {
       console.error('No current log file found to tail');
-      return;
+      this.emit('tail-error', new Error('No current log file found to tail'));
+      return false;
     }
 
     console.log(`   Tailing current log: ${logFile}`);
 
     try {
-      // Use exec with tail -f
+      // Use exec with tail -F to follow rotation
       const exec = await this.container.exec({
-        Cmd: ['tail', '-f', '-n', '0', logFile],
+        Cmd: ['tail', '-F', '-n', '0', logFile],
         AttachStdout: true,
         AttachStderr: true
       });
 
       this.tailStream = await exec.start({ hijack: true, stdin: false }) as unknown as Readable;
+      this.emit('tail-started', logFile);
 
       this.tailStream.on('data', (chunk: Buffer) => {
         // Process data, removing Docker header
@@ -180,14 +182,19 @@ class LogFileReader extends EventEmitter {
 
       this.tailStream.on('end', () => {
         console.log('Tail stream ended, attempting to restart...');
+        this.emit('tail-error', new Error('Tail stream ended'));
         setTimeout(() => this.tailCurrentLog(), 5000);
       });
 
       this.tailStream.on('error', (error: Error) => {
         console.error('Tail stream error:', error.message);
+        this.emit('tail-error', error);
       });
+      return true;
     } catch (error) {
       console.error('Failed to start tail stream:', (error as Error).message);
+      this.emit('tail-error', error as Error);
+      return false;
     }
   }
 

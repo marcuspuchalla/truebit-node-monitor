@@ -25,6 +25,8 @@ interface TaskRow {
 
 interface TasksRouterConfig {
   validateSessionToken?: (token: string) => boolean;
+  readArtifactFile?: (path: string, maxBytes: number) => Promise<Buffer>;
+  maxArtifactBytes?: number;
 }
 
 /**
@@ -73,7 +75,7 @@ function formatTaskForAPI(task: TaskRow, includeInputOutput = false): Record<str
 }
 
 export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig = {}): Router {
-  const { validateSessionToken } = config;
+  const { validateSessionToken, readArtifactFile, maxArtifactBytes } = config;
   const requiresAuth = !!validateSessionToken;
 
   // Helper to validate authentication via session token
@@ -168,6 +170,69 @@ export function createTasksRouter(db: TruebitDatabase, config: TasksRouterConfig
       }
 
       res.json(sensitiveData);
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Get task artifacts metadata (e.g., wasm hashes) - requires authentication
+  router.get('/:executionId/artifacts', (req: Request, res: Response) => {
+    try {
+      if (requiresAuth && !isAuthenticated(req)) {
+        res.status(401).json({
+          error: 'Authentication required',
+          message: 'Artifacts access requires authentication.'
+        });
+        return;
+      }
+
+      const artifacts = db.getTaskArtifacts(req.params.executionId);
+      res.json({ artifacts });
+    } catch (error) {
+      res.status(500).json({ error: (error as Error).message });
+    }
+  });
+
+  // Download a specific artifact by hash - requires authentication
+  router.get('/:executionId/artifacts/:hash', async (req: Request, res: Response) => {
+    try {
+      if (requiresAuth && !isAuthenticated(req)) {
+        res.status(401).json({
+          error: 'Authentication required',
+          message: 'Artifacts access requires authentication.'
+        });
+        return;
+      }
+
+      const hash = req.params.hash;
+      if (!/^[a-f0-9]{64}$/i.test(hash)) {
+        res.status(400).json({ error: 'Invalid artifact hash' });
+        return;
+      }
+
+      const artifacts = db.getTaskArtifacts(req.params.executionId) as Array<{ hash?: string; path?: string }>;
+      const artifact = artifacts.find(a => a.hash?.toLowerCase() === hash.toLowerCase());
+      if (!artifact || !artifact.path) {
+        res.status(404).json({ error: 'Artifact not found' });
+        return;
+      }
+
+      // Basic path safety: only allow wasm cache paths
+      if (!artifact.path.startsWith('/app/build/wasm-files/')) {
+        res.status(403).json({ error: 'Artifact path not allowed' });
+        return;
+      }
+
+      if (!readArtifactFile) {
+        res.status(501).json({ error: 'Artifact download not configured' });
+        return;
+      }
+
+      const maxBytes = maxArtifactBytes || 20 * 1024 * 1024;
+      const data = await readArtifactFile(artifact.path, maxBytes);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Length', data.length);
+      res.send(data);
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }

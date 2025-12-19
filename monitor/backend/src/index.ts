@@ -40,6 +40,8 @@ const HOST = process.env.HOST || '0.0.0.0';
 const CONTAINER_NAME = process.env.CONTAINER_NAME || 'runner-node';
 const DB_PATH = process.env.DB_PATH || './data/truebit-monitor.db';
 const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
+const MAX_OUTPUT_DATA_BYTES = parseInt(process.env.MAX_OUTPUT_DATA_BYTES || '102400', 10); // 100KB
+const WASM_HASH_PATTERN = /^[a-f0-9]{64}$/i;
 
 // CORS: Only allow same-origin by default. Set ALLOWED_ORIGINS env var for cross-origin access.
 // Example: ALLOWED_ORIGINS=https://tru.watch,https://www.tru.watch
@@ -441,6 +443,8 @@ let logFileReader: LogFileReader;
 
 // Current task tracking (in-memory)
 const activeTasks = new Map<string, Task & { status: string; startedAt?: string }>();
+let lastLogAt: string | null = null;
+let activeLogSource: 'file' | 'docker' | null = null;
 
 // Process parsed log
 function processLog(parsed: ParsedLog | null, broadcast: boolean = false): void {
@@ -613,9 +617,23 @@ function handleExecutionOutput(parsed: ParsedLog): void {
     const metrics = logParser.parseExecutionMetrics(parsed.data);
 
     if (metrics) {
+      let outputData: unknown | undefined;
+      try {
+        const payload = parsed.data;
+        if (payload) {
+          const serialized = JSON.stringify(payload);
+          if (Buffer.byteLength(serialized, 'utf8') <= MAX_OUTPUT_DATA_BYTES) {
+            outputData = payload;
+          }
+        }
+      } catch {
+        // Ignore serialization errors for output payloads
+      }
+
       db.updateTaskComplete(executionId, {
         completedAt: new Date().toISOString(),
         status: metrics.exitCode === 0 ? 'completed' : 'failed',
+        outputData,
         elapsedMs: metrics.elapsed,
         gasLimit: metrics.gas?.limit,
         gasUsed: metrics.gas?.used,
@@ -632,6 +650,22 @@ function handleExecutionOutput(parsed: ParsedLog): void {
       });
 
       console.log(`📊 Task metrics: ${executionId} - ${metrics.elapsed.toFixed(2)}ms`);
+
+      // Best-effort: map wasm hash to artifact and store metadata
+      if (metrics.wasm?.hash && WASM_HASH_PATTERN.test(metrics.wasm.hash)) {
+        void (async () => {
+          const artifact = await dockerClient.findWasmArtifact(metrics.wasm!.hash as string);
+          if (artifact) {
+            db.upsertTaskArtifact({
+              executionId,
+              artifactType: 'wasm_prepared',
+              hash: metrics.wasm!.hash as string,
+              path: artifact.path,
+              sizeBytes: artifact.sizeBytes
+            });
+          }
+        })();
+      }
     }
   } catch (error) {
     console.error('Error handling execution output:', (error as Error).message);
@@ -682,9 +716,16 @@ function handleSemaphore(parsed: ParsedLog): void {
 
 // API Routes
 app.use('/api/status', createStatusRouter(db, dockerClient));
-app.use('/api/tasks', createTasksRouter(db, { validateSessionToken }));
+app.use('/api/tasks', createTasksRouter(db, {
+  validateSessionToken,
+  readArtifactFile: (path: string, maxBytes: number) => dockerClient.readFile(path, maxBytes),
+  maxArtifactBytes: parseInt(process.env.MAX_ARTIFACT_BYTES || '20971520', 10)
+}));
 app.use('/api/invoices', createInvoicesRouter(db));
-app.use('/api/logs', createLogsRouter(db, { validateSessionToken }));
+app.use('/api/logs', createLogsRouter(db, {
+  validateSessionToken,
+  getLogStatus: () => ({ source: activeLogSource, lastLogAt })
+}));
 // Federation route is registered in start() after client is created
 
 // Challenge-response authentication endpoints
@@ -1106,9 +1147,18 @@ async function start(): Promise<void> {
 
     // Buffer for real-time log aggregation
     let lineBuffer = '';
+    activeLogSource = null;
+    let dockerLogsStarted = false;
 
-    // Tail current log file for new entries
-    logFileReader.on('line', (logLine: string) => {
+    const handleStreamingLine = (logLine: string, source: 'file' | 'docker'): void => {
+      if (activeLogSource && activeLogSource !== source) {
+        return;
+      }
+      if (!activeLogSource) {
+        activeLogSource = source;
+      }
+      lastLogAt = new Date().toISOString();
+
       const cleanLine = logLine
         .replace(/\x1b\[[0-9;]*m/g, '') // Remove ANSI codes
         .replace(/^runner-node\s+\|\s+/, ''); // Remove container prefix
@@ -1130,10 +1180,49 @@ async function start(): Promise<void> {
         // Continuation line - append to buffer
         lineBuffer += '\n' + logLine;
       }
+    };
+
+    const startDockerLogStream = async (): Promise<void> => {
+      if (dockerLogsStarted) return;
+      dockerLogsStarted = true;
+      console.log('   ↪ Falling back to Docker logs stream');
+
+      dockerClient.on('log', (chunk: string) => {
+        const lines = chunk.split('\n').filter(line => line.trim());
+        for (const line of lines) {
+          handleStreamingLine(line, 'docker');
+        }
+      });
+
+      try {
+        await dockerClient.streamLogs({ follow: true, timestamps: true, tail: 200 });
+        console.log('   ✓ Streaming logs from Docker');
+      } catch (error) {
+        console.error('   ✗ Failed to stream Docker logs:', (error as Error).message);
+      }
+    };
+
+    // Tail current log file for new entries
+    logFileReader.on('line', (logLine: string) => {
+      handleStreamingLine(logLine, 'file');
     });
 
-    logFileReader.tailCurrentLog();
-    console.log('   ✓ Tailing current log file for real-time updates');
+    // If file tailing fails, fall back to Docker logs
+    logFileReader.on('tail-error', () => {
+      if (!activeLogSource || activeLogSource === 'file') {
+        activeLogSource = 'docker';
+        logFileReader.stopTailing();
+        void startDockerLogStream();
+      }
+    });
+
+    const tailOk = await logFileReader.tailCurrentLog();
+    if (tailOk) {
+      console.log('   ✓ Tailing current log file for real-time updates');
+    } else {
+      activeLogSource = 'docker';
+      await startDockerLogStream();
+    }
     console.log();
 
     // Start server

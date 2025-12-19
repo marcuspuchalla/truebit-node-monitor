@@ -1,7 +1,13 @@
 <template>
   <div class="card">
     <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-semibold text-gray-900">Real-time Logs</h2>
+      <div>
+        <h2 class="text-lg font-semibold text-gray-900">Real-time Logs</h2>
+        <p class="text-xs text-gray-500">
+          Source: {{ logsStore.status.source || 'unknown' }}
+          <span v-if="logsStore.status.lastLogAt">· Last: {{ formatTimestamp(logsStore.status.lastLogAt) }}</span>
+        </p>
+      </div>
       <div class="flex items-center space-x-2">
         <select
           v-model="selectedLevel"
@@ -49,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useLogsStore } from '../stores/logs';
 
 const props = defineProps({
@@ -101,8 +107,18 @@ watch(() => logsStore.logs.length, async () => {
   }
 });
 
+let statusTimer;
+
 onMounted(() => {
   // Fetch initial logs from API
   logsStore.fetchLogs({ limit: props.maxLogs });
+  logsStore.fetchStatus();
+  statusTimer = setInterval(() => logsStore.fetchStatus(), 10000);
+});
+
+onUnmounted(() => {
+  if (statusTimer) {
+    clearInterval(statusTimer);
+  }
 });
 </script>

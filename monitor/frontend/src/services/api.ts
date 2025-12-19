@@ -88,6 +88,16 @@ export interface Task {
   sensitiveDataRequiresAuth?: boolean;
 }
 
+export interface TaskArtifact {
+  id: number;
+  execution_id: string;
+  artifact_type: string;
+  hash: string | null;
+  path: string | null;
+  size_bytes: number | null;
+  created_at: string;
+}
+
 export interface TaskStats {
   total: number;
   completed: number;
@@ -126,6 +136,11 @@ export interface Log {
   type?: string;
   message?: string;
   raw?: string;
+}
+
+export interface LogStatus {
+  source: string | null;
+  lastLogAt: string | null;
 }
 
 export interface TasksParams {
@@ -175,6 +190,11 @@ export default {
     return data;
   },
 
+  async getTaskArtifacts(executionId: string): Promise<{ artifacts: TaskArtifact[] }> {
+    const { data } = await api.get<{ artifacts: TaskArtifact[] }>(`/tasks/${executionId}/artifacts`);
+    return data;
+  },
+
   // Invoices
   async getInvoices(params: InvoicesParams = {}): Promise<{ invoices: Invoice[] }> {
     const { data } = await api.get<{ invoices: Invoice[] }>('/invoices', { params });
@@ -189,6 +209,11 @@ export default {
   // Logs
   async getLogs(params: LogsParams = {}): Promise<{ logs: Log[] }> {
     const { data } = await api.get<{ logs: Log[] }>('/logs', { params });
+    return data;
+  },
+
+  async getLogStatus(): Promise<LogStatus> {
+    const { data } = await api.get<LogStatus>('/logs/status');
     return data;
   }
 };

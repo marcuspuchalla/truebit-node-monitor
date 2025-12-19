@@ -33,11 +33,7 @@ class WebSocketClient {
         if (DEBUG) console.log('WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
-        // Send auth handshake if session token is available
-        const sessionToken = localStorage.getItem('app_session_token');
-        if (sessionToken) {
-          this.ws?.send(JSON.stringify({ type: 'auth', token: sessionToken }));
-        }
+        this.authenticate(localStorage.getItem('app_session_token'));
         this.emit('connected', { timestamp: new Date() });
       };
 
@@ -117,6 +113,13 @@ class WebSocketClient {
       this.ws.send(JSON.stringify({ type, data }));
     } else {
       console.warn('WebSocket is not connected');
+    }
+  }
+
+  authenticate(token: string | null): void {
+    if (!token) return;
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'auth', token }));
     }
   }
 

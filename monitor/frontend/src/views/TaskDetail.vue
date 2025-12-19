@@ -128,6 +128,15 @@
               <div v-for="(value, key) in sensitiveData.inputData" :key="key">
                 <dt class="text-sm font-medium text-gray-700 mb-2">{{ key }}:</dt>
                 <dd v-if="key === 'source' && typeof value === 'string'" class="mt-1">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs text-gray-500">Program Source</span>
+                    <button
+                      class="text-xs text-primary-600 hover:underline"
+                      @click="downloadSource(value)"
+                    >
+                      Download
+                    </button>
+                  </div>
                   <pre class="bg-gray-900 text-gray-100 rounded-lg p-4 overflow-x-auto text-sm">{{ value }}</pre>
                 </dd>
                 <dd v-else-if="typeof value === 'string'" class="mt-1">
@@ -147,6 +156,42 @@
 
           <div v-if="!sensitiveData?.inputData && !sensitiveData?.outputData" class="text-gray-500 text-sm">
             No input/output data available for this task.
+          </div>
+        </div>
+      </div>
+
+      <!-- Artifacts -->
+      <div class="card">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-lg font-semibold text-gray-900">Task Artifacts</h2>
+          <button
+            class="text-sm text-primary-600 hover:underline"
+            @click="loadArtifacts"
+            :disabled="artifactsLoading"
+          >
+            {{ artifactsLoading ? 'Loading...' : 'Refresh' }}
+          </button>
+        </div>
+        <div v-if="artifactsError" class="text-red-600 text-sm mb-4">
+          {{ artifactsError }}
+        </div>
+        <div v-if="artifacts.length === 0" class="text-gray-500 text-sm">
+          No artifacts found for this task.
+        </div>
+        <div v-else class="space-y-3">
+          <div v-for="artifact in artifacts" :key="artifact.id" class="flex items-center justify-between text-sm">
+            <div class="flex flex-col">
+              <span class="font-medium text-gray-800">{{ artifact.artifact_type }}</span>
+              <span class="text-gray-500 font-mono">{{ artifact.hash || 'unknown hash' }}</span>
+              <span class="text-gray-400 text-xs">{{ formatBytes(artifact.size_bytes) }}</span>
+            </div>
+            <button
+              class="text-primary-600 hover:underline"
+              @click="downloadArtifact(artifact)"
+              :disabled="!artifact.hash"
+            >
+              Download
+            </button>
           </div>
         </div>
       </div>
@@ -179,6 +224,9 @@ const sensitiveData = ref(null);
 const sensitiveDataLoaded = ref(false);
 const sensitiveDataError = ref('');
 const loadingSensitiveData = ref(false);
+const artifacts = ref([]);
+const artifactsLoading = ref(false);
+const artifactsError = ref('');
 
 async function loadSensitiveData() {
   if (!task.value) return;
@@ -208,6 +256,68 @@ async function loadSensitiveData() {
   }
 }
 
+async function loadArtifacts() {
+  if (!task.value) return;
+  artifactsLoading.value = true;
+  artifactsError.value = '';
+  try {
+    const data = await api.getTaskArtifacts(task.value.execution_id);
+    artifacts.value = data.artifacts || [];
+  } catch (error) {
+    artifactsError.value = (error as Error).message || 'Failed to load artifacts';
+  } finally {
+    artifactsLoading.value = false;
+  }
+}
+
+async function downloadArtifact(artifact) {
+  if (!task.value || !artifact?.hash) return;
+  try {
+    const sessionToken = localStorage.getItem('app_session_token');
+    const response = await fetch(`/api/tasks/${task.value.execution_id}/artifacts/${artifact.hash}`, {
+      headers: sessionToken ? { 'X-Session-Token': sessionToken } : {}
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download artifact');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${artifact.hash}.wasm`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    artifactsError.value = (error as Error).message || 'Failed to download artifact';
+  }
+}
+
+function downloadSource(source) {
+  const blob = new Blob([source], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `task-${task.value?.execution_id || 'source'}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return 'N/A';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let value = bytes;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toFixed(1)} ${units[unit]}`;
+}
+
 function getStatusBadge(status) {
   const badges = {
     completed: 'badge-green',
@@ -235,5 +345,6 @@ function formatDate(date) {
 
 onMounted(() => {
   tasksStore.fetchTask(route.params.id);
+  loadArtifacts();
 });
 </script>
