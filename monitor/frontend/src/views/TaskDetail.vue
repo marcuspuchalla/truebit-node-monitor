@@ -264,7 +264,7 @@ async function loadArtifacts() {
     const data = await api.getTaskArtifacts(task.value.execution_id);
     artifacts.value = data.artifacts || [];
   } catch (error) {
-    artifactsError.value = (error as Error).message || 'Failed to load artifacts';
+    artifactsError.value = getErrorMessage(error, 'Failed to load artifacts');
   } finally {
     artifactsLoading.value = false;
   }
@@ -290,7 +290,7 @@ async function downloadArtifact(artifact) {
     link.remove();
     URL.revokeObjectURL(url);
   } catch (error) {
-    artifactsError.value = (error as Error).message || 'Failed to download artifact';
+    artifactsError.value = getErrorMessage(error, 'Failed to download artifact');
   }
 }
 
@@ -316,6 +316,13 @@ function formatBytes(bytes) {
     unit += 1;
   }
   return `${value.toFixed(1)} ${units[unit]}`;
+}
+
+function getErrorMessage(error, fallback) {
+  if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+    return error.message;
+  }
+  return fallback;
 }
 
 function getStatusBadge(status) {
