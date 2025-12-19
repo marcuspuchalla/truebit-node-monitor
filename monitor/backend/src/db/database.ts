@@ -97,6 +97,7 @@ export interface NetworkStats {
   memoryUsedDistribution?: Record<string, number>;
   chainDistribution?: Record<string, number>;
   taskTypeDistribution?: Record<string, number>;
+  continentDistribution?: Record<string, number>;
 }
 
 class TruebitDatabase {
@@ -296,9 +297,17 @@ class TruebitDatabase {
         memory_used_distribution TEXT,
         chain_distribution TEXT,
         task_type_distribution TEXT,
+        continent_distribution TEXT,
         last_updated TEXT
       )
     `);
+
+    // Add new columns if missing (migration for existing DBs)
+    try {
+      this.db!.exec('ALTER TABLE network_stats_cache ADD COLUMN continent_distribution TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
 
     // Create indexes
     this.db!.exec(`
@@ -923,8 +932,8 @@ class TruebitDatabase {
           invoices_last_24h, success_rate, cache_hit_rate,
           execution_time_distribution, gas_usage_distribution,
           steps_computed_distribution, memory_used_distribution,
-          chain_distribution, task_type_distribution, last_updated
-        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          chain_distribution, task_type_distribution, continent_distribution, last_updated
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       return stmt.run(
@@ -945,6 +954,7 @@ class TruebitDatabase {
         JSON.stringify(data.memoryUsedDistribution),
         JSON.stringify(data.chainDistribution),
         JSON.stringify(data.taskTypeDistribution),
+        JSON.stringify(data.continentDistribution || {}),
         now
       );
     }
@@ -968,35 +978,37 @@ class TruebitDatabase {
         memory_used_distribution = ?,
         chain_distribution = ?,
         task_type_distribution = ?,
+        continent_distribution = ?,
         last_updated = ?
       WHERE id = 1
     `);
 
-    return stmt.run(
-      data.activeNodes,
-      data.totalNodes,
-      data.totalTasks,
-      data.completedTasks,
-      data.failedTasks,
-      data.cachedTasks,
-      data.tasksLast24h,
-      data.totalInvoices,
-      data.invoicesLast24h,
-      data.successRate,
-      data.cacheHitRate,
-      JSON.stringify(data.executionTimeDistribution),
-      JSON.stringify(data.gasUsageDistribution),
-      JSON.stringify(data.stepsComputedDistribution),
-      JSON.stringify(data.memoryUsedDistribution),
-      JSON.stringify(data.chainDistribution),
-      JSON.stringify(data.taskTypeDistribution),
-      now
-    );
-  }
+      return stmt.run(
+        data.activeNodes,
+        data.totalNodes,
+        data.totalTasks,
+        data.completedTasks,
+        data.failedTasks,
+        data.cachedTasks,
+        data.tasksLast24h,
+        data.totalInvoices,
+        data.invoicesLast24h,
+        data.successRate,
+        data.cacheHitRate,
+        JSON.stringify(data.executionTimeDistribution),
+        JSON.stringify(data.gasUsageDistribution),
+        JSON.stringify(data.stepsComputedDistribution),
+        JSON.stringify(data.memoryUsedDistribution),
+        JSON.stringify(data.chainDistribution),
+        JSON.stringify(data.taskTypeDistribution),
+        JSON.stringify(data.continentDistribution || {}),
+        now
+      );
+    }
 
   getNetworkStats(): NetworkStats | null {
     const stmt = this.db!.prepare('SELECT * FROM network_stats_cache WHERE id = 1');
-    const row = stmt.get() as { active_nodes: number; total_nodes: number; total_tasks: number; completed_tasks: number; failed_tasks: number; cached_tasks: number; tasks_last_24h: number; total_invoices: number; invoices_last_24h: number; success_rate: number; cache_hit_rate: number; execution_time_distribution: string; gas_usage_distribution: string; steps_computed_distribution: string; memory_used_distribution: string; chain_distribution: string; task_type_distribution: string; last_updated: string } | undefined;
+    const row = stmt.get() as { active_nodes: number; total_nodes: number; total_tasks: number; completed_tasks: number; failed_tasks: number; cached_tasks: number; tasks_last_24h: number; total_invoices: number; invoices_last_24h: number; success_rate: number; cache_hit_rate: number; execution_time_distribution: string; gas_usage_distribution: string; steps_computed_distribution: string; memory_used_distribution: string; chain_distribution: string; task_type_distribution: string; continent_distribution: string; last_updated: string } | undefined;
 
     if (!row) return null;
 
@@ -1018,7 +1030,8 @@ class TruebitDatabase {
       stepsComputedDistribution: JSON.parse(row.steps_computed_distribution || '{}'),
       memoryUsedDistribution: JSON.parse(row.memory_used_distribution || '{}'),
       chainDistribution: JSON.parse(row.chain_distribution || '{}'),
-      taskTypeDistribution: JSON.parse(row.task_type_distribution || '{}')
+      taskTypeDistribution: JSON.parse(row.task_type_distribution || '{}'),
+      continentDistribution: JSON.parse(row.continent_distribution || '{}')
     };
   }
 

@@ -36,6 +36,7 @@ export interface NodeStatusData {
   activeTasks?: number;
   totalTasks?: number;
   totalInvoices?: number;
+  continent?: string;
 }
 
 export interface InvoiceData {
@@ -134,6 +135,7 @@ class FederationAnonymizer {
    * Anonymize node heartbeat
    */
   anonymizeHeartbeat(nodeStatus: NodeStatusData): AnonymizedMessage {
+    const continent = this.normalizeContinent(nodeStatus.continent);
     return {
       version: '1.0',
       type: 'heartbeat',
@@ -148,7 +150,9 @@ class FederationAnonymizer {
         totalInvoices: nodeStatus.totalInvoices || 0,
         // Bucketed versions for distribution analysis (privacy-preserving)
         activeTasksBucket: this.bucketActiveTasks(nodeStatus.activeTasks || 0),
-        totalTasksBucket: this.bucketTotalTasks(nodeStatus.totalTasks || 0)
+        totalTasksBucket: this.bucketTotalTasks(nodeStatus.totalTasks || 0),
+        // Coarse location bucket (continent only)
+        ...(continent ? { continentBucket: continent } : {})
       }
     };
   }
@@ -316,6 +320,16 @@ class FederationAnonymizer {
     if (count < 500) return '100-500';
     if (count < 1000) return '500-1K';
     return '>1K';
+  }
+
+  /**
+   * Normalize continent code to a safe, coarse bucket.
+   */
+  private normalizeContinent(value: string | undefined): string | null {
+    if (!value) return null;
+    const upper = value.trim().toUpperCase();
+    const allowed = new Set(['AF', 'AN', 'AS', 'EU', 'NA', 'OC', 'SA']);
+    return allowed.has(upper) ? upper : null;
   }
 
   /**

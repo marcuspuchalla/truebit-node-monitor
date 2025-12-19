@@ -42,6 +42,7 @@ const DB_PATH = process.env.DB_PATH || './data/truebit-monitor.db';
 const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
 const MAX_OUTPUT_DATA_BYTES = parseInt(process.env.MAX_OUTPUT_DATA_BYTES || '102400', 10); // 100KB
 const WASM_HASH_PATTERN = /^[a-f0-9]{64}$/i;
+const NODE_CONTINENT = process.env.NODE_CONTINENT || '';
 
 // CORS: Only allow same-origin by default. Set ALLOWED_ORIGINS env var for cross-origin access.
 // Example: ALLOWED_ORIGINS=https://tru.watch,https://www.tru.watch
@@ -935,7 +936,8 @@ async function start(): Promise<void> {
                 connected: federation.client.connected,
                 activeTasks: activeTasks.size,
                 totalTasks: taskStats?.total || 0,
-                totalInvoices: invoiceCount
+                totalInvoices: invoiceCount,
+                continent: NODE_CONTINENT
               };
 
               await federation.client.publishHeartbeat(heartbeatData);

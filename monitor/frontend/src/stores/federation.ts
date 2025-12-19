@@ -96,6 +96,12 @@ export const useFederationStore = defineStore('federation', {
       invoicesLast24h: 0,
       successRate: 0,
       cacheHitRate: 0,
+      executionTimeDistribution: {},
+      gasUsageDistribution: {},
+      stepsComputedDistribution: {},
+      memoryUsedDistribution: {},
+      chainDistribution: {},
+      taskTypeDistribution: {},
       lastUpdated: null,
       status: 'awaiting_data'
     },

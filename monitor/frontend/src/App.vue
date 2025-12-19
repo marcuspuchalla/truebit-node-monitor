@@ -1,31 +1,31 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <div class="min-h-screen bg-gray-50 dark:bg-slate-950">
     <!-- Preloader - only shows during initial load -->
     <Preloader />
 
-    <nav class="bg-white shadow-sm border-b border-gray-200">
+    <nav class="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-800">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
             <div class="flex-shrink-0 flex items-center gap-3">
               <img src="/logo.png" alt="TruBit Watch" class="h-10 w-auto" />
               <div class="flex flex-col">
-                <h1 class="text-xl font-bold text-gray-900">TrueBit Node Monitor</h1>
-                <span class="text-xs text-gray-400">Global Network Statistics</span>
+                <h1 class="text-xl font-bold text-gray-900 dark:text-slate-100">TrueBit Node Monitor</h1>
+                <span class="text-xs text-gray-400 dark:text-slate-400">Global Network Statistics</span>
               </div>
             </div>
             <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
               <router-link
                 to="/"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'federation' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                :class="$route.name === 'federation' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
               >
                 Network
               </router-link>
               <router-link
                 to="/dashboard"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'dashboard' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                :class="$route.name === 'dashboard' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
               >
                 <span class="flex items-center gap-1">
                   Dashboard
@@ -37,7 +37,7 @@
               <router-link
                 to="/tasks"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'tasks' || $route.name === 'task-detail' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                :class="$route.name === 'tasks' || $route.name === 'task-detail' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
               >
                 <span class="flex items-center gap-1">
                   Tasks
@@ -49,7 +49,7 @@
               <router-link
                 to="/invoices"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'invoices' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                :class="$route.name === 'invoices' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
               >
                 <span class="flex items-center gap-1">
                   Invoices
@@ -61,7 +61,7 @@
               <router-link
                 to="/logs"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'logs' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                :class="$route.name === 'logs' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
               >
                 <span class="flex items-center gap-1">
                   Logs
@@ -73,13 +73,22 @@
               <router-link
                 to="/about"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'about' ? 'border-primary-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'"
+                :class="$route.name === 'about' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
               >
                 About
               </router-link>
             </div>
           </div>
           <div class="flex items-center gap-3">
+            <button
+              @click="toggleTheme"
+              class="inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              title="Toggle theme"
+            >
+              <span v-if="isDark">🌙</span>
+              <span v-else>☀️</span>
+              <span>{{ isDark ? 'Dark' : 'Light' }}</span>
+            </button>
             <!-- Auth status indicator -->
             <button
               v-if="isAuthenticated"
@@ -126,7 +135,7 @@
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue';
+import { onMounted, watch, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Preloader from './components/Preloader.vue';
 import { usePreloader } from './composables/usePreloader';
@@ -139,6 +148,7 @@ const router = useRouter();
 const { setProgress, checkStoredAuth } = usePreloader();
 const federationStore = useFederationStore();
 const realtime = useRealtime();
+const isDark = ref(false);
 
 // Handle logout
 const handleLogout = () => {
@@ -155,6 +165,10 @@ const handleLogout = () => {
 };
 
 onMounted(async () => {
+  const storedTheme = localStorage.getItem('theme');
+  isDark.value = storedTheme === 'dark';
+  document.documentElement.classList.toggle('dark', isDark.value);
+
   setProgress(10);
 
   // Check if user was already authenticated and verify the password
@@ -181,4 +195,10 @@ watch(isAuthenticated, (value) => {
     realtime.disconnect();
   }
 });
+
+const toggleTheme = () => {
+  isDark.value = !isDark.value;
+  document.documentElement.classList.toggle('dark', isDark.value);
+  localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
+};
 </script>

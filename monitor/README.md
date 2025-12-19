@@ -1,6 +1,7 @@
 # TrueBit Node Monitor
 
 The Node Monitor is a dashboard that runs alongside your TrueBit node to track tasks, invoices, and performance metrics.
+It includes a light/dark theme toggle and an optional global presence globe (continent-level only).
 
 ## Deployment
 
@@ -49,6 +50,7 @@ Open `http://your-server:8090` in your browser.
 | `TASK_DATA_PASSWORD` | (auto-generated) | Dashboard access password |
 | `FEDERATION_NATS_URL` | `wss://f.tru.watch` | Federation server URL |
 | `LOG_RETENTION_DAYS` | `30` | Days to keep log entries |
+| `NODE_CONTINENT` | (empty) | Optional continent bucket for the global presence globe (AF, AN, AS, EU, NA, OC, SA) |
 
 ### Custom Container Name
 
@@ -75,6 +77,16 @@ networks:
 Federation allows sharing anonymized statistics with other node operators via [tru.watch](https://tru.watch). Enable it in the Federation page of the dashboard.
 
 **Privacy**: Your data is anonymized - identifiers are hashed, metrics are bucketed, timestamps rounded, and wallet addresses are never shared.
+
+### Global Presence Map (Optional)
+
+To appear on the animated globe, set a coarse location bucket:
+
+```
+NODE_CONTINENT=NA
+```
+
+Only continent‑level data is shared.
 
 ## Troubleshooting
 
