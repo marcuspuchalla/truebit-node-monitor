@@ -33,6 +33,11 @@ class WebSocketClient {
         if (DEBUG) console.log('WebSocket connected');
         this.isConnecting = false;
         this.reconnectAttempts = 0;
+        // Send auth handshake if session token is available
+        const sessionToken = localStorage.getItem('app_session_token');
+        if (sessionToken) {
+          this.ws?.send(JSON.stringify({ type: 'auth', token: sessionToken }));
+        }
         this.emit('connected', { timestamp: new Date() });
       };
 

@@ -67,7 +67,6 @@ interface LogPatterns {
   semaphoreSlot: RegExp;
   semaphoreRelease: RegExp;
   invoiceEvent: RegExp;
-  nodeRegistration: RegExp;
   jsonPayload: RegExp;
 }
 
@@ -95,9 +94,6 @@ class LogParser {
 
       // Invoice events
       invoiceEvent: /InvoiceSubscriber/,
-
-      // Node registration
-      nodeRegistration: /Node with address (0x[0-9A-Fa-f]+) (?:registered successfully|requested registration)/,
 
       // JSON payload (for task data, execution results, etc.)
       jsonPayload: /({[\s\S]*})\s*$/
@@ -247,8 +243,6 @@ class LogParser {
       return 'invoice';
     } else if (this.patterns.semaphoreSlot.test(message) || this.patterns.semaphoreRelease.test(message)) {
       return 'semaphore';
-    } else if (this.patterns.nodeRegistration.test(message)) {
-      return 'registration';
     } else if (message.includes('Task') && message.includes('downloaded successfully')) {
       return 'task_download';
     } else if (message.includes('Starting task execution')) {

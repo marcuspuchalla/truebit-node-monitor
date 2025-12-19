@@ -3,7 +3,7 @@
  * Handles federation settings, status, messages, and statistics
  */
 
-import express, { Router, Request, Response } from 'express';
+import express, { Router, Request, Response, NextFunction } from 'express';
 import { validate, schemas } from '../middleware/validate.js';
 import type TruebitDatabase from '../db/database.js';
 import type FederationClient from '../federation/client.js';
@@ -24,11 +24,39 @@ interface MessageRow {
   created_at: string;
 }
 
+// Authentication configuration for federation endpoints
+interface AuthConfig {
+  validateSessionToken?: (token: string) => boolean;
+}
+
+/**
+ * SECURITY: Authentication middleware for federation endpoints
+ * Accepts session token only (per security policy)
+ */
+function requireFederationAuth(config: AuthConfig) {
+  return (req: Request, res: Response, next: NextFunction): void => {
+    const sessionToken = req.headers['x-session-token'] as string;
+    if (sessionToken && config.validateSessionToken?.(sessionToken)) {
+      next();
+      return;
+    }
+    res.status(401).json({
+      error: 'Authentication required',
+      message: 'Federation endpoints require a valid session token'
+    });
+  };
+}
+
 export function createFederationRouter(
   db: TruebitDatabase,
   federation: FederationHolder,
-  recreateClient: () => Promise<void>
+  recreateClient: () => Promise<void>,
+  authConfig?: AuthConfig
 ): Router {
+  // Create auth middleware if auth config is provided
+  const authMiddleware = authConfig?.validateSessionToken
+    ? requireFederationAuth(authConfig)
+    : (_req: Request, _res: Response, next: NextFunction) => next();
   // Get federation settings
   router.get('/settings', (req: Request, res: Response) => {
     try {
@@ -65,8 +93,9 @@ export function createFederationRouter(
     }
   });
 
-  // Update federation settings
+  // Update federation settings (PROTECTED)
   router.put('/settings',
+    authMiddleware,
     validate({ body: schemas.federationSettings }),
     async (req: Request, res: Response) => {
       try {
@@ -106,8 +135,8 @@ export function createFederationRouter(
       }
     });
 
-  // Enable federation
-  router.post('/enable', async (req: Request, res: Response) => {
+  // Enable federation (PROTECTED)
+  router.post('/enable', authMiddleware, async (req: Request, res: Response) => {
     try {
       console.log('📥 Enable federation request received');
 
@@ -231,8 +260,8 @@ export function createFederationRouter(
     }
   });
 
-  // Disable federation
-  router.post('/disable', async (req: Request, res: Response) => {
+  // Disable federation (PROTECTED)
+  router.post('/disable', authMiddleware, async (req: Request, res: Response) => {
     try {
       if (!federation.client) {
         res.status(500).json({ error: 'Federation client not initialized' });
@@ -338,8 +367,9 @@ export function createFederationRouter(
     }
   });
 
-  // Block a peer
+  // Block a peer (PROTECTED)
   router.post('/peers/:nodeId/block',
+    authMiddleware,
     validate({ params: schemas.nodeIdParam }),
     (req: Request, res: Response) => {
       try {
@@ -445,8 +475,8 @@ export function createFederationRouter(
     }
   });
 
-  // Clear all federation data (for fresh start)
-  router.post('/reset', async (req: Request, res: Response) => {
+  // Clear all federation data (for fresh start) (PROTECTED)
+  router.post('/reset', authMiddleware, async (req: Request, res: Response) => {
     try {
       console.log('🗑️ Clearing federation data...');
       const result = db.clearFederationData();

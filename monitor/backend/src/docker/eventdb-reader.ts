@@ -119,11 +119,12 @@ class EventDBReader {
   }
 
   /**
-   * Execute command in container and return output
+   * SECURITY: Execute command in container using array-based exec
+   * F-007 FIX: No shell interpolation to prevent command injection
    */
-  private async execCommand(cmd: string): Promise<string> {
+  private async execCommandArray(cmdArray: string[]): Promise<string> {
     const exec = await this.container.exec({
-      Cmd: ['sh', '-c', cmd],
+      Cmd: cmdArray,  // Direct array, no shell
       AttachStdout: true,
       AttachStderr: true
     });
@@ -146,8 +147,8 @@ class EventDBReader {
    */
   async readEventDB(): Promise<EventDB> {
     try {
-      // List files in datadb directory
-      const filesOutput = await this.execCommand(`ls -1 ${this.eventDBPath}`);
+      // SECURITY: Use array-based exec (F-007)
+      const filesOutput = await this.execCommandArray(['ls', '-1', this.eventDBPath]);
       const files = filesOutput.split('\n').filter(f => f.endsWith('-eventDB.json'));
 
       if (files.length === 0) {
@@ -158,8 +159,8 @@ class EventDBReader {
       const eventDBFile = `${this.eventDBPath}/${files[0]}`;
       console.log(`   Reading EventDB: ${files[0]}`);
 
-      // Read the file
-      const content = await this.execCommand(`cat ${eventDBFile}`);
+      // SECURITY: Use array-based exec (F-007)
+      const content = await this.execCommandArray(['cat', eventDBFile]);
 
       // Parse JSON
       const eventDB = JSON.parse(content) as EventDB;

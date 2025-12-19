@@ -143,25 +143,35 @@ function logAuditEvent(event: string, req: express.Request, details?: Record<str
 // CSP can be disabled via CSP_DISABLED=true for environments that inject tracking scripts
 const isHttps = process.env.HTTPS_ENABLED === 'true';
 const cspDisabled = process.env.CSP_DISABLED === 'true';
+const isProduction = process.env.NODE_ENV === 'production';
+
+// SECURITY: CSP configuration - stricter in production
+// In development, 'unsafe-inline' and 'unsafe-eval' are allowed for Vue hot reload
+// In production, these should be removed if possible (requires build-time nonce injection)
+const cspDirectives = {
+  defaultSrc: ["'self'"],
+  // Production: Remove unsafe-eval if Vue build doesn't require it
+  // Note: Pre-built Vue apps typically don't need eval, but check your build
+  scriptSrc: isProduction
+    ? ["'self'", "'unsafe-inline'"] // Production: no unsafe-eval
+    : ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Development: allow for hot reload
+  styleSrc: ["'self'", "'unsafe-inline'"], // Required for Tailwind
+  imgSrc: ["'self'", "data:", "blob:"],
+  fontSrc: ["'self'"],
+  connectSrc: ["'self'", "ws:", "wss:"], // WebSocket connections
+  frameAncestors: ["'none'"], // Prevent clickjacking
+  formAction: ["'self'"],
+  baseUri: ["'self'"],
+  objectSrc: ["'none'"],
+  scriptSrcAttr: ["'none'"],
+  // Only upgrade insecure requests when behind HTTPS - critical for HTTP-only deployments
+  ...(isHttps ? { upgradeInsecureRequests: [] } : {})
+};
 
 app.use(helmet({
   contentSecurityPolicy: cspDisabled ? false : {
     useDefaults: false, // Disable defaults to have full control
-    directives: {
-      defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vue needs unsafe-inline/eval
-      styleSrc: ["'self'", "'unsafe-inline'"], // Tailwind uses inline styles
-      imgSrc: ["'self'", "data:", "blob:"],
-      fontSrc: ["'self'"],
-      connectSrc: ["'self'", "ws:", "wss:"], // WebSocket connections
-      frameAncestors: ["'none'"], // Prevent clickjacking
-      formAction: ["'self'"],
-      baseUri: ["'self'"],
-      objectSrc: ["'none'"],
-      scriptSrcAttr: ["'none'"],
-      // Only upgrade insecure requests when behind HTTPS - critical for HTTP-only deployments
-      ...(isHttps ? { upgradeInsecureRequests: [] } : {})
-    }
+    directives: cspDirectives
   },
   crossOriginEmbedderPolicy: false, // Required for some Vue features
   crossOriginOpenerPolicy: false, // Disable for HTTP compatibility
@@ -175,29 +185,86 @@ app.use(helmet({
 }));
 
 // CORS configuration
-// By default, allows all origins since the monitor is typically accessed from its own domain
-// and sensitive endpoints are protected by authentication.
-// Set ALLOWED_ORIGINS env var to restrict (comma-separated list of allowed origins)
-app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (same-origin, mobile apps, curl, direct IP access)
-    if (!origin) return callback(null, true);
+// SECURITY: Secure defaults - cross-origin requests are blocked unless ALLOWED_ORIGINS is set
+// Set CORS_ALLOW_ALL=true for development only (DO NOT USE IN PRODUCTION)
+const CORS_ALLOW_ALL = process.env.CORS_ALLOW_ALL === 'true';
 
-    // If ALLOWED_ORIGINS is configured, use whitelist mode
-    if (ALLOWED_ORIGINS.length > 0) {
-      if (ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed.replace(/\/$/, '')))) {
-        callback(null, true);
-      } else {
-        console.warn(`[SECURITY] CORS blocked origin: ${origin}`);
-        callback(new Error('Not allowed by CORS'));
+/**
+ * SECURITY: Properly validate origin using URL parsing
+ * Prevents bypass via subdomain/path manipulation (e.g., example.com.evil.com)
+ */
+function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
+  // Check for wildcard first
+  if (allowedOrigins.includes('*')) {
+    return true;
+  }
+
+  try {
+    const originUrl = new URL(origin);
+    for (const allowed of allowedOrigins) {
+      // Handle entries that might be missing scheme
+      let allowedUrl: URL;
+      try {
+        // First try parsing as-is
+        allowedUrl = new URL(allowed);
+      } catch {
+        // If it fails, try adding https://
+        try {
+          allowedUrl = new URL(`https://${allowed}`);
+        } catch {
+          console.warn(`[CONFIG] Invalid ALLOWED_ORIGINS entry: ${allowed}`);
+          continue;
+        }
       }
-      return;
+      // SECURITY: Exact match on origin (protocol + hostname + port)
+      if (originUrl.origin === allowedUrl.origin) {
+        return true;
+      }
     }
+    return false;
+  } catch {
+    // Invalid origin URL
+    return false;
+  }
+}
 
-    // Default: allow all origins (monitor is accessed from its own domain)
-    callback(null, true);
-  },
-  credentials: true
+app.use(cors((req, callback) => {
+  const origin = req.header('Origin');
+  const corsOptions = { credentials: true, origin: false as boolean };
+
+  // Allow requests with no origin (same-origin, mobile apps, curl, direct IP access)
+  if (!origin) {
+    corsOptions.origin = true;
+    return callback(null, corsOptions);
+  }
+
+  // Explicit dev mode bypass (SECURITY WARNING: never use in production)
+  if (CORS_ALLOW_ALL) {
+    console.warn('[SECURITY] CORS_ALLOW_ALL enabled - DO NOT USE IN PRODUCTION');
+    corsOptions.origin = true;
+    return callback(null, corsOptions);
+  }
+
+  // If ALLOWED_ORIGINS is configured, use strict whitelist mode
+  if (ALLOWED_ORIGINS.length > 0) {
+    if (isOriginAllowed(origin, ALLOWED_ORIGINS)) {
+      corsOptions.origin = true;
+      return callback(null, corsOptions);
+    }
+    console.warn(`[SECURITY] CORS blocked origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
+  }
+
+  // No allowlist configured: allow same-origin only
+  const host = req.get('host');
+  const expectedOrigin = host ? `${req.protocol}://${host}` : '';
+  if (origin === expectedOrigin) {
+    corsOptions.origin = true;
+    return callback(null, corsOptions);
+  }
+
+  console.warn(`[SECURITY] CORS blocked (no allowlist configured): ${origin}`);
+  return callback(new Error('CORS not configured - set ALLOWED_ORIGINS env var'));
 }));
 
 // Rate limiting - 500 requests per minute per IP
@@ -302,11 +369,8 @@ app.use('/api/', (req, res, next) => {
     return next();
   }
 
-  // Skip CSRF for federation enable/disable (they're protected by API key if enabled)
-  // and for internal operations
-  if (req.path.startsWith('/federation/')) {
-    return next();
-  }
+  // SECURITY: Federation endpoints now have their own auth middleware
+  // so they go through CSRF validation like other state-changing endpoints
 
   // Skip CSRF for auth endpoints (they have their own security: challenge-response)
   if (req.path.startsWith('/auth/')) {
@@ -359,7 +423,7 @@ app.get('/api/audit-log', (req, res) => {
 const db = new TruebitDatabase(DB_PATH);
 const dockerClient = new DockerClient(CONTAINER_NAME, DOCKER_SOCKET);
 const logParser = new LogParser();
-const wsServer = new TruebitWebSocketServer(server);
+const wsServer = new TruebitWebSocketServer(server, { validateSessionToken });
 
 // Federation client holder (allows late initialization)
 interface FederationHolder {
@@ -431,9 +495,7 @@ function processLog(parsed: ParsedLog | null, broadcast: boolean = false): void 
       handleSemaphore(parsed);
       break;
 
-    case 'registration':
-      handleRegistration(parsed);
-      break;
+    // F-008: Registration handling removed - nodeAddress is never extracted for privacy
   }
 }
 
@@ -614,30 +676,9 @@ function handleSemaphore(parsed: ParsedLog): void {
   }
 }
 
-function handleRegistration(parsed: ParsedLog): void {
-  if (!parsed.nodeAddress) return;
-
-  try {
-    // Hash node address for privacy in logs
-    const hashedAddress = hashNodeAddress(parsed.nodeAddress);
-
-    const status: NodeStatus = {
-      address: parsed.nodeAddress, // Store real address in DB
-      version: parsed.version ?? undefined,
-      totalCores: 4, // Default, can be extracted from logs
-      registered: parsed.message?.includes('successfully'),
-      lastSeen: parsed.timestamp!.toISOString()
-    };
-
-    db.updateNodeStatus(status);
-    wsServer.sendNodeStatus(status as unknown as Record<string, unknown>);
-
-    // Log with hashed address for privacy
-    console.log(`🔗 Node registration: ${hashedAddress}...`);
-  } catch (error) {
-    console.error('Error handling registration:', (error as Error).message);
-  }
-}
+// F-008: handleRegistration function removed
+// The function was dead code because log-parser.ts never sets nodeAddress
+// (intentionally redacted for privacy protection)
 
 // API Routes
 app.use('/api/status', createStatusRouter(db, dockerClient));
@@ -805,8 +846,11 @@ async function start(): Promise<void> {
     // Create initial federation client
     await createFederationClient();
 
-    // Register federation routes with recreateClient callback
-    app.use('/api/federation', createFederationRouter(db, federation, createFederationClient));
+    // Register federation routes with recreateClient callback and auth config
+    // SECURITY: Pass auth config to enable authentication on state-changing endpoints
+    app.use('/api/federation', createFederationRouter(db, federation, createFederationClient, {
+      validateSessionToken
+    }));
 
     // NOW register static files and catch-all (AFTER all API routes)
     const frontendPath = path.join(__dirname, '..', 'public');

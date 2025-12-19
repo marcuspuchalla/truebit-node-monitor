@@ -135,10 +135,35 @@ const config = {
 // Track message counts per node to prevent flooding
 const nodeMessageCounts = new Map<string, { count: number; windowStart: number }>();
 
-function isRateLimited(nodeId: string): boolean {
-  if (!nodeId) return false;
+// SECURITY: Global rate limit to prevent anonymous message flooding (F-006)
+let globalMessageCount = { count: 0, windowStart: Date.now() };
+const GLOBAL_RATE_LIMIT = parseInt(process.env.GLOBAL_RATE_LIMIT || '1000', 10);
 
+/**
+ * SECURITY: Rate limiting with global fallback
+ * F-006 FIX: Messages without nodeId are now rejected (changed from false to true)
+ */
+function isRateLimited(nodeId: string | undefined): boolean {
   const now = Date.now();
+
+  // Global rate limit check (all messages)
+  if (now - globalMessageCount.windowStart >= config.rateLimitWindow) {
+    globalMessageCount = { count: 1, windowStart: now };
+  } else {
+    globalMessageCount.count++;
+    if (globalMessageCount.count > GLOBAL_RATE_LIMIT) {
+      console.error('[SECURITY] Global rate limit exceeded');
+      return true;
+    }
+  }
+
+  // CRITICAL FIX (F-006): Reject messages without nodeId
+  // Previously returned false, allowing unlimited anonymous messages
+  if (!nodeId) {
+    console.warn('[SECURITY] Rejecting message without nodeId');
+    return true;
+  }
+
   const entry = nodeMessageCounts.get(nodeId);
 
   if (!entry || now - entry.windowStart >= config.rateLimitWindow) {
@@ -175,15 +200,16 @@ let cleanupTimer: ReturnType<typeof setInterval>;
 
 // Message handlers
 function handleTaskReceived(data: unknown, _subject: string): void {
-  // Validate message structure
+  // SECURITY: Validate message structure BEFORE rate limiting (per review feedback)
+  // This prevents malformed data from affecting rate limiter state
   if (!validateMessage(data)) {
     return;
   }
 
   const msg = data as FederationMessage;
 
-  // Rate limit check
-  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+  // Rate limit check (now rejects messages without nodeId)
+  if (isRateLimited(msg.nodeId)) {
     return;
   }
 
@@ -201,15 +227,15 @@ function handleTaskReceived(data: unknown, _subject: string): void {
 }
 
 function handleTaskCompleted(data: unknown, _subject: string): void {
-  // Validate message structure
+  // SECURITY: Validate message structure BEFORE rate limiting
   if (!validateMessage(data)) {
     return;
   }
 
   const msg = data as FederationMessage;
 
-  // Rate limit check
-  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+  // Rate limit check (now rejects messages without nodeId)
+  if (isRateLimited(msg.nodeId)) {
     return;
   }
 
@@ -230,15 +256,15 @@ function handleTaskCompleted(data: unknown, _subject: string): void {
 }
 
 function handleInvoiceCreated(data: unknown, _subject: string): void {
-  // Validate message structure
+  // SECURITY: Validate message structure BEFORE rate limiting
   if (!validateMessage(data)) {
     return;
   }
 
   const msg = data as FederationMessage;
 
-  // Rate limit check
-  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+  // Rate limit check (now rejects messages without nodeId)
+  if (isRateLimited(msg.nodeId)) {
     return;
   }
 
@@ -259,15 +285,15 @@ function handleInvoiceCreated(data: unknown, _subject: string): void {
 }
 
 function handleHeartbeat(data: unknown, _subject: string): void {
-  // Validate message structure
+  // SECURITY: Validate message structure BEFORE rate limiting
   if (!validateMessage(data)) {
     return;
   }
 
   const msg = data as FederationMessage;
 
-  // Rate limit check
-  if (msg.nodeId && isRateLimited(msg.nodeId)) {
+  // Rate limit check (now rejects messages without nodeId)
+  if (isRateLimited(msg.nodeId)) {
     return;
   }
 

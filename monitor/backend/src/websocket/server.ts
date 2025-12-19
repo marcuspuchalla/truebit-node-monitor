@@ -3,13 +3,10 @@ import crypto from 'crypto';
 import type { Server } from 'http';
 import type { IncomingMessage } from 'http';
 
-// Generate a secure token for WebSocket authentication
-const WS_AUTH_TOKEN = process.env.WS_AUTH_TOKEN || crypto.randomBytes(32).toString('hex');
-
 // Security limits
 const MAX_CONNECTIONS = parseInt(process.env.WS_MAX_CONNECTIONS || '100', 10);
 const MAX_CONNECTIONS_PER_IP = parseInt(process.env.WS_MAX_PER_IP || '5', 10);
-const AUTH_TIMEOUT_MS = parseInt(process.env.WS_AUTH_TIMEOUT || '30000', 10); // 30 seconds to authenticate
+const AUTH_TIMEOUT_MS = parseInt(process.env.WS_AUTH_TIMEOUT || '30000', 10); // 30s
 
 interface ClientInfo {
   authenticated: boolean;
@@ -23,14 +20,52 @@ interface WSMessage {
   token?: string;
 }
 
+/**
+ * SECURITY: Properly validate origin using URL parsing
+ * Prevents bypass via subdomain/path manipulation (e.g., example.com.evil.com)
+ */
+function isOriginAllowed(origin: string, allowedOrigins: string[]): boolean {
+  // Check for wildcard first
+  if (allowedOrigins.includes('*')) {
+    return true;
+  }
+
+  try {
+    const originUrl = new URL(origin);
+    for (const allowed of allowedOrigins) {
+      // Handle entries that might be missing scheme
+      let allowedUrl: URL;
+      try {
+        allowedUrl = new URL(allowed);
+      } catch {
+        try {
+          allowedUrl = new URL(`https://${allowed}`);
+        } catch {
+          continue;
+        }
+      }
+      // SECURITY: Exact match on origin (protocol + hostname + port)
+      if (originUrl.origin === allowedUrl.origin) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
 class TruebitWebSocketServer {
   private wss: WebSocketServer;
   private clients: Map<WebSocket, ClientInfo>;
-  private authRequired: boolean;
   private connectionsByIp: Map<string, number>;
+  private authRequired: boolean;
+  private validateSessionToken?: (token: string) => boolean;
 
-  constructor(server: Server) {
+  constructor(server: Server, config: { validateSessionToken?: (token: string) => boolean } = {}) {
     this.connectionsByIp = new Map();
+    this.validateSessionToken = config.validateSessionToken;
+    this.authRequired = !!config.validateSessionToken;
 
     this.wss = new WebSocketServer({
       server,
@@ -51,15 +86,31 @@ class TruebitWebSocketServer {
 
         // Check origin header for CORS-like protection
         const origin = info.origin || info.req.headers.origin;
-        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+        const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',').map(o => o.trim()).filter(Boolean) || [];
 
-        // Allow connections from allowed origins or if no origin (direct connection)
-        if (!origin || allowedOrigins.includes('*')) {
+        // Allow connections with no origin (direct connection, same-origin)
+        if (!origin) {
           return callback(true);
         }
 
-        // Check if origin matches any allowed origin
-        if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
+        // If no allowlist configured, allow same-origin only (UI works out of box)
+        if (allowedOrigins.length === 0) {
+          if (process.env.CORS_ALLOW_ALL === 'true') {
+            return callback(true);
+          }
+          const host = info.req.headers.host;
+          const forwardedProto = info.req.headers['x-forwarded-proto'] as string | undefined;
+          const protocol = forwardedProto || (info.req.socket.encrypted ? 'https' : 'http');
+          const expectedOrigin = host ? `${protocol}://${host}` : '';
+          if (origin === expectedOrigin) {
+            return callback(true);
+          }
+          console.warn(`⚠️ WebSocket connection rejected (no allowlist): ${origin}`);
+          return callback(false, 403, 'No origin allowlist configured');
+        }
+
+        // SECURITY: Use proper URL-based origin matching
+        if (isOriginAllowed(origin, allowedOrigins)) {
           callback(true);
         } else {
           console.warn(`⚠️ WebSocket connection rejected from origin: ${origin}`);
@@ -68,8 +119,7 @@ class TruebitWebSocketServer {
       }
     });
 
-    this.clients = new Map(); // Map of client -> { authenticated: boolean, connectedAt: Date }
-    this.authRequired = process.env.WS_AUTH_REQUIRED === 'true';
+    this.clients = new Map();
 
     this.wss.on('connection', (ws: WebSocket, req: IncomingMessage) => {
       const clientId = crypto.randomBytes(8).toString('hex');
@@ -79,12 +129,11 @@ class TruebitWebSocketServer {
       this.connectionsByIp.set(clientIp, (this.connectionsByIp.get(clientIp) || 0) + 1);
 
       const clientInfo: ClientInfo = {
-        authenticated: !this.authRequired, // Auto-authenticated if auth not required
+        authenticated: !this.authRequired,
         connectedAt: new Date(),
         ip: clientIp
       };
 
-      // Set auth timeout if authentication is required
       if (this.authRequired) {
         clientInfo.authTimeout = setTimeout(() => {
           if (!clientInfo.authenticated) {
@@ -101,11 +150,10 @@ class TruebitWebSocketServer {
         try {
           const data = JSON.parse(message.toString()) as WSMessage;
 
-          // Handle authentication message
           if (data.type === 'auth') {
-            if (data.token === WS_AUTH_TOKEN) {
+            const token = data.token;
+            if (token && this.validateSessionToken?.(token)) {
               clientInfo.authenticated = true;
-              // Clear auth timeout on successful auth
               if (clientInfo.authTimeout) {
                 clearTimeout(clientInfo.authTimeout);
                 clientInfo.authTimeout = undefined;
@@ -114,15 +162,14 @@ class TruebitWebSocketServer {
                 type: 'auth_success',
                 timestamp: new Date().toISOString()
               }));
-              console.log(`✅ WebSocket client authenticated: ${clientId.slice(0, 8)}...`);
             } else {
               ws.send(JSON.stringify({
                 type: 'auth_failed',
-                message: 'Invalid token',
+                message: 'Invalid session token',
                 timestamp: new Date().toISOString()
               }));
-              console.warn(`⚠️ WebSocket auth failed: ${clientId.slice(0, 8)}...`);
             }
+            return;
           }
 
           // Handle ping/pong for connection health
@@ -139,7 +186,6 @@ class TruebitWebSocketServer {
 
       ws.on('close', () => {
         console.log(`🔌 WebSocket client disconnected: ${clientId.slice(0, 8)}...`);
-        // Clear auth timeout if pending
         if (clientInfo.authTimeout) {
           clearTimeout(clientInfo.authTimeout);
         }
@@ -155,7 +201,6 @@ class TruebitWebSocketServer {
 
       ws.on('error', (error: Error) => {
         console.error('WebSocket error:', error.message);
-        // Clear auth timeout if pending
         if (clientInfo.authTimeout) {
           clearTimeout(clientInfo.authTimeout);
         }
@@ -177,37 +222,43 @@ class TruebitWebSocketServer {
       }));
     });
 
-    // Log auth token at startup (only in development)
-    if (process.env.NODE_ENV !== 'production' && this.authRequired) {
-      console.log(`🔑 WebSocket auth token: ${WS_AUTH_TOKEN.slice(0, 8)}...`);
-    }
-
     console.log('WebSocket server initialized');
   }
 
   /**
    * SECURITY: Sanitize data before broadcasting to WebSocket clients
    * Removes sensitive fields that must never be transmitted
+   * F-003: Strip both executionId and execution_id from all broadcasts
    */
   private sanitizeForBroadcast(type: string, data: Record<string, unknown>): Record<string, unknown> {
     if (type === 'task') {
-      // Remove sensitive task data
-      const { input_data, output_data, error_data, execution_id, inputData, outputData, errorData, ...safe } = data;
+      // SECURITY: Remove sensitive task data including both variants of execution ID
+      const {
+        input_data, output_data, error_data,
+        execution_id, executionId,  // F-003: Strip both variants
+        inputData, outputData, errorData,
+        ...safe
+      } = data;
       return safe;
     } else if (type === 'log') {
-      // Remove any wallet addresses or execution IDs from logs
-      const { nodeAddress, executionId, ...safe } = data;
+      // Remove any wallet addresses or execution IDs from logs (both variants)
+      const {
+        nodeAddress, node_address,
+        executionId, execution_id,  // F-003: Strip both variants
+        ...safe
+      } = data;
       return safe;
     } else if (type === 'node_status') {
       // Hash the node address before broadcasting
-      const { address, ...safe } = data;
+      const { address, executionId, execution_id, ...safe } = data;
       if (address && typeof address === 'string') {
         (safe as Record<string, unknown>).addressHash = crypto.createHash('sha256').update(address).digest('hex').slice(0, 16);
       }
       return safe;
     }
-    // For other types (invoice, semaphore), return as-is
-    return data;
+    // SECURITY: Strip execution IDs from all other message types as well
+    const { executionId, execution_id, ...safe } = data;
+    return safe;
   }
 
   broadcast(type: string, data: Record<string, unknown>): void {
@@ -221,10 +272,9 @@ class TruebitWebSocketServer {
     });
 
     this.clients.forEach((clientInfo, client) => {
-      // Only send to authenticated clients
-      if (client.readyState === WebSocket.OPEN && clientInfo.authenticated) {
-        client.send(message);
-      }
+      if (client.readyState !== WebSocket.OPEN) return;
+      if (this.authRequired && !clientInfo.authenticated) return;
+      client.send(message);
     });
   }
 

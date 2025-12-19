@@ -25,11 +25,12 @@ class LogFileReader extends EventEmitter {
   }
 
   /**
-   * Execute command in container and return output
+   * SECURITY: Execute command in container using array-based exec
+   * F-007 FIX: No shell interpolation to prevent command injection
    */
-  private async execCommand(cmd: string): Promise<string> {
+  private async execCommandArray(cmdArray: string[]): Promise<string> {
     const exec = await this.container.exec({
-      Cmd: ['sh', '-c', cmd],
+      Cmd: cmdArray,  // Direct array, no shell
       AttachStdout: true,
       AttachStderr: true
     });
@@ -53,8 +54,8 @@ class LogFileReader extends EventEmitter {
    */
   private async findLogDirectory(): Promise<string> {
     try {
-      // List directories in /app/logs/@truebit/
-      const dirs = await this.execCommand(`ls -1 ${this.logBasePath}`);
+      // SECURITY: Use array-based exec (F-007)
+      const dirs = await this.execCommandArray(['ls', '-1', this.logBasePath]);
       const dirList = dirs.split('\n').filter(d => d.trim() && d.startsWith('worker-runner-node'));
 
       if (dirList.length === 0) {
@@ -76,7 +77,8 @@ class LogFileReader extends EventEmitter {
   async listLogFiles(): Promise<LogFile[]> {
     try {
       const logDir = await this.findLogDirectory();
-      const filesOutput = await this.execCommand(`ls -1 ${logDir}`);
+      // SECURITY: Use array-based exec (F-007)
+      const filesOutput = await this.execCommandArray(['ls', '-1', logDir]);
       const files = filesOutput.split('\n').filter(f => f.endsWith('.log') || f.endsWith('.log.gz'));
 
       return files.map(file => ({
@@ -96,8 +98,9 @@ class LogFileReader extends EventEmitter {
    */
   async readLogFile(filePath: string, compressed: boolean = false): Promise<string> {
     try {
-      const command = compressed ? `zcat ${filePath}` : `cat ${filePath}`;
-      const content = await this.execCommand(command);
+      // SECURITY: Use array-based exec (F-007)
+      const cmd = compressed ? ['zcat', filePath] : ['cat', filePath];
+      const content = await this.execCommandArray(cmd);
       return content;
     } catch (error) {
       console.error(`Failed to read log file ${filePath}:`, (error as Error).message);
@@ -211,7 +214,8 @@ class LogFileReader extends EventEmitter {
     }
 
     try {
-      const content = await this.execCommand(`tail -n ${tailLines} ${logFile}`);
+      // SECURITY: Use array-based exec (F-007)
+      const content = await this.execCommandArray(['tail', '-n', String(tailLines), logFile]);
       return content;
     } catch (error) {
       console.error('Failed to read current log:', (error as Error).message);
