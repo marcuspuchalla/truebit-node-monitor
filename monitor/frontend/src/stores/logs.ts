@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import api, { type Log, type LogsParams } from '../services/api';
+import api, { type Log, type LogsParams, type LogStatus } from '../services/api';
 
 interface LogFilter {
   level: string | null;
@@ -17,6 +17,7 @@ export const useLogsStore = defineStore('logs', () => {
     type: null,
     search: ''
   });
+  const status = ref<LogStatus>({ source: null, lastLogAt: null });
 
   async function fetchLogs(params: LogsParams = {}): Promise<void> {
     try {
@@ -37,6 +38,15 @@ export const useLogsStore = defineStore('logs', () => {
       console.error('Failed to fetch logs:', error);
     } finally {
       loading.value = false;
+    }
+  }
+
+  async function fetchStatus(): Promise<void> {
+    try {
+      const data = await api.getLogStatus();
+      status.value = data;
+    } catch (error) {
+      console.error('Failed to fetch log status:', error);
     }
   }
 
@@ -87,7 +97,9 @@ export const useLogsStore = defineStore('logs', () => {
     loading,
     filter,
     filteredLogs,
+    status,
     fetchLogs,
+    fetchStatus,
     addLog,
     clearLogs,
     setFilter,

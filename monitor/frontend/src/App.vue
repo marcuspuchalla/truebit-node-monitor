@@ -126,10 +126,11 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
+import { onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Preloader from './components/Preloader.vue';
 import { usePreloader } from './composables/usePreloader';
+import { useRealtime } from './composables/useRealtime';
 import { useFederationStore } from './stores/federation';
 import { isAuthenticated } from './router';
 
@@ -137,6 +138,7 @@ const route = useRoute();
 const router = useRouter();
 const { setProgress, checkStoredAuth } = usePreloader();
 const federationStore = useFederationStore();
+const realtime = useRealtime();
 
 // Handle logout
 const handleLogout = () => {
@@ -145,6 +147,7 @@ const handleLogout = () => {
   localStorage.removeItem('app_password');
   // Update shared auth state
   isAuthenticated.value = false;
+  realtime.disconnect();
   // Redirect to home if on a protected route
   if (route.meta.requiresAuth) {
     router.push('/');
@@ -158,11 +161,24 @@ onMounted(async () => {
   const wasAuth = await checkStoredAuth();
   if (wasAuth) {
     isAuthenticated.value = true;
+    realtime.init();
+    realtime.connect();
+    realtime.reauth();
   }
   setProgress(50);
 
   // Initialize federation for public network stats
   await federationStore.initialize();
   setProgress(100);
+});
+
+watch(isAuthenticated, (value) => {
+  if (value) {
+    realtime.init();
+    realtime.connect();
+    realtime.reauth();
+  } else {
+    realtime.disconnect();
+  }
 });
 </script>

@@ -15,11 +15,12 @@ interface LogRow {
 
 interface LogsRouterConfig {
   validateSessionToken?: (token: string) => boolean;
+  getLogStatus?: () => { source: string | null; lastLogAt: string | null };
 }
 
 export function createLogsRouter(db: TruebitDatabase, config: LogsRouterConfig = {}): Router {
   const router: Router = express.Router();
-  const { validateSessionToken } = config;
+  const { validateSessionToken, getLogStatus } = config;
   const requiresAuth = !!validateSessionToken;
 
   // Authentication middleware for logs endpoint - requires session token
@@ -69,6 +70,12 @@ export function createLogsRouter(db: TruebitDatabase, config: LogsRouterConfig =
     } catch (error) {
       res.status(500).json({ error: (error as Error).message });
     }
+  });
+
+  // Get log streaming status (source + last log time)
+  router.get('/status', (_req: Request, res: Response) => {
+    const status = getLogStatus ? getLogStatus() : { source: null, lastLogAt: null };
+    res.json(status);
   });
 
   return router;
