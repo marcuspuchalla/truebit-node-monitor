@@ -100,7 +100,9 @@ class TruebitWebSocketServer {
           }
           const host = info.req.headers.host;
           const forwardedProto = info.req.headers['x-forwarded-proto'] as string | undefined;
-          const protocol = forwardedProto || (info.req.socket.encrypted ? 'https' : 'http');
+          // Check if socket is TLS (encrypted property exists on TLSSocket)
+          const isEncrypted = 'encrypted' in info.req.socket && (info.req.socket as { encrypted?: boolean }).encrypted;
+          const protocol = forwardedProto || (isEncrypted ? 'https' : 'http');
           const expectedOrigin = host ? `${protocol}://${host}` : '';
           if (origin === expectedOrigin) {
             return callback(true);
