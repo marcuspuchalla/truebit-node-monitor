@@ -16,6 +16,8 @@ The TrueBit Node Monitor gives you visibility into your TrueBit node and the net
 
 - **Monitor your node**: Track tasks, invoices, and performance metrics
 - **See network statistics**: View how many nodes are online and tasks processed across the network
+- **Dark mode**: Toggle light/dark theme in the UI
+- **Global presence map**: Optional continent-level globe view (no precise locations)
 
 **Note**: Network stats only show nodes with this monitor installed. The more operators who install it, the more complete the picture.
 
@@ -59,6 +61,7 @@ Open `http://your-server:8090` in your browser.
 | `TASK_DATA_PASSWORD` | (auto-generated) | Password for the dashboard |
 | `FEDERATION_NATS_URL` | `wss://f.tru.watch` | Federation server URL |
 | `LOG_RETENTION_DAYS` | `30` | Days to keep log history |
+| `NODE_CONTINENT` | (empty) | Optional continent bucket for the global presence globe (AF, AN, AS, EU, NA, OC, SA) |
 
 <p align="center">
   <img src="monitor/frontend/public/headerImg.png" alt="TrueBit Node Monitor Screenshot" width="640" />
@@ -67,6 +70,16 @@ Open `http://your-server:8090` in your browser.
 ## Federation
 
 Your monitor automatically participates in the [tru.watch](https://tru.watch) federation network to enable global network statistics - this is one of the main purposes of this tool: to give the community visibility into how many nodes are online and how many tasks are being processed across the entire network.
+
+### Global Presence Map (Optional)
+
+If you want your node to appear on the animated globe, set a coarse location bucket:
+
+```
+NODE_CONTINENT=EU
+```
+
+Only continent‑level data is shared (no IPs, no precise location).
 
 If you prefer not to participate, you can opt out in the **Dashboard** (requires login) by clicking **"Leave Network"**. Your preference is saved and persists across restarts.
 

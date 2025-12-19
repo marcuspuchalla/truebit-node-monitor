@@ -2,8 +2,8 @@
   <div class="card">
     <div class="flex items-center justify-between mb-4">
       <div>
-        <h2 class="text-lg font-semibold text-gray-900">Real-time Logs</h2>
-        <p class="text-xs text-gray-500">
+      <h2 class="text-lg font-semibold text-gray-900 dark:text-slate-100">Real-time Logs</h2>
+      <p class="text-xs text-gray-500 dark:text-slate-400">
           Source: {{ logsStore.status.source || 'unknown' }}
           <span v-if="logsStore.status.lastLogAt">· Last: {{ formatTimestamp(logsStore.status.lastLogAt) }}</span>
         </p>
@@ -11,7 +11,7 @@
       <div class="flex items-center space-x-2">
         <select
           v-model="selectedLevel"
-          class="text-sm border-gray-300 rounded-md"
+          class="text-sm border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 rounded-md"
           @change="filterLogs"
         >
           <option value="">All Levels</option>

@@ -13,6 +13,17 @@
       </div>
     </div>
 
+    <!-- Global Presence -->
+    <div class="section globe-section">
+      <h2>Global Presence</h2>
+      <div class="globe-card">
+        <NetworkGlobe :distribution="networkStatsData.continentDistribution" />
+        <div class="globe-legend">
+          <span>Continent buckets only · No precise locations</span>
+        </div>
+      </div>
+    </div>
+
     <!-- Error Message -->
     <div v-if="errorMessage" class="error-banner">
       {{ errorMessage }}
@@ -29,8 +40,8 @@
         <div class="stat-label">Total Tasks</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value">{{ networkStatsData.totalInvoices || 0 }}</div>
-        <div class="stat-label">Total Invoices</div>
+        <div class="stat-value">{{ networkStatsData.totalNodes || 0 }}</div>
+        <div class="stat-label">Total Nodes</div>
       </div>
     </div>
 
@@ -41,16 +52,140 @@
         <div class="stat-label">Completed</div>
       </div>
       <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.failedTasks || 0 }}</div>
+        <div class="stat-label">Failed</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.cachedTasks || 0 }}</div>
+        <div class="stat-label">Cached</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.cacheHitRate?.toFixed(1) || 0 }}%</div>
+        <div class="stat-label">Cache Hit</div>
+      </div>
+    </div>
+
+    <!-- Throughput & Activity -->
+    <div class="stats-grid secondary">
+      <div class="stat-card small">
         <div class="stat-value">{{ networkStatsData.tasksLast24h || 0 }}</div>
-        <div class="stat-label">Last 24h</div>
+        <div class="stat-label">Tasks 24h</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.invoicesLast24h || 0 }}</div>
+        <div class="stat-label">Invoices 24h</div>
+      </div>
+      <div class="stat-card small">
+        <div class="stat-value">{{ networkStatsData.totalInvoices || 0 }}</div>
+        <div class="stat-label">Total Invoices</div>
       </div>
       <div class="stat-card small">
         <div class="stat-value">{{ networkStatsData.successRate?.toFixed(1) || 0 }}%</div>
         <div class="stat-label">Success Rate</div>
       </div>
-      <div class="stat-card small">
-        <div class="stat-value">{{ networkStatsData.invoicesLast24h || 0 }}</div>
-        <div class="stat-label">Invoices 24h</div>
+    </div>
+
+    <!-- Network Breakdown -->
+    <div class="section">
+      <h2>Network Breakdown</h2>
+      <div class="breakdown-grid">
+        <div class="breakdown-card">
+          <h3>Continents</h3>
+          <div v-if="topContinents.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topContinents" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="breakdown-card">
+          <h3>Top Chains</h3>
+          <div v-if="topChains.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topChains" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="breakdown-card">
+          <h3>Task Types</h3>
+          <div v-if="topTaskTypes.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topTaskTypes" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="breakdown-card">
+          <h3>Execution Time</h3>
+          <div v-if="topExecutionTimes.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topExecutionTimes" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="breakdown-card">
+          <h3>Gas Usage</h3>
+          <div v-if="topGasUsage.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topGasUsage" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="breakdown-card">
+          <h3>Steps Computed</h3>
+          <div v-if="topStepsComputed.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topStepsComputed" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="breakdown-card">
+          <h3>Memory Usage</h3>
+          <div v-if="topMemoryUsed.length === 0" class="empty-mini">No data yet.</div>
+          <div v-else>
+            <div v-for="row in topMemoryUsed" :key="row.label" class="breakdown-row">
+              <span class="row-label">{{ row.label }}</span>
+              <div class="row-bar">
+                <div class="row-fill" :style="{ width: row.percent + '%' }"></div>
+              </div>
+              <span class="row-value">{{ row.value }}</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -197,6 +332,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useFederationStore } from '../stores/federation';
+import NetworkGlobe from '../components/NetworkGlobe.vue';
 
 const federationStore = useFederationStore();
 
@@ -243,6 +379,7 @@ const networkStatsData = computed(() => {
 
   // Otherwise, compute from available data
   const nodeStats = new Map(); // Track latest stats per node
+  const continentCounts: Record<string, number> = {};
 
   // Count only ACTIVE peers (seen within last 2 minutes)
   const activeNodeIds = new Set();
@@ -269,7 +406,8 @@ const networkStatsData = computed(() => {
           activeTasks: msg.data.activeTasks,
           totalInvoices: msg.data.totalInvoices,
           totalTasksBucket: msg.data.totalTasksBucket,
-          activeTasksBucket: msg.data.activeTasksBucket
+          activeTasksBucket: msg.data.activeTasksBucket,
+          continentBucket: msg.data.continentBucket
         });
       }
     }
@@ -291,6 +429,11 @@ const networkStatsData = computed(() => {
     totalInvoicesSum += (typeof stats.totalInvoices === 'number')
       ? stats.totalInvoices
       : 0;
+
+    if (stats.continentBucket && typeof stats.continentBucket === 'string') {
+      const key = stats.continentBucket.toUpperCase();
+      continentCounts[key] = (continentCounts[key] || 0) + 1;
+    }
   });
 
   // Count completed tasks from task_completed messages
@@ -316,6 +459,13 @@ const networkStatsData = computed(() => {
     invoicesLast24h: aggStats.invoicesLast24h || 0,
     successRate: successRate || aggStats.successRate || 0,
     cacheHitRate: aggStats.cacheHitRate || 0,
+    executionTimeDistribution: aggStats.executionTimeDistribution || {},
+    gasUsageDistribution: aggStats.gasUsageDistribution || {},
+    stepsComputedDistribution: aggStats.stepsComputedDistribution || {},
+    memoryUsedDistribution: aggStats.memoryUsedDistribution || {},
+    chainDistribution: aggStats.chainDistribution || {},
+    taskTypeDistribution: aggStats.taskTypeDistribution || {},
+    continentDistribution: aggStats.continentDistribution || continentCounts,
     lastUpdated: aggStats.lastUpdated,
     status: activeNodeIds.size > 0 ? 'computed' : aggStats.status
   };
@@ -334,6 +484,26 @@ const selectedNodeStats = computed(() => {
 });
 
 const errorMessage = ref('');
+
+const toTopList = (dist, limit = 5) => {
+  const entries = Object.entries(dist || {})
+    .map(([label, value]) => ({ label, value: Number(value) || 0 }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, limit);
+  const max = entries[0]?.value || 0;
+  return entries.map(entry => ({
+    ...entry,
+    percent: max > 0 ? Math.round((entry.value / max) * 100) : 0
+  }));
+};
+
+const topChains = computed(() => toTopList(networkStatsData.value.chainDistribution));
+const topTaskTypes = computed(() => toTopList(networkStatsData.value.taskTypeDistribution));
+const topExecutionTimes = computed(() => toTopList(networkStatsData.value.executionTimeDistribution));
+const topGasUsage = computed(() => toTopList(networkStatsData.value.gasUsageDistribution));
+const topStepsComputed = computed(() => toTopList(networkStatsData.value.stepsComputedDistribution));
+const topMemoryUsed = computed(() => toTopList(networkStatsData.value.memoryUsedDistribution));
+const topContinents = computed(() => toTopList(networkStatsData.value.continentDistribution));
 
 // Public federation server URL
 const serverUrl = 'wss://f.tru.watch';
@@ -527,9 +697,9 @@ function formatTime(timestamp) {
 }
 
 .wip-banner {
-  background: #dbeafe;
-  border: 1px solid #3b82f6;
-  color: #1e40af;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
+  color: var(--info-text);
   padding: 0.375rem 1rem;
   border-radius: 0.375rem;
   margin-bottom: 1rem;
@@ -538,9 +708,9 @@ function formatTime(timestamp) {
 }
 
 .unofficial-notice {
-  background: #fef3c7;
-  border: 1px solid #f59e0b;
-  color: #92400e;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  color: var(--warn-text);
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
   margin-top: 2rem;
@@ -550,13 +720,13 @@ function formatTime(timestamp) {
 
 .unofficial-notice .notice-link {
   margin-left: 0.5rem;
-  color: #92400e;
+  color: var(--warn-text);
   font-weight: 600;
   text-decoration: underline;
 }
 
 .unofficial-notice .notice-link:hover {
-  color: #78350f;
+  color: var(--warn-text);
 }
 
 .status-card {
@@ -564,9 +734,9 @@ function formatTime(timestamp) {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  background: white;
+  background: var(--surface);
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   margin-bottom: 1.5rem;
 }
 
@@ -578,8 +748,8 @@ function formatTime(timestamp) {
 }
 
 .status-indicator.connected {
-  background: #10b981;
-  box-shadow: 0 0 8px #10b981;
+  background: var(--success);
+  box-shadow: 0 0 8px var(--success);
 }
 
 .status-indicator.connecting {
@@ -610,9 +780,9 @@ function formatTime(timestamp) {
 
 .error-banner {
   padding: 1rem;
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fca5a5;
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
   border-radius: 0.5rem;
   margin-bottom: 1.5rem;
 }
@@ -631,9 +801,9 @@ function formatTime(timestamp) {
 
 .stat-card {
   padding: 1.5rem;
-  background: white;
+  background: var(--surface);
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   text-align: center;
 }
 
@@ -652,12 +822,12 @@ function formatTime(timestamp) {
 .stat-value {
   font-size: 2rem;
   font-weight: 700;
-  color: #1f2937;
+  color: var(--text);
 }
 
 .stat-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--muted);
   margin-top: 0.25rem;
 }
 
@@ -669,13 +839,27 @@ function formatTime(timestamp) {
   font-size: 1.25rem;
   font-weight: 600;
   margin-bottom: 1rem;
-  color: #1f2937;
+  color: var(--text);
+}
+
+.globe-section .globe-card {
+  background: var(--surface);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.globe-legend {
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
 }
 
 .activity-list {
-  background: white;
+  background: var(--surface);
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
@@ -684,7 +868,7 @@ function formatTime(timestamp) {
   align-items: center;
   gap: 1rem;
   padding: 1rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
 }
 
 .activity-item:last-child {
@@ -698,7 +882,7 @@ function formatTime(timestamp) {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f3f4f6;
+  background: var(--surface-muted);
   border-radius: 0.5rem;
 }
 
@@ -720,14 +904,14 @@ function formatTime(timestamp) {
 
 .activity-title {
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text);
 }
 
 .activity-meta {
   display: flex;
   gap: 1rem;
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--muted);
   margin-top: 0.25rem;
 }
 
@@ -737,11 +921,11 @@ function formatTime(timestamp) {
 
 .empty-state {
   padding: 2rem;
-  background: white;
+  background: var(--surface);
   border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   text-align: center;
-  color: #6b7280;
+  color: var(--muted);
 }
 
 .peers-grid {
@@ -755,16 +939,16 @@ function formatTime(timestamp) {
   align-items: center;
   gap: 0.75rem;
   padding: 1rem;
-  background: white;
+  background: var(--surface);
   border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow);
   cursor: pointer;
   transition: background 0.15s, box-shadow 0.15s;
 }
 
 .peer-card:hover {
-  background: #f9fafb;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: var(--surface-muted);
+  box-shadow: var(--shadow);
 }
 
 .peer-status {
@@ -787,34 +971,34 @@ function formatTime(timestamp) {
 .peer-id {
   font-family: monospace;
   font-weight: 600;
-  color: #1f2937;
+  color: var(--text);
 }
 
 .peer-meta {
   font-size: 0.75rem;
-  color: #6b7280;
+  color: var(--muted);
   margin-top: 0.25rem;
 }
 
 .peer-arrow {
   font-size: 1.25rem;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .peer-card.my-node {
-  background: #eff6ff;
-  border: 2px solid #3b82f6;
+  background: var(--info-bg);
+  border: 2px solid var(--info-border);
 }
 
 .peer-card.my-node:hover {
-  background: #dbeafe;
+  background: var(--info-bg);
 }
 
 .my-node-badge {
   display: inline-block;
   margin-left: 0.5rem;
   padding: 0.125rem 0.5rem;
-  background: #3b82f6;
+  background: var(--info-border);
   color: white;
   border-radius: 0.25rem;
   font-size: 0.7rem;
@@ -830,12 +1014,12 @@ function formatTime(timestamp) {
 }
 
 .activity-item:hover {
-  background: #f9fafb;
+  background: var(--surface-muted);
 }
 
 .activity-arrow {
   font-size: 1.25rem;
-  color: #9ca3af;
+  color: var(--muted);
 }
 
 .activity-details {
@@ -847,10 +1031,10 @@ function formatTime(timestamp) {
 .detail-badge {
   display: inline-block;
   padding: 0.125rem 0.5rem;
-  background: #e5e7eb;
+  background: var(--surface-muted);
   border-radius: 0.25rem;
   font-size: 0.75rem;
-  color: #374151;
+  color: var(--text);
 }
 
 .activity-icon.type-stats {
@@ -885,9 +1069,9 @@ function formatTime(timestamp) {
 }
 
 .modal-content {
-  background: white;
+  background: var(--surface);
   border-radius: 0.75rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.35);
   max-width: 500px;
   width: 100%;
   max-height: 80vh;
@@ -899,7 +1083,7 @@ function formatTime(timestamp) {
   justify-content: space-between;
   align-items: center;
   padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--border);
 }
 
 .modal-header h3 {
@@ -912,14 +1096,14 @@ function formatTime(timestamp) {
   background: none;
   border: none;
   font-size: 1.5rem;
-  color: #6b7280;
+  color: var(--muted);
   cursor: pointer;
   padding: 0;
   line-height: 1;
 }
 
 .modal-close:hover {
-  color: #1f2937;
+  color: var(--text);
 }
 
 .modal-body {
@@ -931,7 +1115,7 @@ function formatTime(timestamp) {
   justify-content: space-between;
   align-items: flex-start;
   padding: 0.75rem 0;
-  border-bottom: 1px solid #f3f4f6;
+  border-bottom: 1px solid var(--border);
 }
 
 .detail-row:last-child {
@@ -940,13 +1124,13 @@ function formatTime(timestamp) {
 
 .detail-label {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: var(--muted);
   flex-shrink: 0;
 }
 
 .detail-value {
   font-size: 0.875rem;
-  color: #1f2937;
+  color: var(--text);
   text-align: right;
   word-break: break-all;
   margin-left: 1rem;
@@ -964,13 +1148,13 @@ function formatTime(timestamp) {
 .detail-section {
   margin-top: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--border);
 }
 
 .detail-section h4 {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #374151;
+  color: var(--text);
   margin: 0 0 0.75rem 0;
 }
 
@@ -980,13 +1164,72 @@ function formatTime(timestamp) {
   border-radius: 1rem;
   font-size: 0.75rem;
   font-weight: 600;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--surface-muted);
+  color: var(--muted);
 }
 
 .status-badge.online {
   background: #d1fae5;
   color: #047857;
+}
+
+.breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.breakdown-card {
+  background: var(--surface);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.breakdown-card h3 {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.75rem;
+}
+
+.breakdown-row {
+  display: grid;
+  grid-template-columns: 1fr 2fr auto;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.row-label {
+  color: var(--muted);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-value {
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.row-bar {
+  height: 8px;
+  background: var(--surface-muted);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.row-fill {
+  height: 100%;
+  background: var(--info-border);
+}
+
+.empty-mini {
+  color: var(--muted);
+  font-size: 0.75rem;
 }
 
 @media (max-width: 640px) {

@@ -34,6 +34,7 @@ interface FederationMessage {
     operation?: string;
     totalTasksBucket?: string;
     activeTasksBucket?: string;
+    continentBucket?: string;
   };
 }
 
@@ -105,7 +106,7 @@ function validateMessage(data: unknown, requiredFields: string[] = []): data is 
     }
 
     // Validate strings
-    const stringFields = ['chainId', 'taskType', 'status', 'operation'];
+    const stringFields = ['chainId', 'taskType', 'status', 'operation', 'continentBucket'];
     for (const field of stringFields) {
       if (dataObj[field] !== undefined && !isValidString(dataObj[field], 64)) {
         console.warn(`[VALIDATION] Invalid ${field}`);
@@ -306,7 +307,8 @@ function handleHeartbeat(data: unknown, _subject: string): void {
       nodeId: msg.nodeId || 'unknown',
       status: (msg.data as { status?: string })?.status || 'online',
       totalTasksBucket: msg.data?.totalTasksBucket,
-      activeTasksBucket: msg.data?.activeTasksBucket
+      activeTasksBucket: msg.data?.activeTasksBucket,
+      continentBucket: msg.data?.continentBucket
     });
   } catch (error) {
     console.error('Error handling heartbeat:', (error as Error).message);

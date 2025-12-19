@@ -287,6 +287,7 @@ export interface AggregatedNetworkStats {
   memoryUsedDistribution?: Record<string, number>;
   chainDistribution?: Record<string, number>;
   taskTypeDistribution?: Record<string, number>;
+  continentDistribution?: Record<string, number>;
   lastUpdated: string | null;
   status: string;
 }

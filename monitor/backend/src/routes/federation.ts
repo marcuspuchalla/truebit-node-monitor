@@ -224,7 +224,8 @@ export function createFederationRouter(
               connected: federation.client.connected,
               activeTasks: 0, // We don't have activeTasks map here, but that's ok
               totalTasks: taskStats?.total || 0,
-              totalInvoices: invoiceCount
+              totalInvoices: invoiceCount,
+              continent: process.env.NODE_CONTINENT || ''
             };
 
             await federation.client.publishHeartbeat(heartbeatData);
@@ -427,6 +428,7 @@ export function createFederationRouter(
           memoryUsedDistribution: {},
           chainDistribution: {},
           taskTypeDistribution: {},
+          continentDistribution: {},
           lastUpdated: null,
           status: 'awaiting_data'
         });

@@ -36,6 +36,7 @@ interface NodeData {
   status?: string;
   totalTasksBucket?: string;
   activeTasksBucket?: string;
+  continentBucket?: string;
 }
 
 interface TaskCounts {
@@ -68,6 +69,7 @@ export interface AggregatedStats {
   memoryUsedDistribution: Record<string, number>;
   chainDistribution: Record<string, number>;
   taskTypeDistribution: Record<string, number>;
+  continentDistribution: Record<string, number>;
 }
 
 class AggregatorDatabase {
@@ -143,10 +145,18 @@ class AggregatorDatabase {
         status TEXT DEFAULT 'online',
         total_tasks_bucket TEXT,
         active_tasks_bucket TEXT,
+        continent_bucket TEXT,
         heartbeat_count INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Add new columns if missing (migration for existing DBs)
+    try {
+      this.db.exec('ALTER TABLE active_nodes ADD COLUMN continent_bucket TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
 
     // Time-series aggregates (stored every publish interval)
     this.db.exec(`
@@ -265,13 +275,14 @@ class AggregatorDatabase {
 
     const stmt = this.db.prepare(`
       INSERT INTO active_nodes (
-        node_id, first_seen_at, last_seen_at, status, total_tasks_bucket, active_tasks_bucket
-      ) VALUES (?, ?, ?, ?, ?, ?)
+        node_id, first_seen_at, last_seen_at, status, total_tasks_bucket, active_tasks_bucket, continent_bucket
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(node_id) DO UPDATE SET
         last_seen_at = excluded.last_seen_at,
         status = excluded.status,
         total_tasks_bucket = excluded.total_tasks_bucket,
         active_tasks_bucket = excluded.active_tasks_bucket,
+        continent_bucket = excluded.continent_bucket,
         heartbeat_count = heartbeat_count + 1
     `);
 
@@ -281,7 +292,8 @@ class AggregatorDatabase {
       now,
       data.status || 'online',
       data.totalTasksBucket,
-      data.activeTasksBucket
+      data.activeTasksBucket,
+      data.continentBucket
     );
   }
 
@@ -343,12 +355,14 @@ class AggregatorDatabase {
     'steps_computed_bucket',
     'memory_used_bucket',
     'chain_id',
-    'task_type'
+    'task_type',
+    'continent_bucket'
   ]);
 
   private static readonly ALLOWED_TABLES = new Set([
     'aggregated_tasks',
-    'aggregated_invoices'
+    'aggregated_invoices',
+    'active_nodes'
   ]);
 
   getDistribution(column: string, table = 'aggregated_tasks'): Record<string, number> {
@@ -437,7 +451,8 @@ class AggregatorDatabase {
       stepsComputedDistribution: this.getDistribution('steps_computed_bucket', 'aggregated_invoices'),
       memoryUsedDistribution: this.getDistribution('memory_used_bucket', 'aggregated_invoices'),
       chainDistribution: this.getDistribution('chain_id'),
-      taskTypeDistribution: this.getDistribution('task_type')
+      taskTypeDistribution: this.getDistribution('task_type'),
+      continentDistribution: this.getDistribution('continent_bucket', 'active_nodes')
     };
   }
 

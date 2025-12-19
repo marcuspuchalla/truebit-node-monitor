@@ -32,6 +32,9 @@ services:
       - CSP_DISABLED=true
       # Enable HTTPS security features (Coolify provides HTTPS via Traefik)
       - HTTPS_ENABLED=true
+      # Optional: Share coarse location (continent) for the global presence map
+      # Allowed values: AF, AN, AS, EU, NA, OC, SA
+      # - NODE_CONTINENT=EU
       # Federation: Connect to the public TrueBit federation network
       # This allows your node to share anonymized statistics with the network
       # Enable federation in the UI after deployment (Federation page)
