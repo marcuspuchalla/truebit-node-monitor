@@ -168,6 +168,47 @@ export function createFederationRouter(
     });
 
   // Location lookup via OpenStreetMap Nominatim (PROTECTED)
+  router.get('/location-lookup',
+    authMiddleware,
+    validate({ query: schemas.locationLookup }),
+    async (req: Request, res: Response) => {
+      try {
+        const { query } = req.query as { query: string };
+        const url = new URL('https://nominatim.openstreetmap.org/search');
+        url.searchParams.set('format', 'json');
+        url.searchParams.set('q', query);
+        url.searchParams.set('limit', '1');
+        url.searchParams.set('addressdetails', '0');
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            'User-Agent': 'truebit-node-monitor',
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          res.status(502).json({ error: 'Location lookup failed' });
+          return;
+        }
+
+        const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string }>;
+        if (!results || results.length === 0) {
+          res.status(404).json({ error: 'No matches found' });
+          return;
+        }
+
+        const match = results[0];
+        res.json({
+          lat: Number(match.lat),
+          lon: Number(match.lon),
+          label: match.display_name || query
+        });
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
   router.post('/location-lookup',
     authMiddleware,
     validate({ body: schemas.locationLookup }),

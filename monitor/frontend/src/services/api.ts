@@ -358,7 +358,9 @@ export const federationAPI = {
   },
 
   async lookupLocation(query: string): Promise<{ lat: number; lon: number; label: string }> {
-    const { data } = await api.post<{ lat: number; lon: number; label: string }>('/federation/location-lookup', { query });
+    const { data } = await api.get<{ lat: number; lon: number; label: string }>('/federation/location-lookup', {
+      params: { query }
+    });
     return data;
   },
 

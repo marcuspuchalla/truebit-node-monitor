@@ -380,6 +380,10 @@ app.use('/api/', (req, res, next) => {
   if (req.path.startsWith('/auth/')) {
     return next();
   }
+  // Skip CSRF for read-only federation lookup
+  if (req.path === '/federation/location-lookup' && req.method === 'GET') {
+    return next();
+  }
 
   const csrfToken = req.headers['x-csrf-token'] as string;
   const sessionId = req.ip || 'anonymous';

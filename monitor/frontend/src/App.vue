@@ -141,7 +141,7 @@ import Preloader from './components/Preloader.vue';
 import { usePreloader } from './composables/usePreloader';
 import { useRealtime } from './composables/useRealtime';
 import { useFederationStore } from './stores/federation';
-import { isAuthenticated } from './router';
+import { isAuthenticated, authChecked } from './router';
 
 const route = useRoute();
 const router = useRouter();
@@ -174,6 +174,7 @@ onMounted(async () => {
   // Check if user was already authenticated and verify the password
   const wasAuth = await checkStoredAuth();
   isAuthenticated.value = wasAuth;
+  authChecked.value = true;
   if (wasAuth) {
     realtime.init();
     realtime.connect();
