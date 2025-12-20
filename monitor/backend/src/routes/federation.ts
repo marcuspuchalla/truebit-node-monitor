@@ -7,6 +7,7 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { validate, schemas } from '../middleware/validate.js';
 import type TruebitDatabase from '../db/database.js';
 import type FederationClient from '../federation/client.js';
+import { resolveLocationBucket } from '../utils/location.js';
 
 const router: Router = express.Router();
 
@@ -69,7 +70,11 @@ export function createFederationRouter(
           shareTasks: true,
           shareStats: true,
           tlsEnabled: true,
-          natsServers: []
+          natsServers: [],
+          locationEnabled: true,
+          locationLabel: null,
+          locationLat: null,
+          locationLon: null
         });
         return;
       }
@@ -85,6 +90,10 @@ export function createFederationRouter(
         shareStats: !!settings.share_stats,
         natsServers,
         tlsEnabled: !!settings.tls_enabled,
+        locationEnabled: settings.location_enabled !== undefined ? !!settings.location_enabled : true,
+        locationLabel: settings.location_label || null,
+        locationLat: settings.location_lat ?? null,
+        locationLon: settings.location_lon ?? null,
         createdAt: settings.created_at,
         updatedAt: settings.updated_at
       });
@@ -219,13 +228,21 @@ export function createFederationRouter(
           try {
             const taskStats = db.getTaskStats();
             const invoiceCount = db.getInvoiceCount();
+            const fedSettings = db.getFederationSettings();
+            const location = await resolveLocationBucket({
+              locationEnabled: fedSettings?.location_enabled,
+              locationLabel: fedSettings?.location_label,
+              locationLat: fedSettings?.location_lat,
+              locationLon: fedSettings?.location_lon
+            });
 
             const heartbeatData = {
               connected: federation.client.connected,
               activeTasks: 0, // We don't have activeTasks map here, but that's ok
               totalTasks: taskStats?.total || 0,
               totalInvoices: invoiceCount,
-              continent: process.env.NODE_CONTINENT || ''
+              continent: process.env.NODE_CONTINENT || '',
+              locationBucket: location?.bucket
             };
 
             await federation.client.publishHeartbeat(heartbeatData);
@@ -429,6 +446,7 @@ export function createFederationRouter(
           chainDistribution: {},
           taskTypeDistribution: {},
           continentDistribution: {},
+          locationDistribution: {},
           lastUpdated: null,
           status: 'awaiting_data'
         });

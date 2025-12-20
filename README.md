@@ -71,6 +71,10 @@ Open `http://your-server:8090` in your browser.
 
 Your monitor automatically participates in the [tru.watch](https://tru.watch) federation network to enable global network statistics - this is one of the main purposes of this tool: to give the community visibility into how many nodes are online and how many tasks are being processed across the entire network.
 
+### Location Sharing (Default On)
+
+The globe uses approximate city-level buckets from a simple IP-based lookup. You can disable this in the dashboard or override it by setting a custom latitude/longitude in the Location Sharing settings.
+
 ### Global Presence Map (Optional)
 
 If you want your node to appear on the animated globe, set a coarse location bucket:
@@ -79,7 +83,7 @@ If you want your node to appear on the animated globe, set a coarse location buc
 NODE_CONTINENT=EU
 ```
 
-Only continent‑level data is shared (no IPs, no precise location).
+Continent-only sharing is supported, but the default is approximate city-level buckets with opt-out.
 
 If you prefer not to participate, you can opt out in the **Dashboard** (requires login) by clicking **"Leave Network"**. Your preference is saved and persists across restarts.
 

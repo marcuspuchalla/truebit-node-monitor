@@ -37,6 +37,7 @@ interface NodeData {
   totalTasksBucket?: string;
   activeTasksBucket?: string;
   continentBucket?: string;
+  locationBucket?: string;
 }
 
 interface TaskCounts {
@@ -70,6 +71,7 @@ export interface AggregatedStats {
   chainDistribution: Record<string, number>;
   taskTypeDistribution: Record<string, number>;
   continentDistribution: Record<string, number>;
+  locationDistribution: Record<string, number>;
 }
 
 class AggregatorDatabase {
@@ -146,6 +148,7 @@ class AggregatorDatabase {
         total_tasks_bucket TEXT,
         active_tasks_bucket TEXT,
         continent_bucket TEXT,
+        location_bucket TEXT,
         heartbeat_count INTEGER DEFAULT 1,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -154,6 +157,11 @@ class AggregatorDatabase {
     // Add new columns if missing (migration for existing DBs)
     try {
       this.db.exec('ALTER TABLE active_nodes ADD COLUMN continent_bucket TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db.exec('ALTER TABLE active_nodes ADD COLUMN location_bucket TEXT');
     } catch {
       // Column exists or migration not needed
     }
@@ -275,14 +283,15 @@ class AggregatorDatabase {
 
     const stmt = this.db.prepare(`
       INSERT INTO active_nodes (
-        node_id, first_seen_at, last_seen_at, status, total_tasks_bucket, active_tasks_bucket, continent_bucket
-      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        node_id, first_seen_at, last_seen_at, status, total_tasks_bucket, active_tasks_bucket, continent_bucket, location_bucket
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(node_id) DO UPDATE SET
         last_seen_at = excluded.last_seen_at,
         status = excluded.status,
         total_tasks_bucket = excluded.total_tasks_bucket,
         active_tasks_bucket = excluded.active_tasks_bucket,
         continent_bucket = excluded.continent_bucket,
+        location_bucket = excluded.location_bucket,
         heartbeat_count = heartbeat_count + 1
     `);
 
@@ -293,7 +302,8 @@ class AggregatorDatabase {
       data.status || 'online',
       data.totalTasksBucket,
       data.activeTasksBucket,
-      data.continentBucket
+      data.continentBucket,
+      data.locationBucket
     );
   }
 
@@ -452,7 +462,8 @@ class AggregatorDatabase {
       memoryUsedDistribution: this.getDistribution('memory_used_bucket', 'aggregated_invoices'),
       chainDistribution: this.getDistribution('chain_id'),
       taskTypeDistribution: this.getDistribution('task_type'),
-      continentDistribution: this.getDistribution('continent_bucket', 'active_nodes')
+      continentDistribution: this.getDistribution('continent_bucket', 'active_nodes'),
+      locationDistribution: this.getDistribution('location_bucket', 'active_nodes')
     };
   }
 

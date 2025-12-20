@@ -33,17 +33,44 @@ const continentMap = {
   AN: { label: 'Antarctica', lat: -75, lon: 0 }
 };
 
+function parseLocationKey(key) {
+  if (continentMap[key]) {
+    return {
+      label: continentMap[key].label,
+      lat: continentMap[key].lat,
+      lon: continentMap[key].lon
+    };
+  }
+
+  const parts = key.split(',');
+  if (parts.length !== 2) return null;
+  const lat = Number(parts[0]);
+  const lon = Number(parts[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return null;
+
+  return {
+    label: key,
+    lat,
+    lon
+  };
+}
+
 const points = computed(() => {
   const entries = Object.entries(props.distribution || {});
   return entries
-    .filter(([key]) => !!continentMap[key])
-    .map(([key, value]) => ({
-      id: key,
-      label: continentMap[key].label,
-      lat: continentMap[key].lat,
-      lon: continentMap[key].lon,
-      count: Number(value) || 0
-    }))
+    .map(([key, value]) => {
+      const parsed = parseLocationKey(key);
+      if (!parsed) return null;
+      return {
+        id: key,
+        label: parsed.label,
+        lat: parsed.lat,
+        lon: parsed.lon,
+        count: Number(value) || 0
+      };
+    })
+    .filter(Boolean)
     .filter(p => p.count > 0);
 });
 

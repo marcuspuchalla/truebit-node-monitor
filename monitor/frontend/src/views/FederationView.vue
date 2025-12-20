@@ -17,9 +17,9 @@
     <div class="section globe-section">
       <h2>Global Presence</h2>
       <div class="globe-card">
-        <NetworkGlobe :distribution="networkStatsData.continentDistribution" />
+        <NetworkGlobe :distribution="globeDistribution" />
         <div class="globe-legend">
-          <span>Continent buckets only · No precise locations</span>
+          <span>Approximate city buckets · Opt-out available</span>
         </div>
       </div>
     </div>
@@ -380,6 +380,7 @@ const networkStatsData = computed(() => {
   // Otherwise, compute from available data
   const nodeStats = new Map(); // Track latest stats per node
   const continentCounts: Record<string, number> = {};
+  const locationCounts: Record<string, number> = {};
 
   // Count only ACTIVE peers (seen within last 2 minutes)
   const activeNodeIds = new Set();
@@ -407,7 +408,8 @@ const networkStatsData = computed(() => {
           totalInvoices: msg.data.totalInvoices,
           totalTasksBucket: msg.data.totalTasksBucket,
           activeTasksBucket: msg.data.activeTasksBucket,
-          continentBucket: msg.data.continentBucket
+          continentBucket: msg.data.continentBucket,
+          locationBucket: msg.data.locationBucket
         });
       }
     }
@@ -433,6 +435,9 @@ const networkStatsData = computed(() => {
     if (stats.continentBucket && typeof stats.continentBucket === 'string') {
       const key = stats.continentBucket.toUpperCase();
       continentCounts[key] = (continentCounts[key] || 0) + 1;
+    }
+    if (stats.locationBucket && typeof stats.locationBucket === 'string') {
+      locationCounts[stats.locationBucket] = (locationCounts[stats.locationBucket] || 0) + 1;
     }
   });
 
@@ -466,9 +471,18 @@ const networkStatsData = computed(() => {
     chainDistribution: aggStats.chainDistribution || {},
     taskTypeDistribution: aggStats.taskTypeDistribution || {},
     continentDistribution: aggStats.continentDistribution || continentCounts,
+    locationDistribution: aggStats.locationDistribution || locationCounts,
     lastUpdated: aggStats.lastUpdated,
     status: activeNodeIds.size > 0 ? 'computed' : aggStats.status
   };
+});
+
+const globeDistribution = computed(() => {
+  const location = networkStatsData.value.locationDistribution || {};
+  if (Object.keys(location).length > 0) {
+    return location;
+  }
+  return networkStatsData.value.continentDistribution || {};
 });
 
 // Get latest stats for a specific node from messages

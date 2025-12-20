@@ -25,6 +25,7 @@ import { createLogsRouter } from './routes/logs.js';
 import { createFederationRouter } from './routes/federation.js';
 import FederationClient from './federation/client.js';
 import FederationAnonymizer from './federation/anonymizer.js';
+import { resolveLocationBucket } from './utils/location.js';
 
 dotenv.config();
 
@@ -931,13 +932,21 @@ async function start(): Promise<void> {
               const nodeStatus = db.getNodeStatus();
               const taskStats = db.getTaskStats();
               const invoiceCount = db.getInvoiceCount();
+              const fedSettings = db.getFederationSettings();
+              const location = await resolveLocationBucket({
+                locationEnabled: fedSettings?.location_enabled,
+                locationLabel: fedSettings?.location_label,
+                locationLat: fedSettings?.location_lat,
+                locationLon: fedSettings?.location_lon
+              });
 
               const heartbeatData = {
                 connected: federation.client.connected,
                 activeTasks: activeTasks.size,
                 totalTasks: taskStats?.total || 0,
                 totalInvoices: invoiceCount,
-                continent: NODE_CONTINENT
+                continent: NODE_CONTINENT,
+                locationBucket: location?.bucket
               };
 
               await federation.client.publishHeartbeat(heartbeatData);
