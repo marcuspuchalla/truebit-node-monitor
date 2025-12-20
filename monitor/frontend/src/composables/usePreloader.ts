@@ -193,18 +193,27 @@ const checkStoredAuth = async (): Promise<boolean> => {
         headers: { 'X-Session-Token': storedToken }
       });
 
-      if (response.ok) {
-        isAuthenticated.value = true;
-        sessionToken.value = storedToken;
-        return true;
-      } else {
-        // Session token no longer valid, clear storage
+      if (!response.ok) {
         localStorage.removeItem('app_authenticated');
         localStorage.removeItem('app_session_token');
         sessionToken.value = null;
         isAuthenticated.value = false;
         return false;
       }
+
+      const data = await response.json() as { authenticated?: boolean };
+      if (data.authenticated) {
+        isAuthenticated.value = true;
+        sessionToken.value = storedToken;
+        return true;
+      }
+
+      // Session token no longer valid, clear storage
+      localStorage.removeItem('app_authenticated');
+      localStorage.removeItem('app_session_token');
+      sessionToken.value = null;
+      isAuthenticated.value = false;
+      return false;
     } catch {
       return false;
     }
