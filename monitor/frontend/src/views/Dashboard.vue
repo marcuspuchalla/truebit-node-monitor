@@ -29,7 +29,7 @@
     <LogViewer :max-logs="50" :auto-scroll="true" />
 
     <!-- Federation Settings -->
-    <div class="bg-white rounded-lg shadow p-4">
+    <div class="card p-4">
       <div class="flex items-center justify-between">
         <div>
           <h3 class="text-sm font-medium text-gray-900">Network Participation</h3>
@@ -49,7 +49,7 @@
     </div>
 
     <!-- Location Sharing -->
-    <div class="bg-white rounded-lg shadow p-4">
+    <div class="card p-4">
       <div class="flex items-start justify-between gap-4">
         <div>
           <h3 class="text-sm font-medium text-gray-900">Location Sharing</h3>
