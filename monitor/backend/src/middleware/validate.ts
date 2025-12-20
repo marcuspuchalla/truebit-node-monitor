@@ -27,6 +27,9 @@ export const schemas = {
     locationLat: z.coerce.number().min(-90).max(90).nullable().optional(),
     locationLon: z.coerce.number().min(-180).max(180).nullable().optional()
   }),
+  locationLookup: z.object({
+    query: z.string().min(2).max(120)
+  }),
 
   // Node ID param (hex string)
   nodeIdParam: z.object({

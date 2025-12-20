@@ -116,6 +116,29 @@ export function createFederationRouter(
         const newServers = settings.natsServers || [];
         const serversChanged = JSON.stringify(oldServers) !== JSON.stringify(newServers);
 
+        // Rate limit location changes (max 5/day)
+        if (oldSettings && (settings.locationLat !== undefined || settings.locationLon !== undefined || settings.locationLabel !== undefined)) {
+          const prevLat = oldSettings.location_lat;
+          const prevLon = oldSettings.location_lon;
+          const prevLabel = oldSettings.location_label || null;
+          const nextLat = settings.locationLat !== undefined ? settings.locationLat : prevLat;
+          const nextLon = settings.locationLon !== undefined ? settings.locationLon : prevLon;
+          const nextLabel = settings.locationLabel !== undefined ? settings.locationLabel : prevLabel;
+          const changed = prevLat !== nextLat || prevLon !== nextLon || prevLabel !== nextLabel;
+          if (changed) {
+            const today = new Date().toISOString().slice(0, 10);
+            const count = db.getLocationChangeCount(today);
+            if (count >= 5) {
+              res.status(429).json({
+                error: 'Location update limit reached',
+                message: 'You can change location up to 5 times per day.'
+              });
+              return;
+            }
+            db.incrementLocationChangeCount(today);
+          }
+        }
+
         // Update database
         db.updateFederationSettings(settings);
 
@@ -139,6 +162,48 @@ export function createFederationRouter(
         }
 
         res.json({ success: true, message: 'Federation settings updated' });
+      } catch (error) {
+        res.status(500).json({ error: (error as Error).message });
+      }
+    });
+
+  // Location lookup via OpenStreetMap Nominatim (PROTECTED)
+  router.post('/location-lookup',
+    authMiddleware,
+    validate({ body: schemas.locationLookup }),
+    async (req: Request, res: Response) => {
+      try {
+        const { query } = req.body as { query: string };
+        const url = new URL('https://nominatim.openstreetmap.org/search');
+        url.searchParams.set('format', 'json');
+        url.searchParams.set('q', query);
+        url.searchParams.set('limit', '1');
+        url.searchParams.set('addressdetails', '0');
+
+        const response = await fetch(url.toString(), {
+          headers: {
+            'User-Agent': 'truebit-node-monitor',
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          res.status(502).json({ error: 'Location lookup failed' });
+          return;
+        }
+
+        const results = await response.json() as Array<{ lat: string; lon: string; display_name?: string }>;
+        if (!results || results.length === 0) {
+          res.status(404).json({ error: 'No matches found' });
+          return;
+        }
+
+        const match = results[0];
+        res.json({
+          lat: Number(match.lat),
+          lon: Number(match.lon),
+          label: match.display_name || query
+        });
       } catch (error) {
         res.status(500).json({ error: (error as Error).message });
       }

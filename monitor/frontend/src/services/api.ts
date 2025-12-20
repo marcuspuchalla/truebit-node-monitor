@@ -326,6 +326,11 @@ export const federationAPI = {
     return data;
   },
 
+  async lookupLocation(query: string): Promise<{ lat: number; lon: number; label: string }> {
+    const { data } = await api.post<{ lat: number; lon: number; label: string }>('/federation/location-lookup', { query });
+    return data;
+  },
+
   async enable(): Promise<{ success: boolean; message: string; connected: boolean }> {
     const { data } = await api.post<{ success: boolean; message: string; connected: boolean }>('/federation/enable');
     return data;
