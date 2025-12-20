@@ -285,6 +285,15 @@ class TruebitDatabase {
       )
     `);
 
+    // Location change limiter (per day)
+    this.db!.exec(`
+      CREATE TABLE IF NOT EXISTS location_change_limits (
+        date TEXT PRIMARY KEY,
+        count INTEGER DEFAULT 0,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Network-wide statistics cache (received from aggregator)
     this.db!.exec(`
       CREATE TABLE IF NOT EXISTS network_stats_cache (
@@ -653,7 +662,7 @@ class TruebitDatabase {
 
   // ===== FEDERATION =====
 
-  // Federation Settings
+    // Federation Settings
   getFederationSettings(): { enabled: number; node_id: string; salt: string; privacy_level: string; share_tasks: number; share_stats: number; nats_servers: string | null; nats_token: string | null; tls_enabled: number; location_enabled: number; location_label: string | null; location_lat: number | null; location_lon: number | null; created_at: string; updated_at: string } | undefined {
     const stmt = this.db!.prepare('SELECT * FROM federation_settings WHERE id = 1');
     return stmt.get() as { enabled: number; node_id: string; salt: string; privacy_level: string; share_tasks: number; share_stats: number; nats_servers: string | null; nats_token: string | null; tls_enabled: number; location_enabled: number; location_label: string | null; location_lat: number | null; location_lon: number | null; created_at: string; updated_at: string } | undefined;
@@ -734,6 +743,26 @@ class TruebitDatabase {
     `);
 
     return stmt.run(...values);
+  }
+
+  // Location change rate limiting
+  getLocationChangeCount(date: string): number {
+    const stmt = this.db!.prepare('SELECT count FROM location_change_limits WHERE date = ?');
+    const row = stmt.get(date) as { count: number } | undefined;
+    return row?.count || 0;
+  }
+
+  incrementLocationChangeCount(date: string): number {
+    const existing = this.db!.prepare('SELECT count FROM location_change_limits WHERE date = ?').get(date) as { count: number } | undefined;
+    const next = (existing?.count || 0) + 1;
+    if (existing) {
+      this.db!.prepare('UPDATE location_change_limits SET count = ?, updated_at = CURRENT_TIMESTAMP WHERE date = ?')
+        .run(next, date);
+    } else {
+      this.db!.prepare('INSERT INTO location_change_limits (date, count) VALUES (?, ?)')
+        .run(date, next);
+    }
+    return next;
   }
 
   // Federation Messages

@@ -52,19 +52,44 @@
     <div class="card p-4">
       <div class="flex items-start justify-between gap-4">
         <div>
-          <h3 class="text-sm font-medium text-gray-900">Location Sharing</h3>
-          <p class="text-xs text-gray-500 mt-1">
+          <h3 class="text-sm font-medium text-gray-900 dark:text-slate-100">Location Sharing</h3>
+          <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">
             Share an approximate location (nearest city) with the network. Disable to stay private.
           </p>
         </div>
-        <label class="inline-flex items-center gap-2 text-xs text-gray-600">
+        <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
           <input type="checkbox" v-model="locationEnabled" />
           Enabled
         </label>
       </div>
 
+      <div class="mt-4">
+        <div class="flex flex-col md:flex-row gap-2">
+          <input
+            v-model="locationQuery"
+            type="text"
+            placeholder="City or country (via OpenStreetMap)"
+            class="flex-1 border border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded px-2 py-1 text-xs"
+            :disabled="!locationEnabled"
+          />
+          <button
+            @click="lookupLocation"
+            class="px-3 py-1 text-xs font-medium rounded border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800"
+            :disabled="!locationEnabled || isLookingUp"
+          >
+            {{ isLookingUp ? 'Looking up...' : 'Find location' }}
+          </button>
+        </div>
+        <p v-if="lookupError" class="mt-2 text-[11px] text-red-600">
+          {{ lookupError }}
+        </p>
+        <p v-else class="mt-2 text-[11px] text-gray-500 dark:text-slate-400">
+          Location lookup powered by OpenStreetMap Nominatim.
+        </p>
+      </div>
+
       <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <label class="flex items-center gap-2 text-xs text-gray-600">
+        <label class="flex items-center gap-2 text-xs text-gray-600 dark:text-slate-300">
           <input type="checkbox" v-model="useCustomLocation" :disabled="!locationEnabled" />
           Use custom location
         </label>
@@ -72,7 +97,7 @@
           v-model="locationLabel"
           type="text"
           placeholder="City label (optional)"
-          class="border border-gray-200 rounded px-2 py-1 text-xs"
+          class="border border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded px-2 py-1 text-xs"
           :disabled="!locationEnabled || !useCustomLocation"
         />
         <input
@@ -82,7 +107,7 @@
           min="-90"
           max="90"
           placeholder="Latitude"
-          class="border border-gray-200 rounded px-2 py-1 text-xs"
+          class="border border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded px-2 py-1 text-xs"
           :disabled="!locationEnabled || !useCustomLocation"
         />
         <input
@@ -92,18 +117,18 @@
           min="-180"
           max="180"
           placeholder="Longitude"
-          class="border border-gray-200 rounded px-2 py-1 text-xs"
+          class="border border-gray-200 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 rounded px-2 py-1 text-xs"
           :disabled="!locationEnabled || !useCustomLocation"
         />
       </div>
 
       <div class="mt-3 flex items-center justify-between">
-        <p class="text-[11px] text-gray-500">
+        <p class="text-[11px] text-gray-500 dark:text-slate-400">
           Custom coordinates override IP-based lookup. Rounded to city-level buckets before sharing.
         </p>
         <button
           @click="saveLocationSettings"
-          class="px-3 py-1 text-xs font-medium rounded border border-gray-200 text-gray-700 hover:bg-gray-50"
+          class="px-3 py-1 text-xs font-medium rounded border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800"
           :disabled="isSavingLocation"
         >
           {{ isSavingLocation ? 'Saving...' : 'Save' }}
@@ -123,6 +148,7 @@ import LogViewer from '../components/LogViewer.vue';
 import InvoiceSummary from '../components/InvoiceSummary.vue';
 import { useTasksStore } from '../stores/tasks';
 import { useFederationStore } from '../stores/federation';
+import { federationAPI } from '../services/api';
 
 const tasksStore = useTasksStore();
 const federationStore = useFederationStore();
@@ -131,10 +157,13 @@ const { settings: federationSettings } = storeToRefs(federationStore);
 const isToggling = ref(false);
 const locationEnabled = ref(true);
 const useCustomLocation = ref(false);
+const locationQuery = ref('');
 const locationLabel = ref('');
 const locationLat = ref(null);
 const locationLon = ref(null);
 const isSavingLocation = ref(false);
+const isLookingUp = ref(false);
+const lookupError = ref('');
 
 async function toggleFederation() {
   isToggling.value = true;
@@ -180,6 +209,30 @@ async function saveLocationSettings() {
     console.error('Location settings update error:', error);
   } finally {
     isSavingLocation.value = false;
+  }
+}
+
+async function lookupLocation() {
+  if (!locationQuery.value || locationQuery.value.trim().length < 2) {
+    lookupError.value = 'Enter a city or country.';
+    return;
+  }
+
+  isLookingUp.value = true;
+  lookupError.value = '';
+
+  try {
+    const result = await federationAPI.lookupLocation(locationQuery.value.trim());
+    useCustomLocation.value = true;
+    locationLat.value = result.lat;
+    locationLon.value = result.lon;
+    if (!locationLabel.value) {
+      locationLabel.value = result.label;
+    }
+  } catch (error) {
+    lookupError.value = 'No matches found or lookup failed.';
+  } finally {
+    isLookingUp.value = false;
   }
 }
 

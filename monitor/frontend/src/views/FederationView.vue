@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <!-- Global Presence (hidden until enhanced) -->
+    <!-- Global Presence -->
     <div v-if="showGlobalPresence" class="section globe-section">
       <h2>Global Presence</h2>
       <div class="globe-card">
@@ -477,7 +477,10 @@ const networkStatsData = computed(() => {
   };
 });
 
-const showGlobalPresence = false;
+const showGlobalPresence = computed(() => {
+  const location = networkStatsData.value.locationDistribution || {};
+  return Object.keys(location).length > 0;
+});
 
 const globeDistribution = computed(() => {
   const location = networkStatsData.value.locationDistribution || {};
