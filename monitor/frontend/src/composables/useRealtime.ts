@@ -1,4 +1,5 @@
 import websocket from '../services/websocket';
+import type { Log } from '../services/api';
 import { useLogsStore } from '../stores/logs';
 import { useTasksStore } from '../stores/tasks';
 import { useInvoicesStore } from '../stores/invoices';
@@ -26,7 +27,16 @@ export function useRealtime() {
     });
 
     websocket.on('log', (data) => {
-      logsStore.addLog(data as { timestamp?: string; level?: string; message?: string; raw?: string });
+      const payload = data as Partial<Log> | undefined;
+      const timestamp = typeof payload?.timestamp === 'string' ? payload.timestamp : new Date().toISOString();
+      logsStore.addLog({
+        id: payload?.id,
+        timestamp,
+        level: payload?.level,
+        type: payload?.type,
+        message: payload?.message,
+        raw: payload?.raw
+      });
     });
 
     websocket.on('task', (data) => {
