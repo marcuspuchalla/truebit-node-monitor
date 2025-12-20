@@ -13,8 +13,8 @@
       </div>
     </div>
 
-    <!-- Global Presence -->
-    <div class="section globe-section">
+    <!-- Global Presence (hidden until enhanced) -->
+    <div v-if="showGlobalPresence" class="section globe-section">
       <h2>Global Presence</h2>
       <div class="globe-card">
         <NetworkGlobe :distribution="globeDistribution" />
@@ -476,6 +476,8 @@ const networkStatsData = computed(() => {
     status: activeNodeIds.size > 0 ? 'computed' : aggStats.status
   };
 });
+
+const showGlobalPresence = false;
 
 const globeDistribution = computed(() => {
   const location = networkStatsData.value.locationDistribution || {};
