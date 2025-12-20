@@ -51,7 +51,11 @@ export const useFederationStore = defineStore('federation', {
       shareTasks: true,
       shareStats: true,
       natsServers: [],
-      tlsEnabled: true
+      tlsEnabled: true,
+      locationEnabled: true,
+      locationLabel: null,
+      locationLat: null,
+      locationLon: null
     },
 
     // Status
@@ -102,6 +106,7 @@ export const useFederationStore = defineStore('federation', {
       memoryUsedDistribution: {},
       chainDistribution: {},
       taskTypeDistribution: {},
+      locationDistribution: {},
       lastUpdated: null,
       status: 'awaiting_data'
     },

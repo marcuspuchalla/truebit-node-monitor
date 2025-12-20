@@ -47,11 +47,74 @@
         </button>
       </div>
     </div>
+
+    <!-- Location Sharing -->
+    <div class="bg-white rounded-lg shadow p-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h3 class="text-sm font-medium text-gray-900">Location Sharing</h3>
+          <p class="text-xs text-gray-500 mt-1">
+            Share an approximate location (nearest city) with the network. Disable to stay private.
+          </p>
+        </div>
+        <label class="inline-flex items-center gap-2 text-xs text-gray-600">
+          <input type="checkbox" v-model="locationEnabled" />
+          Enabled
+        </label>
+      </div>
+
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+        <label class="flex items-center gap-2 text-xs text-gray-600">
+          <input type="checkbox" v-model="useCustomLocation" :disabled="!locationEnabled" />
+          Use custom location
+        </label>
+        <input
+          v-model="locationLabel"
+          type="text"
+          placeholder="City label (optional)"
+          class="border border-gray-200 rounded px-2 py-1 text-xs"
+          :disabled="!locationEnabled || !useCustomLocation"
+        />
+        <input
+          v-model.number="locationLat"
+          type="number"
+          step="0.1"
+          min="-90"
+          max="90"
+          placeholder="Latitude"
+          class="border border-gray-200 rounded px-2 py-1 text-xs"
+          :disabled="!locationEnabled || !useCustomLocation"
+        />
+        <input
+          v-model.number="locationLon"
+          type="number"
+          step="0.1"
+          min="-180"
+          max="180"
+          placeholder="Longitude"
+          class="border border-gray-200 rounded px-2 py-1 text-xs"
+          :disabled="!locationEnabled || !useCustomLocation"
+        />
+      </div>
+
+      <div class="mt-3 flex items-center justify-between">
+        <p class="text-[11px] text-gray-500">
+          Custom coordinates override IP-based lookup. Rounded to city-level buckets before sharing.
+        </p>
+        <button
+          @click="saveLocationSettings"
+          class="px-3 py-1 text-xs font-medium rounded border border-gray-200 text-gray-700 hover:bg-gray-50"
+          :disabled="isSavingLocation"
+        >
+          {{ isSavingLocation ? 'Saving...' : 'Save' }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import NodeStatus from '../components/NodeStatus.vue';
 import TaskSummary from '../components/TaskSummary.vue';
@@ -66,6 +129,12 @@ const federationStore = useFederationStore();
 
 const { settings: federationSettings } = storeToRefs(federationStore);
 const isToggling = ref(false);
+const locationEnabled = ref(true);
+const useCustomLocation = ref(false);
+const locationLabel = ref('');
+const locationLat = ref(null);
+const locationLon = ref(null);
+const isSavingLocation = ref(false);
 
 async function toggleFederation() {
   isToggling.value = true;
@@ -82,6 +151,39 @@ async function toggleFederation() {
     isToggling.value = false;
   }
 }
+
+function syncLocationFromSettings() {
+  const settings = federationSettings.value;
+  if (!settings) return;
+  locationEnabled.value = settings.locationEnabled !== false;
+  const hasCoords = typeof settings.locationLat === 'number' && typeof settings.locationLon === 'number';
+  useCustomLocation.value = hasCoords;
+  locationLabel.value = settings.locationLabel || '';
+  locationLat.value = hasCoords ? settings.locationLat : null;
+  locationLon.value = hasCoords ? settings.locationLon : null;
+}
+
+async function saveLocationSettings() {
+  isSavingLocation.value = true;
+  try {
+    const enabled = locationEnabled.value;
+    const useCustom = enabled && useCustomLocation.value;
+    const lat = Number.isFinite(locationLat.value) ? locationLat.value : null;
+    const lon = Number.isFinite(locationLon.value) ? locationLon.value : null;
+    await federationStore.updateSettings({
+      locationEnabled: enabled,
+      locationLabel: useCustom ? (locationLabel.value || null) : null,
+      locationLat: useCustom ? lat : null,
+      locationLon: useCustom ? lon : null
+    });
+  } catch (error) {
+    console.error('Location settings update error:', error);
+  } finally {
+    isSavingLocation.value = false;
+  }
+}
+
+watch(federationSettings, syncLocationFromSettings, { immediate: true });
 
 onMounted(() => {
   tasksStore.fetchTasks({ limit: 10 });

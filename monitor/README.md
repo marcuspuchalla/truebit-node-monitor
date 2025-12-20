@@ -78,6 +78,10 @@ Federation allows sharing anonymized statistics with other node operators via [t
 
 **Privacy**: Your data is anonymized - identifiers are hashed, metrics are bucketed, timestamps rounded, and wallet addresses are never shared.
 
+### Location Sharing (Default On)
+
+The globe uses approximate city-level buckets from a simple IP-based lookup. You can opt out in the dashboard or override it by setting a custom latitude/longitude in the Location Sharing settings.
+
 ### Global Presence Map (Optional)
 
 To appear on the animated globe, set a coarse location bucket:
@@ -86,7 +90,7 @@ To appear on the animated globe, set a coarse location bucket:
 NODE_CONTINENT=NA
 ```
 
-Only continent‑level data is shared.
+Continent-only sharing is still supported, but the default is approximate city-level buckets with opt-out.
 
 ## Troubleshooting
 

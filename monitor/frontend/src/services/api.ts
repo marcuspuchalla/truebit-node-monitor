@@ -227,6 +227,10 @@ export interface FederationSettings {
   shareStats: boolean;
   natsServers: string[];
   tlsEnabled: boolean;
+  locationEnabled: boolean;
+  locationLabel?: string | null;
+  locationLat?: number | null;
+  locationLon?: number | null;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -288,6 +292,7 @@ export interface AggregatedNetworkStats {
   chainDistribution?: Record<string, number>;
   taskTypeDistribution?: Record<string, number>;
   continentDistribution?: Record<string, number>;
+  locationDistribution?: Record<string, number>;
   lastUpdated: string | null;
   status: string;
 }

@@ -35,6 +35,7 @@ interface FederationMessage {
     totalTasksBucket?: string;
     activeTasksBucket?: string;
     continentBucket?: string;
+    locationBucket?: string;
   };
 }
 
@@ -60,6 +61,17 @@ function isValidNodeId(value: unknown): boolean {
 
 function isValidBucket(value: unknown): boolean {
   return isValidString(value, 20) && BUCKET_PATTERN.test(value as string);
+}
+
+function isValidLocationBucket(value: unknown): boolean {
+  if (!isValidString(value, 32)) return false;
+  const parts = (value as string).split(',');
+  if (parts.length !== 2) return false;
+  const lat = Number(parts[0]);
+  const lon = Number(parts[1]);
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return false;
+  return true;
 }
 
 function validateMessage(data: unknown, requiredFields: string[] = []): data is FederationMessage {
@@ -112,6 +124,11 @@ function validateMessage(data: unknown, requiredFields: string[] = []): data is 
         console.warn(`[VALIDATION] Invalid ${field}`);
         return false;
       }
+    }
+
+    if (dataObj.locationBucket !== undefined && !isValidLocationBucket(dataObj.locationBucket)) {
+      console.warn('[VALIDATION] Invalid locationBucket');
+      return false;
     }
   }
 
@@ -308,7 +325,8 @@ function handleHeartbeat(data: unknown, _subject: string): void {
       status: (msg.data as { status?: string })?.status || 'online',
       totalTasksBucket: msg.data?.totalTasksBucket,
       activeTasksBucket: msg.data?.activeTasksBucket,
-      continentBucket: msg.data?.continentBucket
+      continentBucket: msg.data?.continentBucket,
+      locationBucket: msg.data?.locationBucket
     });
   } catch (error) {
     console.error('Error handling heartbeat:', (error as Error).message);

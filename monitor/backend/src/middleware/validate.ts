@@ -21,7 +21,11 @@ export const schemas = {
     shareTasks: z.boolean().optional(),
     shareStats: z.boolean().optional(),
     natsServers: z.array(z.string().url()).optional(),
-    tlsEnabled: z.boolean().optional()
+    tlsEnabled: z.boolean().optional(),
+    locationEnabled: z.boolean().optional(),
+    locationLabel: z.string().max(80).nullable().optional(),
+    locationLat: z.coerce.number().min(-90).max(90).nullable().optional(),
+    locationLon: z.coerce.number().min(-180).max(180).nullable().optional()
   }),
 
   // Node ID param (hex string)

@@ -69,6 +69,10 @@ export interface FederationSettings {
   natsServers?: string[];
   natsToken?: string | null;
   tlsEnabled?: boolean;
+  locationEnabled?: boolean;
+  locationLabel?: string | null;
+  locationLat?: number | null;
+  locationLon?: number | null;
 }
 
 export interface FederationMessage {
@@ -98,6 +102,7 @@ export interface NetworkStats {
   chainDistribution?: Record<string, number>;
   taskTypeDistribution?: Record<string, number>;
   continentDistribution?: Record<string, number>;
+  locationDistribution?: Record<string, number>;
 }
 
 class TruebitDatabase {
@@ -231,6 +236,10 @@ class TruebitDatabase {
         nats_servers TEXT,
         nats_token TEXT,
         tls_enabled BOOLEAN DEFAULT 1,
+        location_enabled BOOLEAN DEFAULT 1,
+        location_label TEXT,
+        location_lat REAL,
+        location_lon REAL,
         created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         updated_at TEXT DEFAULT CURRENT_TIMESTAMP
       )
@@ -298,6 +307,7 @@ class TruebitDatabase {
         chain_distribution TEXT,
         task_type_distribution TEXT,
         continent_distribution TEXT,
+        location_distribution TEXT,
         last_updated TEXT
       )
     `);
@@ -305,6 +315,31 @@ class TruebitDatabase {
     // Add new columns if missing (migration for existing DBs)
     try {
       this.db!.exec('ALTER TABLE network_stats_cache ADD COLUMN continent_distribution TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db!.exec('ALTER TABLE network_stats_cache ADD COLUMN location_distribution TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db!.exec('ALTER TABLE federation_settings ADD COLUMN location_enabled BOOLEAN DEFAULT 1');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db!.exec('ALTER TABLE federation_settings ADD COLUMN location_label TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db!.exec('ALTER TABLE federation_settings ADD COLUMN location_lat REAL');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db!.exec('ALTER TABLE federation_settings ADD COLUMN location_lon REAL');
     } catch {
       // Column exists or migration not needed
     }
@@ -619,9 +654,9 @@ class TruebitDatabase {
   // ===== FEDERATION =====
 
   // Federation Settings
-  getFederationSettings(): { enabled: number; node_id: string; salt: string; privacy_level: string; share_tasks: number; share_stats: number; nats_servers: string | null; nats_token: string | null; tls_enabled: number; created_at: string; updated_at: string } | undefined {
+  getFederationSettings(): { enabled: number; node_id: string; salt: string; privacy_level: string; share_tasks: number; share_stats: number; nats_servers: string | null; nats_token: string | null; tls_enabled: number; location_enabled: number; location_label: string | null; location_lat: number | null; location_lon: number | null; created_at: string; updated_at: string } | undefined {
     const stmt = this.db!.prepare('SELECT * FROM federation_settings WHERE id = 1');
-    return stmt.get() as { enabled: number; node_id: string; salt: string; privacy_level: string; share_tasks: number; share_stats: number; nats_servers: string | null; nats_token: string | null; tls_enabled: number; created_at: string; updated_at: string } | undefined;
+    return stmt.get() as { enabled: number; node_id: string; salt: string; privacy_level: string; share_tasks: number; share_stats: number; nats_servers: string | null; nats_token: string | null; tls_enabled: number; location_enabled: number; location_label: string | null; location_lat: number | null; location_lon: number | null; created_at: string; updated_at: string } | undefined;
   }
 
   initializeFederationSettings(nodeId: string, salt: string): unknown {
@@ -668,6 +703,22 @@ class TruebitDatabase {
     if (settings.tlsEnabled !== undefined) {
       updates.push('tls_enabled = ?');
       values.push(settings.tlsEnabled ? 1 : 0);
+    }
+    if (settings.locationEnabled !== undefined) {
+      updates.push('location_enabled = ?');
+      values.push(settings.locationEnabled ? 1 : 0);
+    }
+    if (settings.locationLabel !== undefined) {
+      updates.push('location_label = ?');
+      values.push(settings.locationLabel || null);
+    }
+    if (settings.locationLat !== undefined) {
+      updates.push('location_lat = ?');
+      values.push(settings.locationLat);
+    }
+    if (settings.locationLon !== undefined) {
+      updates.push('location_lon = ?');
+      values.push(settings.locationLon);
     }
 
     if (updates.length === 0) {
@@ -932,8 +983,8 @@ class TruebitDatabase {
           invoices_last_24h, success_rate, cache_hit_rate,
           execution_time_distribution, gas_usage_distribution,
           steps_computed_distribution, memory_used_distribution,
-          chain_distribution, task_type_distribution, continent_distribution, last_updated
-        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          chain_distribution, task_type_distribution, continent_distribution, location_distribution, last_updated
+        ) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `);
 
       return stmt.run(
@@ -955,6 +1006,7 @@ class TruebitDatabase {
         JSON.stringify(data.chainDistribution),
         JSON.stringify(data.taskTypeDistribution),
         JSON.stringify(data.continentDistribution || {}),
+        JSON.stringify(data.locationDistribution || {}),
         now
       );
     }
@@ -979,6 +1031,7 @@ class TruebitDatabase {
         chain_distribution = ?,
         task_type_distribution = ?,
         continent_distribution = ?,
+        location_distribution = ?,
         last_updated = ?
       WHERE id = 1
     `);
@@ -1002,13 +1055,14 @@ class TruebitDatabase {
         JSON.stringify(data.chainDistribution),
         JSON.stringify(data.taskTypeDistribution),
         JSON.stringify(data.continentDistribution || {}),
+        JSON.stringify(data.locationDistribution || {}),
         now
       );
     }
 
   getNetworkStats(): NetworkStats | null {
     const stmt = this.db!.prepare('SELECT * FROM network_stats_cache WHERE id = 1');
-    const row = stmt.get() as { active_nodes: number; total_nodes: number; total_tasks: number; completed_tasks: number; failed_tasks: number; cached_tasks: number; tasks_last_24h: number; total_invoices: number; invoices_last_24h: number; success_rate: number; cache_hit_rate: number; execution_time_distribution: string; gas_usage_distribution: string; steps_computed_distribution: string; memory_used_distribution: string; chain_distribution: string; task_type_distribution: string; continent_distribution: string; last_updated: string } | undefined;
+    const row = stmt.get() as { active_nodes: number; total_nodes: number; total_tasks: number; completed_tasks: number; failed_tasks: number; cached_tasks: number; tasks_last_24h: number; total_invoices: number; invoices_last_24h: number; success_rate: number; cache_hit_rate: number; execution_time_distribution: string; gas_usage_distribution: string; steps_computed_distribution: string; memory_used_distribution: string; chain_distribution: string; task_type_distribution: string; continent_distribution: string; location_distribution: string; last_updated: string } | undefined;
 
     if (!row) return null;
 
@@ -1031,7 +1085,8 @@ class TruebitDatabase {
       memoryUsedDistribution: JSON.parse(row.memory_used_distribution || '{}'),
       chainDistribution: JSON.parse(row.chain_distribution || '{}'),
       taskTypeDistribution: JSON.parse(row.task_type_distribution || '{}'),
-      continentDistribution: JSON.parse(row.continent_distribution || '{}')
+      continentDistribution: JSON.parse(row.continent_distribution || '{}'),
+      locationDistribution: JSON.parse(row.location_distribution || '{}')
     };
   }
 

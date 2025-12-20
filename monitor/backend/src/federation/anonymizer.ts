@@ -37,6 +37,7 @@ export interface NodeStatusData {
   totalTasks?: number;
   totalInvoices?: number;
   continent?: string;
+  locationBucket?: string;
 }
 
 export interface InvoiceData {
@@ -136,6 +137,7 @@ class FederationAnonymizer {
    */
   anonymizeHeartbeat(nodeStatus: NodeStatusData): AnonymizedMessage {
     const continent = this.normalizeContinent(nodeStatus.continent);
+    const locationBucket = nodeStatus.locationBucket;
     return {
       version: '1.0',
       type: 'heartbeat',
@@ -152,7 +154,8 @@ class FederationAnonymizer {
         activeTasksBucket: this.bucketActiveTasks(nodeStatus.activeTasks || 0),
         totalTasksBucket: this.bucketTotalTasks(nodeStatus.totalTasks || 0),
         // Coarse location bucket (continent only)
-        ...(continent ? { continentBucket: continent } : {})
+        ...(continent ? { continentBucket: continent } : {}),
+        ...(locationBucket ? { locationBucket } : {})
       }
     };
   }
