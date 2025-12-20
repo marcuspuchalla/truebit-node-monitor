@@ -18,8 +18,8 @@ async function getCsrfToken(): Promise<string | null> {
   try {
     const response = await fetch(`${API_BASE_URL}/csrf-token`);
     if (!response.ok) return null;
-    const data = await response.json() as { token?: string };
-    csrfToken = data.token || null;
+    const data = await response.json() as { token?: string; csrfToken?: string };
+    csrfToken = data.token || data.csrfToken || null;
     return csrfToken;
   } catch {
     return null;

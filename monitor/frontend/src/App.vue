@@ -173,11 +173,13 @@ onMounted(async () => {
 
   // Check if user was already authenticated and verify the password
   const wasAuth = await checkStoredAuth();
+  isAuthenticated.value = wasAuth;
   if (wasAuth) {
-    isAuthenticated.value = true;
     realtime.init();
     realtime.connect();
     realtime.reauth();
+  } else {
+    realtime.disconnect();
   }
   setProgress(50);
 
