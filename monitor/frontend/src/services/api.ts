@@ -12,7 +12,7 @@ const api: AxiosInstance = axios.create({
 });
 
 // Protected endpoints that require authentication
-const PROTECTED_ENDPOINTS = ['/logs', '/audit-log', '/tasks/'];
+const PROTECTED_ENDPOINTS = ['/logs', '/audit-log', '/tasks/', '/federation'];
 
 // Request interceptor to add auth header for protected endpoints
 api.interceptors.request.use((config) => {
