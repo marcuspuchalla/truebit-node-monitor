@@ -1,7 +1,7 @@
 <template>
   <div class="protected-route">
     <!-- Show auth screen if not authenticated -->
-    <div v-if="!isAuthenticated" class="auth-screen">
+    <div v-if="authChecked && !isAuthenticated" class="auth-screen">
       <div class="auth-card">
         <div class="auth-content">
           <div class="lock-icon">
@@ -49,14 +49,15 @@
     </div>
 
     <!-- Render the actual component when authenticated -->
-    <component v-else :is="component" v-bind="$attrs" />
+    <component v-else-if="authChecked" :is="component" v-bind="$attrs" />
+    <div v-else class="text-center py-12 text-gray-500">Checking authentication...</div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, nextTick, type Component } from 'vue';
 import { useRoute } from 'vue-router';
-import { isAuthenticated } from '../router';
+import { isAuthenticated, authChecked } from '../router';
 
 defineProps<{
   component: Component;

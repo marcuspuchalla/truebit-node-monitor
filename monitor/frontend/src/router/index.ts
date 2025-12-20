@@ -19,12 +19,7 @@ declare module 'vue-router' {
 
 // Shared auth state - will be synced with usePreloader
 export const isAuthenticated = ref(false);
-
-// Check localStorage on module load
-const storedAuth = localStorage.getItem('app_authenticated');
-if (storedAuth === 'true') {
-  isAuthenticated.value = true;
-}
+export const authChecked = ref(false);
 
 const routes: RouteRecordRaw[] = [
   // Public routes - no auth required
