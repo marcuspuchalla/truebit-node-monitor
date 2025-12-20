@@ -379,8 +379,8 @@ const networkStatsData = computed(() => {
 
   // Otherwise, compute from available data
   const nodeStats = new Map(); // Track latest stats per node
-  const continentCounts: Record<string, number> = {};
-  const locationCounts: Record<string, number> = {};
+  const continentCounts = {};
+  const locationCounts = {};
 
   // Count only ACTIVE peers (seen within last 2 minutes)
   const activeNodeIds = new Set();
