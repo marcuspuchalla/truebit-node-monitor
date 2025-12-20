@@ -197,7 +197,7 @@
       </div>
 
       <!-- No sensitive data available -->
-      <div v-else class="card">
+      <div v-if="!task.hasSensitiveData" class="card">
         <h2 class="text-lg font-semibold text-gray-900 mb-4">Task Input/Output Data</h2>
         <p class="text-gray-500 text-sm">No input/output data recorded for this task.</p>
       </div>
