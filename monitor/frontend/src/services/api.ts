@@ -11,6 +11,21 @@ const api: AxiosInstance = axios.create({
   }
 });
 
+let csrfToken: string | null = null;
+
+async function getCsrfToken(): Promise<string | null> {
+  if (csrfToken) return csrfToken;
+  try {
+    const response = await fetch(`${API_BASE_URL}/csrf-token`);
+    if (!response.ok) return null;
+    const data = await response.json() as { token?: string };
+    csrfToken = data.token || null;
+    return csrfToken;
+  } catch {
+    return null;
+  }
+}
+
 // Protected endpoints that require authentication
 const PROTECTED_ENDPOINTS = ['/logs', '/audit-log', '/tasks/', '/federation'];
 
@@ -26,6 +41,22 @@ api.interceptors.request.use((config) => {
     const sessionToken = localStorage.getItem('app_session_token');
     if (sessionToken) {
       config.headers['X-Session-Token'] = sessionToken;
+    }
+  }
+
+  return config;
+});
+
+// CSRF token for mutating requests (POST/PUT/PATCH/DELETE)
+api.interceptors.request.use(async (config) => {
+  const method = (config.method || 'get').toLowerCase();
+  const needsCsrf = ['post', 'put', 'patch', 'delete'].includes(method);
+  const isAuthEndpoint = config.url?.startsWith('/auth/') || config.url?.includes('/auth/');
+
+  if (needsCsrf && !isAuthEndpoint) {
+    const token = await getCsrfToken();
+    if (token) {
+      config.headers['X-CSRF-Token'] = token;
     }
   }
 
