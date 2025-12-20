@@ -1,15 +1,15 @@
 <template>
   <div class="card">
     <!-- Filters -->
-    <div class="mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+    <div class="mb-4 p-4 bg-gray-50 dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Level Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Log Level</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Log Level</label>
           <select
             v-model="filters.level"
             @change="applyFilters"
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            class="w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 shadow-sm focus:border-primary-500 focus:ring-primary-500"
           >
             <option :value="null">All Levels</option>
             <option value="info">Info</option>
@@ -21,11 +21,11 @@
 
         <!-- Type Filter -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Log Type</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Log Type</label>
           <select
             v-model="filters.type"
             @change="applyFilters"
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            class="w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 shadow-sm focus:border-primary-500 focus:ring-primary-500"
           >
             <option :value="null">All Types</option>
             <option value="task_received">Task Received</option>
@@ -43,13 +43,13 @@
 
         <!-- Message Search -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-1">Search Message</label>
+          <label class="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">Search Message</label>
           <input
             v-model="filters.search"
             @input="debouncedFilter"
             type="text"
             placeholder="Search in messages..."
-            class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500"
+            class="w-full rounded-md border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 shadow-sm focus:border-primary-500 focus:ring-primary-500"
           />
         </div>
       </div>
@@ -58,7 +58,7 @@
       <div class="mt-3 flex justify-end">
         <button
           @click="clearFilters"
-          class="text-sm text-gray-600 hover:text-gray-900 underline"
+          class="text-sm text-gray-600 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100 underline"
         >
           Clear Filters
         </button>
@@ -69,18 +69,18 @@
       <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
     </div>
 
-    <div v-else-if="parsedLogs.length === 0" class="text-center py-8 text-gray-500">
+    <div v-else-if="parsedLogs.length === 0" class="text-center py-8 text-gray-500 dark:text-slate-400">
       No logs available
     </div>
 
     <div v-else class="overflow-x-auto">
-      <table class="min-w-full divide-y divide-gray-200">
-        <thead class="bg-gray-50">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+        <thead class="bg-gray-50 dark:bg-slate-800">
           <tr>
             <th class="w-12 px-4 py-3"></th>
             <th
               @click="toggleSort"
-              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 select-none"
+              class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-slate-700 select-none"
             >
               <div class="flex items-center gap-2">
                 <span>Timestamp</span>
@@ -95,27 +95,27 @@
                 </svg>
               </div>
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
               Level
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
               Type
             </th>
-            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-slate-300 uppercase tracking-wider">
               Message
             </th>
           </tr>
         </thead>
-        <tbody class="bg-white divide-y divide-gray-200">
+        <tbody class="bg-white dark:bg-slate-900 divide-y divide-gray-200 dark:divide-slate-700">
           <template v-for="(log, index) in parsedLogs" :key="log.id">
             <!-- Main Row -->
             <tr
               @click="toggleExpand(log.id)"
-              class="hover:bg-gray-50 cursor-pointer transition-colors"
+              class="hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer transition-colors"
             >
               <td class="px-4 py-3 text-center">
                 <svg
-                  class="w-4 h-4 text-gray-400 transition-transform inline-block"
+                  class="w-4 h-4 text-gray-400 dark:text-slate-400 transition-transform inline-block"
                   :class="{ 'rotate-90': expandedRows.has(log.id) }"
                   fill="none"
                   stroke="currentColor"
@@ -124,7 +124,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                 </svg>
               </td>
-              <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-900">
+              <td class="px-6 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-slate-100">
                 {{ formatTimestamp(log.timestamp, log.timestamp_original) }}
               </td>
               <td class="px-6 py-3 whitespace-nowrap">
@@ -137,25 +137,25 @@
                   {{ log.type }}
                 </span>
               </td>
-              <td class="px-6 py-3 text-sm text-gray-700">
+              <td class="px-6 py-3 text-sm text-gray-700 dark:text-slate-200">
                 {{ log.summary }}
               </td>
             </tr>
 
             <!-- Expanded Details Row -->
-            <tr v-if="expandedRows.has(log.id)" class="bg-gray-50">
+            <tr v-if="expandedRows.has(log.id)" class="bg-gray-50 dark:bg-slate-800">
               <td colspan="5" class="px-6 py-4">
                 <div class="space-y-4">
                   <!-- Parsed Fields -->
                   <div v-if="log.parsed && Object.keys(log.parsed).length > 0" class="space-y-3">
-                    <h4 class="text-sm font-semibold text-gray-900">Parsed Information</h4>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-slate-100">Parsed Information</h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div v-for="(value, key) in log.parsed" :key="key" class="bg-white p-3 rounded border border-gray-200">
-                        <div class="text-xs font-medium text-gray-500 uppercase mb-1">{{ key }}</div>
-                        <div class="text-sm text-gray-900">
+                      <div v-for="(value, key) in log.parsed" :key="key" class="bg-white dark:bg-slate-900 p-3 rounded border border-gray-200 dark:border-slate-700">
+                        <div class="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase mb-1">{{ key }}</div>
+                        <div class="text-sm text-gray-900 dark:text-slate-100">
                           <!-- Handle different value types -->
                           <template v-if="typeof value === 'object' && value !== null">
-                            <pre class="text-xs bg-gray-50 p-2 rounded overflow-x-auto">{{ JSON.stringify(value, null, 2) }}</pre>
+                            <pre class="text-xs bg-gray-50 dark:bg-slate-800 p-2 rounded overflow-x-auto">{{ JSON.stringify(value, null, 2) }}</pre>
                           </template>
                           <template v-else-if="typeof value === 'boolean'">
                             <span :class="value ? 'text-green-600' : 'text-red-600'">{{ value }}</span>
@@ -170,13 +170,13 @@
 
                   <!-- Raw Message -->
                   <div>
-                    <h4 class="text-sm font-semibold text-gray-900 mb-2">Raw Message</h4>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">Raw Message</h4>
                     <pre class="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto">{{ log.message }}</pre>
                   </div>
 
                   <!-- JSON Data if available -->
                   <div v-if="log.data">
-                    <h4 class="text-sm font-semibold text-gray-900 mb-2">Additional Data</h4>
+                    <h4 class="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2">Additional Data</h4>
                     <pre class="text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-x-auto">{{ formatJSON(log.data) }}</pre>
                   </div>
                 </div>
@@ -408,27 +408,27 @@ function formatTimestamp(timestamp, timestampOriginal) {
 
 function getLevelClass(level) {
   const classes = {
-    info: 'bg-blue-100 text-blue-800',
-    warn: 'bg-yellow-100 text-yellow-800',
-    error: 'bg-red-100 text-red-800',
-    debug: 'bg-gray-100 text-gray-800'
+    info: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
+    warn: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-200',
+    error: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-200',
+    debug: 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200'
   };
-  return classes[level] || 'bg-gray-100 text-gray-800';
+  return classes[level] || 'bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200';
 }
 
 function getTypeClass(type) {
   const classes = {
-    task_received: 'bg-green-100 text-green-800',
-    task_start: 'bg-blue-100 text-blue-800',
-    task_completed: 'bg-purple-100 text-purple-800',
-    task_download: 'bg-cyan-100 text-cyan-800',
-    semaphore: 'bg-orange-100 text-orange-800',
-    invoice: 'bg-pink-100 text-pink-800',
-    registration: 'bg-indigo-100 text-indigo-800',
-    raw: 'bg-gray-100 text-gray-600',
-    info: 'bg-gray-100 text-gray-600'
+    task_received: 'bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-200',
+    task_start: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200',
+    task_completed: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-200',
+    task_download: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-200',
+    semaphore: 'bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-200',
+    invoice: 'bg-pink-100 text-pink-800 dark:bg-pink-900/40 dark:text-pink-200',
+    registration: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-200',
+    raw: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-200',
+    info: 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-200'
   };
-  return classes[type] || 'bg-gray-100 text-gray-600';
+  return classes[type] || 'bg-gray-100 text-gray-600 dark:bg-slate-800 dark:text-slate-200';
 }
 
 function formatJSON(data) {
