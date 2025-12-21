@@ -76,31 +76,8 @@
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Task Input/Output Data</h2>
           <span v-if="task.sensitiveDataRequiresAuth && !sensitiveDataLoaded" class="text-sm text-amber-600">
-            Password required
+            Login required
           </span>
-        </div>
-
-        <!-- Password prompt if auth required and data not loaded -->
-        <div v-if="task.sensitiveDataRequiresAuth && !sensitiveDataLoaded && !sensitiveDataError" class="space-y-4">
-          <p class="text-sm text-gray-600">
-            Task input/output data is protected. Enter your password to view.
-          </p>
-          <div class="flex gap-2">
-            <input
-              v-model="password"
-              type="password"
-              placeholder="Enter task data password"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
-              @keyup.enter="loadSensitiveData"
-            />
-            <button
-              @click="loadSensitiveData"
-              :disabled="loadingSensitiveData"
-              class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50"
-            >
-              {{ loadingSensitiveData ? 'Loading...' : 'View Data' }}
-            </button>
-          </div>
         </div>
 
         <!-- Error message -->
@@ -109,8 +86,8 @@
           <button @click="sensitiveDataError = ''" class="ml-2 text-primary-600 underline">Try again</button>
         </div>
 
-        <!-- Load button if no auth required -->
-        <div v-if="!task.sensitiveDataRequiresAuth && !sensitiveDataLoaded && !sensitiveDataError" class="space-y-4">
+        <!-- Load button -->
+        <div v-if="!sensitiveDataLoaded && !sensitiveDataError" class="space-y-4">
           <button
             @click="loadSensitiveData"
             :disabled="loadingSensitiveData"
@@ -219,7 +196,6 @@ const route = useRoute();
 const tasksStore = useTasksStore();
 
 const task = computed(() => tasksStore.currentTask);
-const password = ref('');
 const sensitiveData = ref(null);
 const sensitiveDataLoaded = ref(false);
 const sensitiveDataError = ref('');
@@ -235,10 +211,8 @@ async function loadSensitiveData() {
   sensitiveDataError.value = '';
 
   try {
-    const headers = {};
-    if (task.value.sensitiveDataRequiresAuth && password.value) {
-      headers['X-Task-Data-Password'] = password.value;
-    }
+    const sessionToken = localStorage.getItem('app_session_token');
+    const headers = sessionToken ? { 'X-Session-Token': sessionToken } : {};
 
     const response = await fetch(`/api/tasks/${task.value.execution_id}/data`, { headers });
     const data = await response.json();
