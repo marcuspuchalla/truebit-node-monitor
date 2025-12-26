@@ -477,17 +477,20 @@ const networkStatsData = computed(() => {
   };
 });
 
-const showGlobalPresence = computed(() => {
-  const location = networkStatsData.value.locationDistribution || {};
-  return Object.keys(location).length > 0;
-});
+// Always show globe - it's a key visual element
+const showGlobalPresence = computed(() => true);
 
 const globeDistribution = computed(() => {
   const location = networkStatsData.value.locationDistribution || {};
   if (Object.keys(location).length > 0) {
     return location;
   }
-  return networkStatsData.value.continentDistribution || {};
+  const continents = networkStatsData.value.continentDistribution || {};
+  if (Object.keys(continents).length > 0) {
+    return continents;
+  }
+  // No data yet - return empty, globe will show earth without points
+  return {};
 });
 
 // Get latest stats for a specific node from messages
