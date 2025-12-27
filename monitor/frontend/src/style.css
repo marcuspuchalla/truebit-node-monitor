@@ -21,48 +21,83 @@
     --danger-border: #fca5a5;
     --danger-text: #991b1b;
     --success: #10b981;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.3);
   }
 
+  /* Sci-Fi Dark Theme */
   .dark {
-    --bg: #0b1220;
-    --surface: #0f172a;
-    --surface-muted: #111827;
-    --text: #e2e8f0;
-    --muted: #94a3b8;
-    --border: #1f2937;
-    --shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
-    --info-bg: #0b1d3a;
-    --info-border: #2563eb;
-    --info-text: #bfdbfe;
-    --warn-bg: #2a1b06;
-    --warn-border: #f59e0b;
+    --bg: #050810;
+    --surface: #0a0f1a;
+    --surface-muted: #0d1424;
+    --text: #e0f4ff;
+    --muted: #4a6fa5;
+    --border: #1a3a5c;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+    --info-bg: #061528;
+    --info-border: #00d4ff;
+    --info-text: #7dd3fc;
+    --warn-bg: #1a1506;
+    --warn-border: #ffaa00;
     --warn-text: #fcd34d;
-    --danger-bg: #2a0f12;
-    --danger-border: #ef4444;
-    --danger-text: #fecaca;
-    --success: #22c55e;
+    --danger-bg: #1a0610;
+    --danger-border: #ff3366;
+    --danger-text: #fca5a5;
+    --success: #00ff88;
+    --accent: #00d4ff;
+    --accent-glow: rgba(0, 212, 255, 0.3);
   }
 
   body {
     @apply bg-gray-50 text-gray-900 dark:bg-slate-950 dark:text-slate-100;
+    background-color: var(--bg);
+    color: var(--text);
+  }
+
+  .dark body {
+    background: linear-gradient(180deg, #050810 0%, #0a1020 100%);
+    min-height: 100vh;
   }
 }
 
 @layer components {
   .card {
-    @apply bg-white dark:bg-slate-900 rounded-lg shadow-md dark:shadow-slate-900/40 p-6;
+    @apply rounded-lg p-6;
+    background-color: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .dark .card {
+    border: 1px solid var(--border);
   }
 
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700;
+    @apply btn text-white;
+    background-color: var(--accent);
+  }
+
+  .dark .btn-primary {
+    box-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .dark .btn-primary:hover {
+    box-shadow: 0 0 20px var(--accent-glow), 0 0 30px var(--accent-glow);
   }
 
   .btn-secondary {
-    @apply btn bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700;
+    @apply btn;
+    background-color: var(--surface-muted);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .dark .btn-secondary:hover {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow);
   }
 
   .badge {
@@ -70,23 +105,140 @@
   }
 
   .badge-green {
-    @apply badge bg-green-100 text-green-800 dark:bg-emerald-900/40 dark:text-emerald-200;
+    @apply badge bg-green-100 text-green-800;
+  }
+
+  .dark .badge-green {
+    background-color: rgba(0, 255, 136, 0.15);
+    color: #00ff88;
+    border: 1px solid rgba(0, 255, 136, 0.3);
   }
 
   .badge-yellow {
-    @apply badge bg-yellow-100 text-yellow-800 dark:bg-amber-900/40 dark:text-amber-200;
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+
+  .dark .badge-yellow {
+    background-color: rgba(255, 170, 0, 0.15);
+    color: #ffaa00;
+    border: 1px solid rgba(255, 170, 0, 0.3);
   }
 
   .badge-red {
-    @apply badge bg-red-100 text-red-800 dark:bg-rose-900/40 dark:text-rose-200;
+    @apply badge bg-red-100 text-red-800;
+  }
+
+  .dark .badge-red {
+    background-color: rgba(255, 51, 102, 0.15);
+    color: #ff3366;
+    border: 1px solid rgba(255, 51, 102, 0.3);
   }
 
   .badge-blue {
-    @apply badge bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200;
+    @apply badge bg-blue-100 text-blue-800;
+  }
+
+  .dark .badge-blue {
+    background-color: rgba(0, 212, 255, 0.15);
+    color: #00d4ff;
+    border: 1px solid rgba(0, 212, 255, 0.3);
   }
 
   .badge-gray {
-    @apply badge bg-gray-100 text-gray-800 dark:bg-slate-800 dark:text-slate-200;
+    @apply badge bg-gray-100 text-gray-800;
+  }
+
+  .dark .badge-gray {
+    background-color: rgba(74, 111, 165, 0.2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* Sci-Fi Effects */
+  .glow-border {
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 10px var(--accent-glow), inset 0 0 5px var(--accent-glow);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 10px var(--accent-glow);
+  }
+
+  .pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 5px var(--accent-glow);
+    }
+    50% {
+      box-shadow: 0 0 15px var(--accent-glow), 0 0 25px var(--accent-glow);
+    }
+  }
+
+  /* Dot grid pattern for backgrounds */
+  .dot-pattern {
+    background-image: radial-gradient(
+      circle,
+      var(--border) 1px,
+      transparent 1px
+    );
+    background-size: 24px 24px;
+  }
+
+  /* Scanline effect for terminal-like displays */
+  .scanline {
+    position: relative;
+  }
+
+  .scanline::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.05) 2px,
+      rgba(0, 0, 0, 0.05) 4px
+    );
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  /* Status indicator with glow */
+  .status-online {
+    background-color: var(--success);
+    box-shadow: 0 0 8px var(--success);
+  }
+
+  .status-offline {
+    background-color: var(--danger-border);
+    box-shadow: 0 0 8px var(--danger-border);
+  }
+
+  .status-connecting {
+    background-color: var(--warn-border);
+    box-shadow: 0 0 8px var(--warn-border);
+    animation: pulse-opacity 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse-opacity {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* Terminal/code block styling */
+  .terminal-block {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  }
+
+  .dark .terminal-block {
+    background: linear-gradient(180deg, #0a0f1a 0%, #050810 100%);
   }
 }
 
@@ -100,11 +252,11 @@
   }
 
   .dark .bg-gray-100 {
-    background-color: #1f2937;
+    background-color: #0d1424;
   }
 
   .dark .bg-gray-200 {
-    background-color: #273244;
+    background-color: #111827;
   }
 
   .dark .text-gray-900,
@@ -121,5 +273,18 @@
   .dark .border-gray-200,
   .dark .border-gray-300 {
     border-color: var(--border);
+  }
+
+  /* Accent color utilities */
+  .text-accent {
+    color: var(--accent);
+  }
+
+  .bg-accent {
+    background-color: var(--accent);
+  }
+
+  .border-accent {
+    border-color: var(--accent);
   }
 }

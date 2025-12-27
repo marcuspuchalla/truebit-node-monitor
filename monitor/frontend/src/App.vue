@@ -1,9 +1,9 @@
 <template>
-  <div class="min-h-screen bg-gray-50 dark:bg-slate-950">
+  <div class="min-h-screen bg-gray-50 dark:bg-[#050810]">
     <!-- Preloader - only shows during initial load -->
     <Preloader />
 
-    <nav class="bg-white dark:bg-slate-900 shadow-sm border-b border-gray-200 dark:border-slate-800">
+    <nav class="bg-white dark:bg-[#0a0f1a] shadow-sm border-b border-gray-200 dark:border-[#1a3a5c] dark:shadow-[0_1px_10px_rgba(0,212,255,0.1)]">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
           <div class="flex">
@@ -166,7 +166,8 @@ const handleLogout = () => {
 
 onMounted(async () => {
   const storedTheme = localStorage.getItem('theme');
-  isDark.value = storedTheme === 'dark';
+  // Default to dark mode if no preference is stored
+  isDark.value = storedTheme !== 'light';
   document.documentElement.classList.toggle('dark', isDark.value);
 
   setProgress(10);

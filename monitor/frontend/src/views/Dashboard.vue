@@ -1,17 +1,17 @@
 <template>
   <div class="space-y-6">
     <!-- Warning Banner -->
-    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+    <div class="warning-banner">
       <div class="flex">
         <div class="flex-shrink-0">
-          <svg class="h-5 w-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+          <svg class="h-5 w-5 text-yellow-400 dark:text-amber-400" fill="currentColor" viewBox="0 0 20 20">
             <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
           </svg>
         </div>
         <div class="ml-3">
-          <p class="text-sm text-yellow-800">
+          <p class="text-sm text-yellow-800 dark:text-amber-300">
             <strong>Unofficial Monitor</strong> - This tool is not affiliated with TrueBit. Use at your own risk.
-            <router-link to="/about" class="font-semibold underline hover:text-yellow-900">Read the full disclaimer →</router-link>
+            <router-link to="/about" class="font-semibold underline hover:text-yellow-900 dark:hover:text-amber-200">Read the full disclaimer →</router-link>
           </p>
         </div>
       </div>
@@ -245,20 +245,46 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.warning-banner {
+  background: #fef3c7;
+  border-left: 4px solid #fbbf24;
+  padding: 1rem;
+  border-radius: 0.25rem;
+}
+
+.dark .warning-banner {
+  background: rgba(255, 170, 0, 0.1);
+  border-left-color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.3);
+  border-left-width: 4px;
+}
+
 .federation-toggle {
   padding: 0.5rem 1rem;
   border-radius: 0.375rem;
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s;
   border: 1px solid #d1d5db;
   background: white;
   color: #374151;
 }
 
+.dark .federation-toggle {
+  background: #0a0f1a;
+  border-color: #1a3a5c;
+  color: #00d4ff;
+}
+
 .federation-toggle:hover:not(:disabled) {
   background: #f3f4f6;
+}
+
+.dark .federation-toggle:hover:not(:disabled) {
+  background: #0d1424;
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .federation-toggle.enabled {
@@ -267,8 +293,19 @@ onMounted(() => {
   color: #991b1b;
 }
 
+.dark .federation-toggle.enabled {
+  background: rgba(255, 51, 102, 0.1);
+  border-color: #ff3366;
+  color: #ff3366;
+}
+
 .federation-toggle.enabled:hover:not(:disabled) {
   background: #fecaca;
+}
+
+.dark .federation-toggle.enabled:hover:not(:disabled) {
+  background: rgba(255, 51, 102, 0.2);
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
 }
 
 .federation-toggle:disabled {
