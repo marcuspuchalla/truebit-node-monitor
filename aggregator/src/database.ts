@@ -366,7 +366,8 @@ class AggregatorDatabase {
     'memory_used_bucket',
     'chain_id',
     'task_type',
-    'continent_bucket'
+    'continent_bucket',
+    'location_bucket'
   ]);
 
   private static readonly ALLOWED_TABLES = new Set([
