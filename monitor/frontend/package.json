@@ -22,6 +22,7 @@
   "dependencies": {
     "axios": "^1.6.5",
     "chart.js": "^4.4.1",
+    "cobe": "^0.6.5",
     "globe.gl": "^2.45.0",
     "pinia": "^2.1.7",
     "three": "^0.182.0",
@@ -30,6 +31,7 @@
     "vue-router": "^4.2.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@vitejs/plugin-vue": "^5.0.3",
     "autoprefixer": "^10.4.17",
     "postcss": "^8.4.33",

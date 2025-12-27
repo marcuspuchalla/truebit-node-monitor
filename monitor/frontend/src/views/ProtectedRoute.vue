@@ -244,12 +244,42 @@ async function handleSubmit() {
 }
 
 .auth-card {
-  background: white;
+  background: linear-gradient(135deg, #0a0f1a 0%, #0d1424 100%);
   border-radius: 1rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  border: 1px solid #1a3a5c;
+  box-shadow:
+    0 0 30px rgba(0, 212, 255, 0.1),
+    inset 0 1px 0 rgba(0, 212, 255, 0.1);
   padding: 2rem;
   max-width: 400px;
   width: 100%;
+  position: relative;
+}
+
+/* Subtle corner accents */
+.auth-card::before,
+.auth-card::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(0, 212, 255, 0.3);
+}
+
+.auth-card::before {
+  top: -1px;
+  left: -1px;
+  border-right: none;
+  border-bottom: none;
+  border-radius: 1rem 0 0 0;
+}
+
+.auth-card::after {
+  bottom: -1px;
+  right: -1px;
+  border-left: none;
+  border-top: none;
+  border-radius: 0 0 1rem 0;
 }
 
 .auth-content {
@@ -260,8 +290,19 @@ async function handleSubmit() {
 }
 
 .lock-icon {
-  color: #3b82f6;
+  color: #00d4ff;
   margin-bottom: 0.5rem;
+  filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+  animation: lock-pulse 2s ease-in-out infinite;
+}
+
+@keyframes lock-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 10px rgba(0, 212, 255, 0.5));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px rgba(0, 212, 255, 0.8));
+  }
 }
 
 .lock-icon svg {
@@ -272,14 +313,15 @@ async function handleSubmit() {
 .title {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1f2937;
+  color: #00d4ff;
   margin: 0;
   text-align: center;
+  text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
 }
 
 .subtitle {
   font-size: 0.875rem;
-  color: #6b7280;
+  color: #4a6fa5;
   margin: 0;
   text-align: center;
 }
@@ -299,50 +341,62 @@ async function handleSubmit() {
 .password-input {
   width: 100%;
   padding: 0.75rem 1rem;
-  border: 2px solid #e5e7eb;
+  border: 1px solid #1a3a5c;
   border-radius: 0.5rem;
   font-size: 1rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-sizing: border-box;
+  background: #050810;
+  color: #e0f4ff;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.password-input::placeholder {
+  color: #4a6fa5;
 }
 
 .password-input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: #00d4ff;
+  box-shadow: 0 0 10px rgba(0, 212, 255, 0.3);
 }
 
 .password-input.error {
-  border-color: #ef4444;
+  border-color: #ff3366;
+  box-shadow: 0 0 10px rgba(255, 51, 102, 0.3);
 }
 
 .password-input:disabled {
-  background: #f3f4f6;
+  background: #0d1424;
   cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .error-message {
-  color: #ef4444;
+  color: #ff3366;
   font-size: 0.875rem;
   margin: 0;
   text-align: center;
+  text-shadow: 0 0 5px rgba(255, 51, 102, 0.3);
 }
 
 .submit-button {
   width: 100%;
   padding: 0.75rem 1rem;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
-  color: white;
+  background: linear-gradient(90deg, #00d4ff, #0099cc);
+  color: #050810;
   border: none;
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s, transform 0.1s;
+  transition: all 0.2s;
+  box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
 }
 
 .submit-button:hover:not(:disabled) {
-  opacity: 0.9;
+  box-shadow: 0 0 25px rgba(0, 212, 255, 0.5);
+  transform: translateY(-1px);
 }
 
 .submit-button:active:not(:disabled) {
@@ -352,11 +406,12 @@ async function handleSubmit() {
 .submit-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  box-shadow: none;
 }
 
 .help-text {
   font-size: 0.75rem;
-  color: #9ca3af;
+  color: #4a6fa5;
   text-align: center;
   margin: 0;
   line-height: 1.5;
@@ -364,24 +419,30 @@ async function handleSubmit() {
 
 .help-text code {
   display: block;
-  background: #f3f4f6;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
+  background: #050810;
+  border: 1px solid #1a3a5c;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
   font-size: 0.7rem;
-  margin-top: 0.25rem;
+  margin-top: 0.5rem;
   word-break: break-all;
+  color: #00d4ff;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
 }
 
 .back-link {
-  color: #6b7280;
+  color: #4a6fa5;
   font-size: 0.875rem;
   padding: 0.5rem;
   margin-top: 0.5rem;
-  text-decoration: underline;
-  transition: color 0.2s;
+  text-decoration: none;
+  transition: all 0.2s;
+  border-bottom: 1px solid transparent;
 }
 
 .back-link:hover {
-  color: #3b82f6;
+  color: #00d4ff;
+  border-bottom-color: #00d4ff;
+  text-shadow: 0 0 5px rgba(0, 212, 255, 0.3);
 }
 </style>

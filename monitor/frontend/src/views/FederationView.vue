@@ -13,24 +13,33 @@
       </div>
     </div>
 
-    <!-- Global Presence -->
-    <div v-if="showGlobalPresence" class="section globe-section">
-      <h2>Global Presence</h2>
-      <div class="globe-card">
+    <!-- Hero Section: Globe + Key Stats Side by Side -->
+    <div v-if="showGlobalPresence" class="hero-section">
+      <div class="hero-globe">
         <NetworkGlobe :distribution="globeDistribution" />
-        <div class="globe-legend">
+      </div>
+      <div class="hero-stats">
+        <h2 class="hero-title">Network Status</h2>
+        <div class="hero-stat">
+          <div class="hero-stat-value">{{ networkStatsData.activeNodes || activePeerCount }}</div>
+          <div class="hero-stat-label">Active Nodes</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">{{ networkStatsData.totalTasks || 0 }}</div>
+          <div class="hero-stat-label">Total Tasks</div>
+        </div>
+        <div class="hero-stat">
+          <div class="hero-stat-value">{{ networkStatsData.totalNodes || 0 }}</div>
+          <div class="hero-stat-label">Total Nodes</div>
+        </div>
+        <div class="hero-legend">
           <span>Approximate city buckets · Opt-out available</span>
         </div>
       </div>
     </div>
 
-    <!-- Error Message -->
-    <div v-if="errorMessage" class="error-banner">
-      {{ errorMessage }}
-    </div>
-
-    <!-- Network Stats Grid -->
-    <div class="stats-grid">
+    <!-- Fallback stats when globe not shown -->
+    <div v-else class="stats-grid">
       <div class="stat-card">
         <div class="stat-value">{{ networkStatsData.activeNodes || activePeerCount }}</div>
         <div class="stat-label">Active Nodes</div>
@@ -43,6 +52,11 @@
         <div class="stat-value">{{ networkStatsData.totalNodes || 0 }}</div>
         <div class="stat-label">Total Nodes</div>
       </div>
+    </div>
+
+    <!-- Error Message -->
+    <div v-if="errorMessage" class="error-banner">
+      {{ errorMessage }}
     </div>
 
     <!-- Extended Stats -->
@@ -480,6 +494,15 @@ const networkStatsData = computed(() => {
 // Always show globe - it's a key visual element
 const showGlobalPresence = computed(() => true);
 
+// Mock data for local development testing (5 nodes around the world)
+const mockLocationData = {
+  '40.7,-74.0': 2,   // New York, USA
+  '51.5,-0.1': 3,    // London, UK
+  '35.7,139.7': 1,   // Tokyo, Japan
+  '-33.9,151.2': 2,  // Sydney, Australia
+  '-23.5,-46.6': 1   // São Paulo, Brazil
+};
+
 const globeDistribution = computed(() => {
   const location = networkStatsData.value.locationDistribution || {};
   if (Object.keys(location).length > 0) {
@@ -488,6 +511,10 @@ const globeDistribution = computed(() => {
   const continents = networkStatsData.value.continentDistribution || {};
   if (Object.keys(continents).length > 0) {
     return continents;
+  }
+  // Use mock data for local testing when no real data available
+  if (import.meta.env.DEV) {
+    return mockLocationData;
   }
   // No data yet - return empty, globe will show earth without points
   return {};
@@ -869,6 +896,87 @@ function formatTime(timestamp) {
   border-radius: 0.75rem;
   box-shadow: var(--shadow);
   padding: 1rem;
+}
+
+/* Hero Section: Globe + Stats Side by Side */
+.hero-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  align-items: center;
+}
+
+.hero-globe {
+  background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 50%, #0a0a0f 100%);
+  border-radius: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+}
+
+:root:not(.dark) .hero-globe {
+  background: var(--surface);
+}
+
+.hero-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.hero-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0;
+}
+
+.dark .hero-title {
+  text-shadow: 0 0 10px var(--accent-glow);
+}
+
+.hero-stat {
+  padding: 1.25rem 1.5rem;
+  background: var(--surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+}
+
+.dark .hero-stat {
+  background: linear-gradient(135deg, #0a0f1a 0%, #0d1424 100%);
+}
+
+.hero-stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+}
+
+.dark .hero-stat-value {
+  color: var(--accent);
+  text-shadow: 0 0 15px var(--accent-glow);
+}
+
+.hero-stat-label {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hero-legend {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Responsive: Stack on smaller screens */
+@media (max-width: 768px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+  }
 }
 
 .globe-legend {
