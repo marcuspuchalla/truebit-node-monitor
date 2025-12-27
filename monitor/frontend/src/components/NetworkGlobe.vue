@@ -1,12 +1,15 @@
 <template>
   <div ref="wrapper" class="globe-wrap">
-    <div ref="globeEl" class="globe-canvas"></div>
+    <div v-if="globeError" class="globe-fallback">
+      <div class="globe-icon">🌍</div>
+      <div class="globe-text">Global node distribution</div>
+    </div>
+    <div v-show="!globeError" ref="globeEl" class="globe-canvas"></div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, computed } from 'vue';
-import Globe from 'globe.gl';
 
 const props = defineProps({
   distribution: {
@@ -17,8 +20,20 @@ const props = defineProps({
 
 const wrapper = ref(null);
 const globeEl = ref(null);
+const globeError = ref(false);
 let globeInstance = null;
 let resizeHandler = null;
+
+// Check WebGL support
+function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+  } catch {
+    return false;
+  }
+}
 
 const continentMap = {
   NA: { label: 'North America', lat: 40, lon: -100 },
@@ -98,20 +113,37 @@ function updateGlobePoints() {
     .pointColor(() => accent);
 }
 
-onMounted(() => {
+onMounted(async () => {
   if (!globeEl.value) return;
-  globeInstance = Globe()(globeEl.value)
-    .backgroundColor('rgba(0,0,0,0)')
-    .showAtmosphere(true)
-    .atmosphereColor(getColor('--info-border', '#3b82f6'))
-    .atmosphereAltitude(0.15)
-    .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
-    .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
 
-  updateGlobeSize();
-  updateGlobePoints();
-  resizeHandler = () => updateGlobeSize();
-  window.addEventListener('resize', resizeHandler);
+  // Check WebGL support first
+  if (!isWebGLAvailable()) {
+    console.warn('WebGL not available, showing fallback');
+    globeError.value = true;
+    return;
+  }
+
+  try {
+    // Dynamic import to handle potential bundling issues
+    const GlobeModule = await import('globe.gl');
+    const Globe = GlobeModule.default;
+
+    globeInstance = Globe()(globeEl.value)
+      .backgroundColor('rgba(0,0,0,0)')
+      .showAtmosphere(true)
+      .atmosphereColor(getColor('--info-border', '#3b82f6'))
+      .atmosphereAltitude(0.15)
+      .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .bumpImageUrl('https://unpkg.com/three-globe/example/img/earth-topology.png');
+
+    updateGlobeSize();
+    updateGlobePoints();
+    resizeHandler = () => updateGlobeSize();
+    window.addEventListener('resize', resizeHandler);
+  } catch (err) {
+    console.error('Failed to initialize globe:', err);
+    globeError.value = true;
+  }
 });
 
 onUnmounted(() => {
@@ -143,5 +175,26 @@ watch(() => props.distribution, () => {
   background: transparent;
   width: 100%;
   min-height: 320px;
+}
+
+.globe-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  width: 100%;
+  background: var(--surface-muted, #f3f4f6);
+  border-radius: 1rem;
+}
+
+.globe-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.globe-text {
+  color: var(--muted, #6b7280);
+  font-size: 0.875rem;
 }
 </style>
