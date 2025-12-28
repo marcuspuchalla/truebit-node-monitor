@@ -12,7 +12,8 @@
       @mouseleave="onPointerUp"
       @touchstart="onTouchStart"
       @touchmove="onTouchMove"
-      @touchend="onPointerUp"
+      @touchend="onTouchEnd"
+      @wheel.prevent="onWheel"
     />
     <div v-if="totalNodes > 0" class="node-count">
       {{ markerCount }} location(s) · {{ totalNodes }} node(s)
@@ -47,6 +48,16 @@ const isDragging = ref(false);
 let pointerX = 0;
 let pointerY = 0;
 let dragVelocity = 0;
+
+// Zoom state
+let scale = 1;
+const SCALE_MIN = 0.5;
+const SCALE_MAX = 2.5;
+const ZOOM_SENSITIVITY = 0.001;
+
+// Pinch zoom state
+let initialPinchDistance = 0;
+let initialScale = 1;
 
 const continentMap = {
   NA: { label: 'North America', lat: 40, lon: -100 },
@@ -133,17 +144,44 @@ function onPointerUp() {
   isDragging.value = false;
 }
 
+// Mouse wheel zoom
+function onWheel(e) {
+  const delta = -e.deltaY * ZOOM_SENSITIVITY;
+  scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, scale + delta * scale));
+}
+
+// Calculate distance between two touch points
+function getTouchDistance(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 // Touch event handlers
 function onTouchStart(e) {
   if (e.touches.length === 1) {
+    // Single touch - drag
     isDragging.value = true;
     pointerX = e.touches[0].clientX;
     pointerY = e.touches[0].clientY;
     dragVelocity = 0;
+  } else if (e.touches.length === 2) {
+    // Two fingers - pinch zoom
+    isDragging.value = false;
+    initialPinchDistance = getTouchDistance(e.touches);
+    initialScale = scale;
   }
 }
 
 function onTouchMove(e) {
+  if (e.touches.length === 2) {
+    // Pinch zoom
+    const currentDistance = getTouchDistance(e.touches);
+    const scaleChange = currentDistance / initialPinchDistance;
+    scale = Math.max(SCALE_MIN, Math.min(SCALE_MAX, initialScale * scaleChange));
+    return;
+  }
+
   if (!isDragging.value || e.touches.length !== 1) return;
 
   const deltaX = e.touches[0].clientX - pointerX;
@@ -155,6 +193,17 @@ function onTouchMove(e) {
 
   pointerX = e.touches[0].clientX;
   pointerY = e.touches[0].clientY;
+}
+
+function onTouchEnd(e) {
+  if (e.touches.length === 0) {
+    isDragging.value = false;
+  } else if (e.touches.length === 1) {
+    // Switched from pinch to single touch
+    pointerX = e.touches[0].clientX;
+    pointerY = e.touches[0].clientY;
+    isDragging.value = true;
+  }
 }
 
 function initGlobe() {
@@ -173,6 +222,7 @@ function initGlobe() {
       height: canvasSize * 2,
       phi: 0,
       theta: 0.3,
+      scale: 1,
       dark: 1,
       diffuse: 1.2,
       mapSamples: 16000,
@@ -184,6 +234,7 @@ function initGlobe() {
       onRender: (state) => {
         state.phi = phi;
         state.theta = theta;
+        state.scale = scale;
 
         if (!isDragging.value) {
           // Auto-rotate when not dragging
