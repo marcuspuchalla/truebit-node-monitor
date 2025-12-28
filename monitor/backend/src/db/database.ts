@@ -353,6 +353,18 @@ class TruebitDatabase {
       // Column exists or migration not needed
     }
 
+    // Add location columns to federation_peers (migration for existing DBs)
+    try {
+      this.db!.exec('ALTER TABLE federation_peers ADD COLUMN continent_bucket TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
+    try {
+      this.db!.exec('ALTER TABLE federation_peers ADD COLUMN location_bucket TEXT');
+    } catch {
+      // Column exists or migration not needed
+    }
+
     // Create indexes
     this.db!.exec(`
       CREATE INDEX IF NOT EXISTS idx_tasks_execution_id ON tasks(execution_id);
@@ -830,28 +842,64 @@ class TruebitDatabase {
   }
 
   // Federation Peers
-  upsertFederationPeer(nodeId: string): void {
+  upsertFederationPeer(nodeId: string, locationData?: { continentBucket?: string; locationBucket?: string }): void {
     const now = new Date().toISOString();
+
+    // Validate and sanitize location data to prevent injection
+    const sanitizedContinent = this.sanitizeContinentBucket(locationData?.continentBucket);
+    const sanitizedLocation = this.sanitizeLocationBucket(locationData?.locationBucket);
 
     // Try to update existing peer
     const updateStmt = this.db!.prepare(`
       UPDATE federation_peers
       SET last_seen = ?,
           message_count = message_count + 1,
+          continent_bucket = COALESCE(?, continent_bucket),
+          location_bucket = COALESCE(?, location_bucket),
           updated_at = ?
       WHERE node_id = ?
     `);
 
-    const result = updateStmt.run(now, now, nodeId);
+    const result = updateStmt.run(now, sanitizedContinent, sanitizedLocation, now, nodeId);
 
     // If no rows updated, insert new peer
     if (result.changes === 0) {
       const insertStmt = this.db!.prepare(`
-        INSERT INTO federation_peers (node_id, first_seen, last_seen, message_count)
-        VALUES (?, ?, ?, 1)
+        INSERT INTO federation_peers (node_id, first_seen, last_seen, message_count, continent_bucket, location_bucket)
+        VALUES (?, ?, ?, 1, ?, ?)
       `);
-      insertStmt.run(nodeId, now, now);
+      insertStmt.run(nodeId, now, now, sanitizedContinent, sanitizedLocation);
     }
+  }
+
+  // Validate continent bucket - must be a 2-letter continent code
+  private sanitizeContinentBucket(continent?: string): string | null {
+    if (!continent || typeof continent !== 'string') return null;
+    const validContinents = ['AF', 'AN', 'AS', 'EU', 'NA', 'OC', 'SA'];
+    const normalized = continent.toUpperCase().trim();
+    return validContinents.includes(normalized) ? normalized : null;
+  }
+
+  // Validate location bucket - must be "lat,lon" format with valid ranges
+  private sanitizeLocationBucket(location?: string): string | null {
+    if (!location || typeof location !== 'string') return null;
+
+    // Must be under 32 characters
+    if (location.length > 32) return null;
+
+    const parts = location.split(',');
+    if (parts.length !== 2) return null;
+
+    const lat = Number(parts[0]);
+    const lon = Number(parts[1]);
+
+    // Validate numeric ranges
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    if (lat < -90 || lat > 90) return null;
+    if (lon < -180 || lon > 180) return null;
+
+    // Return sanitized format (normalized to 1 decimal place)
+    return `${lat.toFixed(1)},${lon.toFixed(1)}`;
   }
 
   getFederationPeers(): unknown[] {

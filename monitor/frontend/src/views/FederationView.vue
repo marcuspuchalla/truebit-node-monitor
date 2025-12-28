@@ -299,6 +299,14 @@
             <span class="detail-label">Total Tasks</span>
             <span class="detail-value">{{ selectedNodeStats.totalTasks ?? selectedNodeStats.totalTasksBucket ?? '0' }}</span>
           </div>
+          <div class="detail-row" v-if="selectedNode.continent_bucket || selectedNodeStats?.continentBucket">
+            <span class="detail-label">Continent</span>
+            <span class="detail-value">{{ formatContinent(selectedNode.continent_bucket || selectedNodeStats?.continentBucket) }}</span>
+          </div>
+          <div class="detail-row" v-if="selectedNode.location_bucket || selectedNodeStats?.locationBucket">
+            <span class="detail-label">Location</span>
+            <span class="detail-value">{{ formatLocationBucket(selectedNode.location_bucket || selectedNodeStats?.locationBucket) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -735,6 +743,43 @@ function formatTime(timestamp) {
   if (diffMin < 60) return `${diffMin}m ago`;
   if (diffHour < 24) return `${diffHour}h ago`;
   return date.toLocaleDateString();
+}
+
+// Continent code to friendly name mapping
+const continentNames = {
+  'AF': 'Africa',
+  'AN': 'Antarctica',
+  'AS': 'Asia',
+  'EU': 'Europe',
+  'NA': 'North America',
+  'OC': 'Oceania',
+  'SA': 'South America'
+};
+
+function formatContinent(code) {
+  if (!code || typeof code !== 'string') return 'Unknown';
+  const normalized = code.toUpperCase().trim();
+  return continentNames[normalized] || normalized;
+}
+
+function formatLocationBucket(location) {
+  if (!location || typeof location !== 'string') return 'Unknown';
+
+  // Validate format: should be "lat,lon"
+  const parts = location.split(',');
+  if (parts.length !== 2) return 'Unknown';
+
+  const lat = parseFloat(parts[0]);
+  const lon = parseFloat(parts[1]);
+
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return 'Unknown';
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return 'Unknown';
+
+  // Format with N/S and E/W indicators
+  const latDir = lat >= 0 ? 'N' : 'S';
+  const lonDir = lon >= 0 ? 'E' : 'W';
+
+  return `${Math.abs(lat).toFixed(1)}°${latDir}, ${Math.abs(lon).toFixed(1)}°${lonDir}`;
 }
 </script>
 
