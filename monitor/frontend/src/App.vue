@@ -77,6 +77,13 @@
               >
                 About
               </router-link>
+              <router-link
+                to="/contracts"
+                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
+                :class="$route.name === 'contracts' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
+              >
+                Contracts
+              </router-link>
             </div>
           </div>
           <div class="flex items-center gap-3">

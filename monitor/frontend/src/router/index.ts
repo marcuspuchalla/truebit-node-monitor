@@ -7,6 +7,7 @@ import InvoicesView from '../views/InvoicesView.vue';
 import LogsView from '../views/LogsView.vue';
 import FederationView from '../views/FederationView.vue';
 import AboutView from '../views/AboutView.vue';
+import OnChainView from '../views/OnChainView.vue';
 import ProtectedRoute from '../views/ProtectedRoute.vue';
 
 // Extend route meta type
@@ -34,6 +35,12 @@ const routes: RouteRecordRaw[] = [
     name: 'about',
     component: AboutView,
     meta: { requiresAuth: false, title: 'About' }
+  },
+  {
+    path: '/contracts',
+    name: 'contracts',
+    component: OnChainView,
+    meta: { requiresAuth: false, title: 'Contracts' }
   },
 
   // Protected routes - auth required
