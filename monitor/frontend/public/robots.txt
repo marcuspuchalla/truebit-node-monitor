@@ -1,0 +1,6 @@
+# TrueBit Node Monitor - robots.txt
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://tru.watch/sitemap.xml
