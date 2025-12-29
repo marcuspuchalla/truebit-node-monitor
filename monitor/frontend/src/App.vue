@@ -135,9 +135,10 @@
       </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pb-16">
       <router-view />
     </main>
+    <AppFooter />
   </div>
 </template>
 
@@ -145,6 +146,7 @@
 import { onMounted, watch, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Preloader from './components/Preloader.vue';
+import AppFooter from './components/AppFooter.vue';
 import { usePreloader } from './composables/usePreloader';
 import { useRealtime } from './composables/useRealtime';
 import { useFederationStore } from './stores/federation';

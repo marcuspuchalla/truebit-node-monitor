@@ -1,6 +1,6 @@
 {
   "name": "truebit-federation-aggregator",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Federation aggregator service for TrueBit Monitor network statistics",
   "type": "module",
   "main": "dist/index.js",

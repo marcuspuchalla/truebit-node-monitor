@@ -245,6 +245,8 @@
             <div class="peer-id">
               {{ formatNodeId(peer.node_id) }}
               <span v-if="isMyNode(peer)" class="my-node-badge">You</span>
+              <span v-if="getPeerRegistrationStatus(peer) === true" class="registered-badge" title="Registered on-chain">Registered</span>
+              <span v-else-if="getPeerRegistrationStatus(peer) === false" class="unregistered-badge" title="Not registered on-chain">Unregistered</span>
             </div>
             <div class="peer-meta">
               <span class="peer-seen">Last seen: {{ formatTime(peer.last_seen) }}</span>
@@ -252,6 +254,43 @@
           </div>
           <div class="peer-arrow">›</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Node Registration Checker -->
+    <div class="section">
+      <h2>Check Node Registration</h2>
+      <div class="registration-checker">
+        <div class="checker-input-group">
+          <input
+            v-model="addressToCheck"
+            type="text"
+            placeholder="Enter Ethereum address (0x...)"
+            class="checker-input"
+            @keyup.enter="checkAddress"
+          />
+          <button @click="checkAddress" :disabled="addressCheckLoading || !addressToCheck" class="checker-button">
+            {{ addressCheckLoading ? 'Checking...' : 'Check' }}
+          </button>
+        </div>
+        <div v-if="addressCheckResult" class="checker-result" :class="{ registered: addressCheckResult.isRegistered, unregistered: !addressCheckResult.isRegistered }">
+          <div class="result-icon">{{ addressCheckResult.isRegistered ? '✓' : '✗' }}</div>
+          <div class="result-content">
+            <div class="result-status">
+              {{ addressCheckResult.isRegistered ? 'Registered' : 'Not Registered' }}
+            </div>
+            <div class="result-address">{{ addressCheckResult.address }}</div>
+            <div v-if="addressCheckResult.isRegistered && addressCheckResult.timestampRegistered" class="result-meta">
+              Registered: {{ formatDateTime(addressCheckResult.timestampRegistered) }}
+            </div>
+          </div>
+        </div>
+        <div v-if="nodeRegistry.error.value" class="checker-error">
+          {{ nodeRegistry.error.value }}
+        </div>
+        <p class="checker-hint">
+          Check if an Ethereum address is registered as a TrueBit node on the Avalanche Node Registry.
+        </p>
       </div>
     </div>
 
@@ -351,10 +390,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useFederationStore } from '../stores/federation';
 import NetworkGlobe from '../components/NetworkGlobe.vue';
+import { useNodeRegistry } from '../composables/useNodeRegistry';
 
 const federationStore = useFederationStore();
 
@@ -372,6 +412,29 @@ const {
 // Modal state
 const selectedNode = ref(null);
 const selectedMessage = ref(null);
+
+// Node registry for on-chain registration checks
+const nodeRegistry = useNodeRegistry();
+const registrationStatus = ref(new Map());
+const addressToCheck = ref('');
+const addressCheckResult = ref(null);
+const addressCheckLoading = ref(false);
+
+// Check registration for a single address
+async function checkAddress() {
+  if (!addressToCheck.value) return;
+  addressCheckLoading.value = true;
+  addressCheckResult.value = null;
+  const result = await nodeRegistry.checkRegistration(addressToCheck.value);
+  addressCheckResult.value = result;
+  addressCheckLoading.value = false;
+}
+
+// Get registration status for a peer (defined early, used in template)
+function getPeerRegistrationStatus(peer) {
+  const status = registrationStatus.value.get(peer.node_id.toLowerCase());
+  return status;
+}
 
 // Parse bucket string to get minimum value (e.g., "1-10" -> 1, "0" -> 0, ">1K" -> 1000)
 function parseBucketMin(bucket) {
@@ -613,6 +676,8 @@ onMounted(async () => {
       federationStore.fetchAggregatedNetworkStats();
     }
   }, 5000);
+
+  // Initial registration check will be set up after activePeers is defined
 });
 
 onUnmounted(() => {
@@ -645,6 +710,25 @@ const activePeers = computed(() => {
     return new Date(b.last_seen) - new Date(a.last_seen);
   });
 });
+
+// Check registration status for all active peers that look like Ethereum addresses
+async function checkPeerRegistrations() {
+  const ethAddressPattern = /^0x[a-fA-F0-9]{40}$/;
+  const addressPeers = activePeers.value.filter(p => ethAddressPattern.test(p.node_id));
+  if (addressPeers.length === 0) return;
+
+  const addresses = addressPeers.map(p => p.node_id);
+  const results = await nodeRegistry.checkMultipleRegistrations(addresses);
+  registrationStatus.value = results;
+}
+
+// Watch for changes in active peers and check their registration status
+watch(activePeers, () => {
+  checkPeerRegistrations();
+}, { deep: true });
+
+// Initial registration check after component is ready
+setTimeout(() => checkPeerRegistrations(), 2000);
 
 // Format node ID for display
 function formatNodeId(nodeId) {
@@ -1405,6 +1489,185 @@ function formatLocationBucket(location) {
 .empty-mini {
   color: var(--muted);
   font-size: 0.75rem;
+}
+
+/* Registration badges */
+.registered-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: #10b981;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: sans-serif;
+  vertical-align: middle;
+}
+
+.unregistered-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.125rem 0.5rem;
+  background: #ef4444;
+  color: white;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: sans-serif;
+  vertical-align: middle;
+}
+
+/* Registration checker */
+.registration-checker {
+  background: var(--surface);
+  border-radius: 0.75rem;
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+
+.checker-input-group {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.checker-input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-family: monospace;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.checker-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+.checker-button {
+  padding: 0.75rem 1.5rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.checker-button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.checker-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checker-result {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 1rem;
+  border-radius: 0.5rem;
+}
+
+.checker-result.registered {
+  background: #d1fae5;
+  border: 1px solid #10b981;
+}
+
+.dark .checker-result.registered {
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid #10b981;
+}
+
+.checker-result.unregistered {
+  background: #fee2e2;
+  border: 1px solid #ef4444;
+}
+
+.dark .checker-result.unregistered {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid #ef4444;
+}
+
+.result-icon {
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.checker-result.registered .result-icon {
+  color: #10b981;
+}
+
+.checker-result.unregistered .result-icon {
+  color: #ef4444;
+}
+
+.result-content {
+  flex: 1;
+}
+
+.result-status {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.checker-result.registered .result-status {
+  color: #047857;
+}
+
+.dark .checker-result.registered .result-status {
+  color: #10b981;
+}
+
+.checker-result.unregistered .result-status {
+  color: #dc2626;
+}
+
+.dark .checker-result.unregistered .result-status {
+  color: #ef4444;
+}
+
+.result-address {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.result-meta {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.25rem;
+}
+
+.checker-error {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: #fee2e2;
+  border: 1px solid #ef4444;
+  border-radius: 0.5rem;
+  color: #dc2626;
+  font-size: 0.875rem;
+}
+
+.dark .checker-error {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.checker-hint {
+  margin-top: 1rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
 }
 
 @media (max-width: 640px) {

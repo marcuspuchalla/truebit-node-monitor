@@ -1,6 +1,6 @@
 {
   "name": "truebit-node-monitor-frontend",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Frontend for TrueBit Node Monitor",
   "type": "module",
   "repository": {
@@ -23,6 +23,7 @@
     "axios": "^1.6.5",
     "chart.js": "^4.4.1",
     "cobe": "^0.6.5",
+    "ethers": "^5.7.2",
     "globe.gl": "^2.45.0",
     "pinia": "^2.1.7",
     "three": "^0.182.0",
