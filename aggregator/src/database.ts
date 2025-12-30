@@ -184,6 +184,34 @@ class AggregatorDatabase {
       )
     `);
 
+    // TRU token burns table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS tru_burns (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tx_hash TEXT NOT NULL,
+        log_index INTEGER DEFAULT 0,
+        block_number INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        from_address TEXT NOT NULL,
+        to_address TEXT NOT NULL,
+        amount TEXT NOT NULL,
+        amount_formatted REAL NOT NULL,
+        burn_type TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(tx_hash, log_index)
+      )
+    `);
+
+    // Burn sync state table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS tru_burn_sync_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        last_block INTEGER NOT NULL,
+        total_burns INTEGER NOT NULL,
+        last_sync TEXT NOT NULL
+      )
+    `);
+
     // Indexes
     this.db.exec(`
       CREATE INDEX IF NOT EXISTS idx_tasks_hash ON aggregated_tasks(task_id_hash);
@@ -193,6 +221,8 @@ class AggregatorDatabase {
       CREATE INDEX IF NOT EXISTS idx_invoices_task ON aggregated_invoices(task_id_hash);
       CREATE INDEX IF NOT EXISTS idx_nodes_last_seen ON active_nodes(last_seen_at);
       CREATE INDEX IF NOT EXISTS idx_stats_recorded ON network_stats_history(recorded_at);
+      CREATE INDEX IF NOT EXISTS idx_burns_block ON tru_burns(block_number);
+      CREATE INDEX IF NOT EXISTS idx_burns_timestamp ON tru_burns(timestamp);
     `);
   }
 
@@ -466,6 +496,127 @@ class AggregatorDatabase {
       continentDistribution: this.getDistribution('continent_bucket', 'active_nodes'),
       locationDistribution: this.getDistribution('location_bucket', 'active_nodes')
     };
+  }
+
+  // ===== TRU BURNS =====
+
+  insertBurns(burns: Array<{
+    txHash: string;
+    logIndex: number;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+    burnType: string;
+  }>): number {
+    if (!this.db || burns.length === 0) return 0;
+
+    const stmt = this.db.prepare(`
+      INSERT OR IGNORE INTO tru_burns (
+        tx_hash, log_index, block_number, timestamp, from_address, to_address,
+        amount, amount_formatted, burn_type
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    let inserted = 0;
+    const insertMany = this.db.transaction((items: typeof burns) => {
+      for (const burn of items) {
+        const result = stmt.run(
+          burn.txHash,
+          burn.logIndex,
+          burn.blockNumber,
+          burn.timestamp,
+          burn.from,
+          burn.to,
+          burn.amount,
+          burn.amountFormatted,
+          burn.burnType
+        );
+        if (result.changes > 0) inserted++;
+      }
+    });
+
+    insertMany(burns);
+    return inserted;
+  }
+
+  getAllBurns(): Array<{
+    txHash: string;
+    logIndex: number;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+    burnType: string;
+  }> {
+    if (!this.db) return [];
+
+    const stmt = this.db.prepare(`
+      SELECT tx_hash, log_index, block_number, timestamp, from_address,
+             to_address, amount, amount_formatted, burn_type
+      FROM tru_burns
+      ORDER BY block_number ASC
+    `);
+
+    const rows = stmt.all() as Array<{
+      tx_hash: string;
+      log_index: number;
+      block_number: number;
+      timestamp: number;
+      from_address: string;
+      to_address: string;
+      amount: string;
+      amount_formatted: number;
+      burn_type: string;
+    }>;
+
+    return rows.map(row => ({
+      txHash: row.tx_hash,
+      logIndex: row.log_index,
+      blockNumber: row.block_number,
+      timestamp: row.timestamp,
+      from: row.from_address,
+      to: row.to_address,
+      amount: row.amount,
+      amountFormatted: row.amount_formatted,
+      burnType: row.burn_type
+    }));
+  }
+
+  getBurnSyncState(): { lastBlock: number; totalBurns: number; lastSync: string | null } {
+    if (!this.db) return { lastBlock: 0, totalBurns: 0, lastSync: null };
+
+    const stmt = this.db.prepare('SELECT last_block, total_burns, last_sync FROM tru_burn_sync_state WHERE id = 1');
+    const row = stmt.get() as { last_block: number; total_burns: number; last_sync: string } | undefined;
+
+    if (row) {
+      return {
+        lastBlock: row.last_block,
+        totalBurns: row.total_burns,
+        lastSync: row.last_sync
+      };
+    }
+
+    return { lastBlock: 0, totalBurns: 0, lastSync: null };
+  }
+
+  updateBurnSyncState(lastBlock: number, totalBurns: number): void {
+    if (!this.db) return;
+
+    const stmt = this.db.prepare(`
+      INSERT INTO tru_burn_sync_state (id, last_block, total_burns, last_sync)
+      VALUES (1, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        last_block = excluded.last_block,
+        total_burns = excluded.total_burns,
+        last_sync = excluded.last_sync
+    `);
+
+    stmt.run(lastBlock, totalBurns, new Date().toISOString());
   }
 
   // Cleanup old data

@@ -59,6 +59,28 @@
       {{ errorMessage }}
     </div>
 
+    <!-- On-Chain Stats -->
+    <div class="stats-grid onchain">
+      <div class="stat-card small onchain-stat">
+        <div class="stat-value">{{ registeredNodeCount ?? '—' }}</div>
+        <div class="stat-label">Registered Nodes</div>
+        <div class="stat-network">Avalanche</div>
+      </div>
+      <div class="stat-card small onchain-stat">
+        <div class="stat-value">{{ totalStakedTRU !== null ? formatNumber(totalStakedTRU) : '—' }}</div>
+        <div class="stat-label">Total Staked</div>
+        <div class="stat-network">Ethereum</div>
+      </div>
+      <router-link to="/nodes" class="stat-card small onchain-stat clickable">
+        <div class="stat-icon">→</div>
+        <div class="stat-label">View Registry</div>
+      </router-link>
+      <router-link to="/staking" class="stat-card small onchain-stat clickable">
+        <div class="stat-icon">→</div>
+        <div class="stat-label">View Staking</div>
+      </router-link>
+    </div>
+
     <!-- Extended Stats -->
     <div class="stats-grid secondary">
       <div class="stat-card small">
@@ -395,6 +417,7 @@ import { storeToRefs } from 'pinia';
 import { useFederationStore } from '../stores/federation';
 import NetworkGlobe from '../components/NetworkGlobe.vue';
 import { useNodeRegistry } from '../composables/useNodeRegistry';
+import { useStaking } from '../composables/useStaking';
 
 const federationStore = useFederationStore();
 
@@ -419,6 +442,11 @@ const registrationStatus = ref(new Map());
 const addressToCheck = ref('');
 const addressCheckResult = ref(null);
 const addressCheckLoading = ref(false);
+
+// On-chain stats
+const staking = useStaking();
+const registeredNodeCount = ref(null);
+const totalStakedTRU = ref(null);
 
 // Check registration for a single address
 async function checkAddress() {
@@ -667,6 +695,9 @@ onMounted(async () => {
     }
   }
 
+  // Fetch on-chain stats
+  fetchOnChainStats();
+
   // Refresh data periodically (only if enabled)
   refreshInterval = setInterval(() => {
     if (settings.value?.enabled) {
@@ -679,6 +710,22 @@ onMounted(async () => {
 
   // Initial registration check will be set up after activePeers is defined
 });
+
+// Fetch on-chain data from node registry and staking contracts
+async function fetchOnChainStats() {
+  try {
+    const [nodeCount, stakingStats] = await Promise.all([
+      nodeRegistry.getNodeCount(),
+      staking.getStats()
+    ]);
+    registeredNodeCount.value = nodeCount;
+    if (stakingStats) {
+      totalStakedTRU.value = stakingStats.totalStaked;
+    }
+  } catch (e) {
+    console.error('Failed to fetch on-chain stats:', e);
+  }
+}
 
 onUnmounted(() => {
   if (refreshInterval) {
@@ -865,6 +912,17 @@ function formatLocationBucket(location) {
 
   return `${Math.abs(lat).toFixed(1)}°${latDir}, ${Math.abs(lon).toFixed(1)}°${lonDir}`;
 }
+
+// Format large numbers with K/M suffixes
+function formatNumber(num) {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+  if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toLocaleString();
+}
 </script>
 
 <style scoped>
@@ -975,6 +1033,54 @@ function formatLocationBucket(location) {
 .stats-grid.secondary {
   grid-template-columns: repeat(4, 1fr);
   margin-bottom: 2rem;
+}
+
+.stats-grid.onchain {
+  grid-template-columns: repeat(4, 1fr);
+  margin-bottom: 1.5rem;
+}
+
+.onchain-stat {
+  border: 1px solid var(--accent);
+  position: relative;
+}
+
+.dark .onchain-stat {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.onchain-stat .stat-network {
+  font-size: 0.65rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.25rem;
+}
+
+.onchain-stat.clickable {
+  cursor: pointer;
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.onchain-stat.clickable:hover {
+  background: var(--surface-muted);
+  transform: translateY(-2px);
+}
+
+.dark .onchain-stat.clickable:hover {
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.onchain-stat .stat-icon {
+  font-size: 1.5rem;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
 }
 
 .stat-card {

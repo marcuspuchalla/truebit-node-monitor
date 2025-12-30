@@ -18,11 +18,13 @@ const COINGECKO_API = 'https://api.coingecko.com/api/v3';
 export interface BurnEvent {
   txHash: string;
   blockNumber: number;
+  logIndex?: number;
   timestamp: number;
   from: string;
   to: string;
   amount: string; // wei as string
   amountFormatted: number; // human readable
+  burnType: 'null' | 'dead';
 }
 
 export interface TokenMetrics {
@@ -170,7 +172,8 @@ export class TokenService {
                   from: tx.from.hash,
                   to: tx.to.hash,
                   amount: tx.total.value,
-                  amountFormatted: this.formatTRU(tx.total.value)
+                  amountFormatted: this.formatTRU(tx.total.value),
+                  burnType: burnAddress === BURN_ADDRESS ? 'null' : 'dead'
                 });
               } else if (tx.block_number <= startBlock) {
                 // We've reached blocks we already have, stop paginating
@@ -401,7 +404,8 @@ export class TokenService {
         from: b.from,
         to: b.to,
         amount: b.amount,
-        amountFormatted: b.amountFormatted
+        amountFormatted: b.amountFormatted,
+        burnType: b.to?.toLowerCase() === BURN_ADDRESS.toLowerCase() ? 'null' as const : 'dead' as const
       }));
       this.cache.burnsLastBlock = state.lastBlock;
 

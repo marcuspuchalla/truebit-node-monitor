@@ -9,6 +9,8 @@ import FederationView from '../views/FederationView.vue';
 import AboutView from '../views/AboutView.vue';
 import OnChainView from '../views/OnChainView.vue';
 import TokenView from '../views/TokenView.vue';
+import NodeRegistryView from '../views/NodeRegistryView.vue';
+import StakingView from '../views/StakingView.vue';
 import ProtectedRoute from '../views/ProtectedRoute.vue';
 
 // Extend route meta type
@@ -48,6 +50,18 @@ const routes: RouteRecordRaw[] = [
     name: 'token',
     component: TokenView,
     meta: { requiresAuth: false, title: 'Token' }
+  },
+  {
+    path: '/nodes',
+    name: 'nodes',
+    component: NodeRegistryView,
+    meta: { requiresAuth: false, title: 'Nodes' }
+  },
+  {
+    path: '/staking',
+    name: 'staking',
+    component: StakingView,
+    meta: { requiresAuth: false, title: 'Staking' }
   },
 
   // Protected routes - auth required
