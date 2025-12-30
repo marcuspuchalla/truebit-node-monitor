@@ -321,6 +321,30 @@ class TruebitDatabase {
       )
     `);
 
+    // TRU token burn events cache
+    this.db!.exec(`
+      CREATE TABLE IF NOT EXISTS token_burns (
+        tx_hash TEXT PRIMARY KEY,
+        block_number INTEGER NOT NULL,
+        timestamp INTEGER NOT NULL,
+        from_address TEXT NOT NULL,
+        to_address TEXT NOT NULL,
+        amount TEXT NOT NULL,
+        amount_formatted REAL NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Token burn sync state
+    this.db!.exec(`
+      CREATE TABLE IF NOT EXISTS token_sync_state (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        last_block INTEGER DEFAULT 0,
+        last_sync TEXT,
+        total_burns INTEGER DEFAULT 0
+      )
+    `);
+
     // Add new columns if missing (migration for existing DBs)
     try {
       this.db!.exec('ALTER TABLE network_stats_cache ADD COLUMN continent_distribution TEXT');
@@ -1165,6 +1189,105 @@ class TruebitDatabase {
       continentDistribution: JSON.parse(row.continent_distribution || '{}'),
       locationDistribution: JSON.parse(row.location_distribution || '{}')
     };
+  }
+
+  // ===== Token Burns =====
+
+  insertTokenBurn(burn: {
+    txHash: string;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+  }): void {
+    const stmt = this.db!.prepare(`
+      INSERT OR IGNORE INTO token_burns (tx_hash, block_number, timestamp, from_address, to_address, amount, amount_formatted)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+    stmt.run(burn.txHash, burn.blockNumber, burn.timestamp, burn.from, burn.to, burn.amount, burn.amountFormatted);
+  }
+
+  insertTokenBurns(burns: Array<{
+    txHash: string;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+  }>): number {
+    const stmt = this.db!.prepare(`
+      INSERT OR IGNORE INTO token_burns (tx_hash, block_number, timestamp, from_address, to_address, amount, amount_formatted)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `);
+
+    let inserted = 0;
+    const transaction = this.db!.transaction(() => {
+      for (const burn of burns) {
+        const result = stmt.run(burn.txHash, burn.blockNumber, burn.timestamp, burn.from, burn.to, burn.amount, burn.amountFormatted);
+        if (result.changes > 0) inserted++;
+      }
+    });
+    transaction();
+    return inserted;
+  }
+
+  getAllTokenBurns(): Array<{
+    txHash: string;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+  }> {
+    const stmt = this.db!.prepare(`
+      SELECT tx_hash, block_number, timestamp, from_address, to_address, amount, amount_formatted
+      FROM token_burns
+      ORDER BY block_number ASC
+    `);
+    const rows = stmt.all() as Array<{
+      tx_hash: string;
+      block_number: number;
+      timestamp: number;
+      from_address: string;
+      to_address: string;
+      amount: string;
+      amount_formatted: number;
+    }>;
+
+    return rows.map(row => ({
+      txHash: row.tx_hash,
+      blockNumber: row.block_number,
+      timestamp: row.timestamp,
+      from: row.from_address,
+      to: row.to_address,
+      amount: row.amount,
+      amountFormatted: row.amount_formatted
+    }));
+  }
+
+  getTokenSyncState(): { lastBlock: number; lastSync: string | null; totalBurns: number } {
+    const stmt = this.db!.prepare('SELECT last_block, last_sync, total_burns FROM token_sync_state WHERE id = 1');
+    const row = stmt.get() as { last_block: number; last_sync: string | null; total_burns: number } | undefined;
+
+    return row
+      ? { lastBlock: row.last_block, lastSync: row.last_sync, totalBurns: row.total_burns }
+      : { lastBlock: 0, lastSync: null, totalBurns: 0 };
+  }
+
+  updateTokenSyncState(lastBlock: number, totalBurns: number): void {
+    const stmt = this.db!.prepare(`
+      INSERT INTO token_sync_state (id, last_block, last_sync, total_burns)
+      VALUES (1, ?, datetime('now'), ?)
+      ON CONFLICT(id) DO UPDATE SET
+        last_block = excluded.last_block,
+        last_sync = datetime('now'),
+        total_burns = excluded.total_burns
+    `);
+    stmt.run(lastBlock, totalBurns);
   }
 
   close(): void {

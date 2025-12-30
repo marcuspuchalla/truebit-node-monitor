@@ -736,8 +736,8 @@ app.use('/api/logs', createLogsRouter(db, {
   getLogStatus: () => ({ source: activeLogSource, lastLogAt })
 }));
 
-// Token analytics service and route
-const tokenService = new TokenService(ETHERSCAN_API_KEY || undefined);
+// Token analytics service and route (db passed later after initialization)
+const tokenService = new TokenService(ETHERSCAN_API_KEY || undefined, db);
 app.use('/api/token', createTokenRouter({ tokenService }));
 
 // Federation route is registered in start() after client is created
@@ -847,7 +847,10 @@ async function start(): Promise<void> {
 
     // Initialize token analytics (async, non-blocking)
     console.log('📊 Initializing TRU token analytics...');
-    tokenService.syncBurns().then(result => {
+    tokenService.initialize().then(() => {
+      // Load from cache, then sync new burns
+      return tokenService.syncBurns();
+    }).then(result => {
       console.log(`   ✓ Loaded ${result.totalBurns} burn events`);
       // Set up periodic sync (every 10 minutes)
       setInterval(() => {

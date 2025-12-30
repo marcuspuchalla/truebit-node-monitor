@@ -75,8 +75,32 @@ interface CoinGeckoResponse {
   };
 }
 
+interface DatabaseInterface {
+  getAllTokenBurns(): Array<{
+    txHash: string;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+  }>;
+  insertTokenBurns(burns: Array<{
+    txHash: string;
+    blockNumber: number;
+    timestamp: number;
+    from: string;
+    to: string;
+    amount: string;
+    amountFormatted: number;
+  }>): number;
+  getTokenSyncState(): { lastBlock: number; lastSync: string | null; totalBurns: number };
+  updateTokenSyncState(lastBlock: number, totalBurns: number): void;
+}
+
 export class TokenService {
   private etherscanApiKey: string | null;
+  private db: DatabaseInterface | null;
   private cache: {
     metrics: TokenMetrics | null;
     metricsUpdatedAt: number;
@@ -84,8 +108,9 @@ export class TokenService {
     burnsLastBlock: number;
   };
 
-  constructor(etherscanApiKey?: string) {
+  constructor(etherscanApiKey?: string, db?: DatabaseInterface) {
     this.etherscanApiKey = etherscanApiKey || null;
+    this.db = db || null;
     this.cache = {
       metrics: null,
       metricsUpdatedAt: 0,
@@ -349,6 +374,30 @@ export class TokenService {
   }
 
   /**
+   * Initialize from database if available
+   */
+  async initialize(): Promise<void> {
+    if (this.db) {
+      // Load cached burns from database
+      const burns = this.db.getAllTokenBurns();
+      const state = this.db.getTokenSyncState();
+
+      this.cache.burns = burns.map(b => ({
+        txHash: b.txHash,
+        blockNumber: b.blockNumber,
+        timestamp: b.timestamp,
+        from: b.from,
+        to: b.to,
+        amount: b.amount,
+        amountFormatted: b.amountFormatted
+      }));
+      this.cache.burnsLastBlock = state.lastBlock;
+
+      console.log(`[TokenService] Loaded ${burns.length} burns from database (last block: ${state.lastBlock})`);
+    }
+  }
+
+  /**
    * Sync burn data from blockchain
    */
   async syncBurns(): Promise<{ newBurns: number; totalBurns: number }> {
@@ -359,6 +408,7 @@ export class TokenService {
     console.log(`[TokenService] Syncing burns from block ${startBlock}...`);
 
     const newBurns = await this.fetchBurnTransfers(startBlock);
+    let insertedCount = 0;
 
     if (newBurns.length > 0) {
       // Merge with existing burns, avoiding duplicates
@@ -371,6 +421,13 @@ export class TokenService {
         ...newBurns.map(b => b.blockNumber)
       );
 
+      // Persist to database if available
+      if (this.db && uniqueNewBurns.length > 0) {
+        insertedCount = this.db.insertTokenBurns(uniqueNewBurns);
+        this.db.updateTokenSyncState(this.cache.burnsLastBlock, this.cache.burns.length);
+        console.log(`[TokenService] Persisted ${insertedCount} burns to database`);
+      }
+
       console.log(`[TokenService] Found ${uniqueNewBurns.length} new burn events`);
     }
 
@@ -381,7 +438,7 @@ export class TokenService {
   }
 
   /**
-   * Load cached burns from database
+   * Load cached burns from external source (deprecated - use initialize() instead)
    */
   loadFromCache(burns: BurnEvent[], lastBlock: number): void {
     this.cache.burns = burns;
