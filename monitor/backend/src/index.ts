@@ -23,6 +23,8 @@ import { createTasksRouter } from './routes/tasks.js';
 import { createInvoicesRouter } from './routes/invoices.js';
 import { createLogsRouter } from './routes/logs.js';
 import { createFederationRouter } from './routes/federation.js';
+import { createTokenRouter } from './routes/token.js';
+import TokenService from './services/tokenService.js';
 import FederationClient from './federation/client.js';
 import FederationAnonymizer from './federation/anonymizer.js';
 import { resolveLocationBucket } from './utils/location.js';
@@ -44,6 +46,7 @@ const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
 const MAX_OUTPUT_DATA_BYTES = parseInt(process.env.MAX_OUTPUT_DATA_BYTES || '102400', 10); // 100KB
 const WASM_HASH_PATTERN = /^[a-f0-9]{64}$/i;
 const NODE_CONTINENT = process.env.NODE_CONTINENT || '';
+const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || '';
 
 // CORS: Only allow same-origin by default. Set ALLOWED_ORIGINS env var for cross-origin access.
 // Example: ALLOWED_ORIGINS=https://tru.watch,https://www.tru.watch
@@ -732,6 +735,11 @@ app.use('/api/logs', createLogsRouter(db, {
   validateSessionToken,
   getLogStatus: () => ({ source: activeLogSource, lastLogAt })
 }));
+
+// Token analytics service and route
+const tokenService = new TokenService(ETHERSCAN_API_KEY || undefined);
+app.use('/api/token', createTokenRouter({ tokenService }));
+
 // Federation route is registered in start() after client is created
 
 // Challenge-response authentication endpoints
@@ -836,6 +844,20 @@ async function start(): Promise<void> {
     const anonymizer = new FederationAnonymizer();
     const credentials = anonymizer.getNodeCredentials();
     db.initializeFederationSettings(credentials.nodeId, credentials.salt);
+
+    // Initialize token analytics (async, non-blocking)
+    console.log('📊 Initializing TRU token analytics...');
+    tokenService.syncBurns().then(result => {
+      console.log(`   ✓ Loaded ${result.totalBurns} burn events`);
+      // Set up periodic sync (every 10 minutes)
+      setInterval(() => {
+        tokenService.syncBurns().catch(err => {
+          console.error('Token sync error:', err);
+        });
+      }, 10 * 60 * 1000);
+    }).catch(err => {
+      console.error('   ✗ Token sync failed:', err);
+    });
 
     // Function to create/recreate federation client
     const createFederationClient = async (): Promise<void> => {
