@@ -101,6 +101,8 @@ interface BurnLeaderboard {
 - 01:10 - Created `TokenView.vue` frontend page with Chart.js
 - 01:11 - Added `/token` route to router and navigation
 - 01:13 - Fixed TypeScript errors, both frontend and backend compile
+- 01:15 - Added database persistence (token_burns, token_sync_state tables)
+- 01:18 - TokenService now loads/saves burns to SQLite
 
 ## Implementation Plan
 

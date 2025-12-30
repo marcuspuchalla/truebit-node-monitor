@@ -46,7 +46,6 @@ const DOCKER_SOCKET = process.env.DOCKER_SOCKET_PATH || '/var/run/docker.sock';
 const MAX_OUTPUT_DATA_BYTES = parseInt(process.env.MAX_OUTPUT_DATA_BYTES || '102400', 10); // 100KB
 const WASM_HASH_PATTERN = /^[a-f0-9]{64}$/i;
 const NODE_CONTINENT = process.env.NODE_CONTINENT || '';
-const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY || '';
 
 // CORS: Only allow same-origin by default. Set ALLOWED_ORIGINS env var for cross-origin access.
 // Example: ALLOWED_ORIGINS=https://tru.watch,https://www.tru.watch
@@ -737,7 +736,7 @@ app.use('/api/logs', createLogsRouter(db, {
 }));
 
 // Token analytics service and route (db passed later after initialization)
-const tokenService = new TokenService(ETHERSCAN_API_KEY || undefined, db);
+const tokenService = new TokenService(db);
 app.use('/api/token', createTokenRouter({ tokenService }));
 
 // Federation route is registered in start() after client is created

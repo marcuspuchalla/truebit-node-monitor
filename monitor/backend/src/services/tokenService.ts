@@ -8,8 +8,9 @@ const TRU_CONTRACT = '0xf65b5c5104c4fafd4b709d9d60a185eae063276c';
 const BURN_ADDRESS = '0x0000000000000000000000000000000000000000';
 const DEAD_ADDRESS = '0x000000000000000000000000000000000000dEaD';
 
-// Etherscan API (free tier: 5 calls/sec, 100k/day)
-const ETHERSCAN_API = 'https://api.etherscan.io/api';
+// Blockscout API (free, no API key required)
+// More reliable than Etherscan V2 which requires API key
+const BLOCKSCOUT_API = 'https://eth.blockscout.com/api/v2';
 
 // CoinGecko API (free tier with rate limits)
 const COINGECKO_API = 'https://api.coingecko.com/api/v3';
@@ -49,19 +50,30 @@ export interface ChartDataPoint {
   dailyBurned: number;
 }
 
-interface EtherscanTransfer {
-  hash: string;
-  blockNumber: string;
-  timeStamp: string;
-  from: string;
-  to: string;
-  value: string;
+interface BlockscoutTransfer {
+  block_number: number;
+  timestamp: string;
+  transaction_hash: string;
+  from: { hash: string };
+  to: { hash: string };
+  total: { value: string; decimals: string };
+  type: string;
 }
 
-interface EtherscanResponse {
-  status: string;
-  message: string;
-  result: EtherscanTransfer[] | string;
+interface BlockscoutTransferResponse {
+  items: BlockscoutTransfer[];
+  next_page_params?: {
+    block_number: number;
+    index: number;
+    items_count: number;
+  } | null;
+}
+
+interface BlockscoutTokenInfo {
+  holders_count: string;
+  total_supply: string;
+  exchange_rate: string;
+  volume_24h: string;
 }
 
 interface CoinGeckoResponse {
@@ -99,7 +111,6 @@ interface DatabaseInterface {
 }
 
 export class TokenService {
-  private etherscanApiKey: string | null;
   private db: DatabaseInterface | null;
   private cache: {
     metrics: TokenMetrics | null;
@@ -108,8 +119,7 @@ export class TokenService {
     burnsLastBlock: number;
   };
 
-  constructor(etherscanApiKey?: string, db?: DatabaseInterface) {
-    this.etherscanApiKey = etherscanApiKey || null;
+  constructor(db?: DatabaseInterface) {
     this.db = db || null;
     this.cache = {
       metrics: null,
@@ -127,50 +137,58 @@ export class TokenService {
   }
 
   /**
-   * Fetch token transfers to burn addresses from Etherscan
+   * Fetch token transfers to burn addresses from Blockscout
    */
   async fetchBurnTransfers(startBlock: number = 0): Promise<BurnEvent[]> {
     const burns: BurnEvent[] = [];
 
-    // Fetch transfers to both burn addresses
+    // Fetch transfers to both burn addresses using Blockscout API
     for (const burnAddress of [BURN_ADDRESS, DEAD_ADDRESS]) {
       try {
-        const params = new URLSearchParams({
-          module: 'account',
-          action: 'tokentx',
-          contractaddress: TRU_CONTRACT,
-          address: burnAddress,
-          startblock: startBlock.toString(),
-          endblock: '99999999',
-          sort: 'asc'
-        });
+        let hasMore = true;
+        let nextPageParams: { block_number: number; index: number; items_count: number } | null = null;
 
-        if (this.etherscanApiKey) {
-          params.append('apikey', this.etherscanApiKey);
-        }
+        while (hasMore) {
+          let url = `${BLOCKSCOUT_API}/addresses/${burnAddress}/token-transfers?token=${TRU_CONTRACT}&type=ERC-20`;
 
-        const response = await fetch(`${ETHERSCAN_API}?${params}`);
-        const data = await response.json() as EtherscanResponse;
+          if (nextPageParams) {
+            url += `&block_number=${nextPageParams.block_number}&index=${nextPageParams.index}&items_count=${nextPageParams.items_count}`;
+          }
 
-        if (data.status === '1' && Array.isArray(data.result)) {
-          for (const tx of data.result) {
-            // Only include transfers TO the burn address (not FROM)
-            if (tx.to.toLowerCase() === burnAddress.toLowerCase()) {
-              burns.push({
-                txHash: tx.hash,
-                blockNumber: parseInt(tx.blockNumber),
-                timestamp: parseInt(tx.timeStamp) * 1000,
-                from: tx.from,
-                to: tx.to,
-                amount: tx.value,
-                amountFormatted: this.formatTRU(tx.value)
-              });
+          const response = await fetch(url);
+          const data = await response.json() as BlockscoutTransferResponse;
+
+          if (data.items && Array.isArray(data.items)) {
+            for (const tx of data.items) {
+              // Only include transfers TO the burn address and after startBlock
+              if (tx.to.hash.toLowerCase() === burnAddress.toLowerCase() &&
+                  tx.block_number > startBlock) {
+                burns.push({
+                  txHash: tx.transaction_hash,
+                  blockNumber: tx.block_number,
+                  timestamp: new Date(tx.timestamp).getTime(),
+                  from: tx.from.hash,
+                  to: tx.to.hash,
+                  amount: tx.total.value,
+                  amountFormatted: this.formatTRU(tx.total.value)
+                });
+              } else if (tx.block_number <= startBlock) {
+                // We've reached blocks we already have, stop paginating
+                hasMore = false;
+                break;
+              }
             }
           }
-        }
 
-        // Rate limit: wait 200ms between calls
-        await new Promise(resolve => setTimeout(resolve, 200));
+          // Check if there are more pages
+          if (data.next_page_params && hasMore) {
+            nextPageParams = data.next_page_params;
+            // Rate limit: wait 200ms between calls
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } else {
+            hasMore = false;
+          }
+        }
       } catch (error) {
         console.error(`Error fetching burns to ${burnAddress}:`, error);
       }
@@ -183,33 +201,27 @@ export class TokenService {
   }
 
   /**
-   * Fetch holder count from Etherscan
+   * Fetch holder count and token info from Blockscout
+   */
+  async fetchBlockscoutTokenInfo(): Promise<BlockscoutTokenInfo | null> {
+    try {
+      const response = await fetch(`${BLOCKSCOUT_API}/tokens/${TRU_CONTRACT}`);
+      const data = await response.json() as BlockscoutTokenInfo;
+      return data;
+    } catch (error) {
+      console.error('Error fetching token info from Blockscout:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Fetch holder count from Blockscout
    */
   async fetchHolderCount(): Promise<number> {
-    try {
-      // Note: tokenholdercount requires Etherscan API key
-      // Fall back to a reasonable estimate if not available
-      if (!this.etherscanApiKey) {
-        return 0; // Will be filled from CoinGecko or cached data
-      }
-
-      const params = new URLSearchParams({
-        module: 'token',
-        action: 'tokenholdercount',
-        contractaddress: TRU_CONTRACT,
-        apikey: this.etherscanApiKey
-      });
-
-      const response = await fetch(`${ETHERSCAN_API}?${params}`);
-      const data = await response.json() as { status: string; result: string };
-
-      if (data.status === '1') {
-        return parseInt(data.result);
-      }
-    } catch (error) {
-      console.error('Error fetching holder count:', error);
+    const info = await this.fetchBlockscoutTokenInfo();
+    if (info?.holders_count) {
+      return parseInt(info.holders_count);
     }
-
     return 0;
   }
 
