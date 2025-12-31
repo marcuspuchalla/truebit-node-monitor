@@ -84,10 +84,14 @@ class AnalyticsService {
 
   /**
    * Decode address from hex (last 20 bytes of 32-byte word)
+   * Accepts both with and without 0x prefix
    */
   private decodeAddress(hex: string): string {
-    if (!hex || hex.length < 66) return '0x0000000000000000000000000000000000000000';
-    return '0x' + hex.slice(-40);
+    if (!hex) return '0x0000000000000000000000000000000000000000';
+    // Remove 0x prefix if present
+    const cleanHex = hex.startsWith('0x') ? hex.slice(2) : hex;
+    if (cleanHex.length < 40) return '0x0000000000000000000000000000000000000000';
+    return '0x' + cleanHex.slice(-40);
   }
 
   /**
