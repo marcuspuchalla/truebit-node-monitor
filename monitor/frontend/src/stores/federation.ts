@@ -14,6 +14,10 @@ import {
   type AggregatedNetworkStats
 } from '../services/api';
 
+// Federation API errors are non-critical - suppress console spam
+// Errors are still stored in state.error for debugging
+const SUPPRESS_FEDERATION_ERRORS = true;
+
 interface FederationState {
   // Settings
   settings: FederationSettings;
@@ -136,8 +140,10 @@ export const useFederationStore = defineStore('federation', {
         const response = await federationAPI.getSettings();
         this.settings = response;
       } catch (error) {
-        this.error = (error as Error).message;
-        console.error('Failed to fetch federation settings:', error);
+        if (!SUPPRESS_FEDERATION_ERRORS) {
+          this.error = (error as Error).message;
+          console.error('Failed to fetch federation settings:', error);
+        }
       } finally {
         this.settingsLoading = false;
       }
@@ -193,8 +199,10 @@ export const useFederationStore = defineStore('federation', {
         const response = await federationAPI.getStatus();
         this.status = response;
       } catch (error) {
-        this.error = (error as Error).message;
-        console.error('Failed to fetch federation status:', error);
+        if (!SUPPRESS_FEDERATION_ERRORS) {
+          this.error = (error as Error).message;
+          console.error('Failed to fetch federation status:', error);
+        }
       } finally {
         this.statusLoading = false;
       }
@@ -207,8 +215,10 @@ export const useFederationStore = defineStore('federation', {
         const response = await federationAPI.getMessages(limit, offset, type);
         this.messages = response.messages;
       } catch (error) {
-        this.error = (error as Error).message;
-        console.error('Failed to fetch federation messages:', error);
+        if (!SUPPRESS_FEDERATION_ERRORS) {
+          this.error = (error as Error).message;
+          console.error('Failed to fetch federation messages:', error);
+        }
       } finally {
         this.messagesLoading = false;
       }
@@ -221,8 +231,10 @@ export const useFederationStore = defineStore('federation', {
         const response = await federationAPI.getPeers();
         this.peers = response.peers;
       } catch (error) {
-        this.error = (error as Error).message;
-        console.error('Failed to fetch federation peers:', error);
+        if (!SUPPRESS_FEDERATION_ERRORS) {
+          this.error = (error as Error).message;
+          console.error('Failed to fetch federation peers:', error);
+        }
       } finally {
         this.peersLoading = false;
       }
@@ -246,8 +258,10 @@ export const useFederationStore = defineStore('federation', {
         const response = await federationAPI.getStats(hours);
         this.networkStats = response;
       } catch (error) {
-        this.error = (error as Error).message;
-        console.error('Failed to fetch network stats:', error);
+        if (!SUPPRESS_FEDERATION_ERRORS) {
+          this.error = (error as Error).message;
+          console.error('Failed to fetch network stats:', error);
+        }
       }
     },
 
@@ -257,8 +271,10 @@ export const useFederationStore = defineStore('federation', {
         const response = await federationAPI.getNetworkStats();
         this.aggregatedNetworkStats = response;
       } catch (error) {
-        this.error = (error as Error).message;
-        console.error('Failed to fetch aggregated network stats:', error);
+        if (!SUPPRESS_FEDERATION_ERRORS) {
+          this.error = (error as Error).message;
+          console.error('Failed to fetch aggregated network stats:', error);
+        }
       }
     },
 

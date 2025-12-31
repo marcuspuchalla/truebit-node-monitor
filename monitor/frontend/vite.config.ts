@@ -7,18 +7,14 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
-      // Token API proxied to standalone token server (runs without Docker)
-      '/api/token': {
-        target: 'http://localhost:8091',
-        changeOrigin: true
-      },
-      // Other API calls go to main backend
+      // All API calls go to main backend (token API is now integrated)
       '/api': {
-        target: 'http://localhost:8090',
-        changeOrigin: true
+        target: 'http://127.0.0.1:8090',
+        changeOrigin: true,
+        secure: false
       },
       '/ws': {
-        target: 'ws://localhost:8090',
+        target: 'ws://127.0.0.1:8090',
         ws: true
       }
     }

@@ -14,7 +14,8 @@
                 <span class="text-xs text-gray-400 dark:text-slate-400">Global Network Statistics</span>
               </div>
             </div>
-            <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+            <div class="hidden sm:ml-6 sm:flex sm:space-x-6">
+              <!-- Network -->
               <router-link
                 to="/"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
@@ -22,54 +23,30 @@
               >
                 Network
               </router-link>
-              <router-link
-                to="/dashboard"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'dashboard' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                <span class="flex items-center gap-1">
-                  Dashboard
-                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
-                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+
+              <!-- Analytics Dropdown -->
+              <div class="relative h-full flex items-center" @mouseenter="openDropdown = 'analytics'" @mouseleave="openDropdown = null">
+                <button
+                  class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 text-sm font-medium"
+                  :class="isAnalyticsActive ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
+                >
+                  Analytics
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                   </svg>
-                </span>
-              </router-link>
-              <router-link
-                to="/tasks"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'tasks' || $route.name === 'task-detail' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                <span class="flex items-center gap-1">
-                  Tasks
-                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
-                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-              </router-link>
-              <router-link
-                to="/invoices"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'invoices' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                <span class="flex items-center gap-1">
-                  Invoices
-                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
-                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-              </router-link>
-              <router-link
-                to="/logs"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'logs' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                <span class="flex items-center gap-1">
-                  Logs
-                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
-                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
-                  </svg>
-                </span>
-              </router-link>
+                </button>
+                <div
+                  v-show="openDropdown === 'analytics'"
+                  class="absolute left-0 top-full w-40 bg-white dark:bg-[#0d1424] rounded-md shadow-lg border border-gray-200 dark:border-[#1a3a5c] z-50"
+                >
+                  <router-link to="/contracts" class="dropdown-item" @click="openDropdown = null">Contracts</router-link>
+                  <router-link to="/token" class="dropdown-item" @click="openDropdown = null">Token</router-link>
+                  <router-link to="/nodes" class="dropdown-item" @click="openDropdown = null">Nodes</router-link>
+                  <router-link to="/staking" class="dropdown-item" @click="openDropdown = null">Staking</router-link>
+                </div>
+              </div>
+
+              <!-- About -->
               <router-link
                 to="/about"
                 class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
@@ -77,34 +54,59 @@
               >
                 About
               </router-link>
-              <router-link
-                to="/contracts"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'contracts' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                Contracts
-              </router-link>
-              <router-link
-                to="/token"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'token' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                Token
-              </router-link>
-              <router-link
-                to="/nodes"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'nodes' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                Nodes
-              </router-link>
-              <router-link
-                to="/staking"
-                class="inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium"
-                :class="$route.name === 'staking' ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
-              >
-                Staking
-              </router-link>
+
+              <!-- Operator Dropdown (secured) -->
+              <div class="relative h-full flex items-center" @mouseenter="openDropdown = 'operator'" @mouseleave="openDropdown = null">
+                <button
+                  class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 text-sm font-medium"
+                  :class="isOperatorActive ? 'border-primary-500 text-gray-900 dark:text-slate-100' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:border-slate-600'"
+                >
+                  Operator
+                  <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                    <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                  </svg>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div
+                  v-show="openDropdown === 'operator'"
+                  class="absolute left-0 top-full w-40 bg-white dark:bg-[#0d1424] rounded-md shadow-lg border border-gray-200 dark:border-[#1a3a5c] z-50"
+                >
+                  <router-link to="/dashboard" class="dropdown-item" @click="openDropdown = null">
+                    <span class="flex items-center gap-2">
+                      Dashboard
+                      <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                        <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </router-link>
+                  <router-link to="/tasks" class="dropdown-item" @click="openDropdown = null">
+                    <span class="flex items-center gap-2">
+                      Tasks
+                      <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                        <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </router-link>
+                  <router-link to="/invoices" class="dropdown-item" @click="openDropdown = null">
+                    <span class="flex items-center gap-2">
+                      Invoices
+                      <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                        <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </router-link>
+                  <router-link to="/logs" class="dropdown-item" @click="openDropdown = null">
+                    <span class="flex items-center gap-2">
+                      Logs
+                      <svg v-if="!isAuthenticated" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-gray-400">
+                        <path fill-rule="evenodd" d="M8 1a3.5 3.5 0 0 0-3.5 3.5V7A1.5 1.5 0 0 0 3 8.5v5A1.5 1.5 0 0 0 4.5 15h7a1.5 1.5 0 0 0 1.5-1.5v-5A1.5 1.5 0 0 0 11.5 7V4.5A3.5 3.5 0 0 0 8 1Zm2 6V4.5a2 2 0 1 0-4 0V7h4Z" clip-rule="evenodd" />
+                      </svg>
+                    </span>
+                  </router-link>
+                </div>
+              </div>
             </div>
           </div>
           <div class="flex items-center gap-3">
@@ -164,7 +166,7 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref } from 'vue';
+import { onMounted, watch, ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import Preloader from './components/Preloader.vue';
 import AppFooter from './components/AppFooter.vue';
@@ -179,6 +181,19 @@ const { setProgress, checkStoredAuth } = usePreloader();
 const federationStore = useFederationStore();
 const realtime = useRealtime();
 const isDark = ref(false);
+const openDropdown = ref(null);
+
+// Check if Analytics dropdown items are active
+const isAnalyticsActive = computed(() => {
+  const analyticsRoutes = ['contracts', 'token', 'nodes', 'staking'];
+  return analyticsRoutes.includes(route.name);
+});
+
+// Check if Operator dropdown items are active
+const isOperatorActive = computed(() => {
+  const operatorRoutes = ['dashboard', 'tasks', 'task-detail', 'invoices', 'logs'];
+  return operatorRoutes.includes(route.name);
+});
 
 // Handle logout
 const handleLogout = () => {
@@ -236,3 +251,38 @@ const toggleTheme = () => {
   localStorage.setItem('theme', isDark.value ? 'dark' : 'light');
 };
 </script>
+
+<style scoped>
+.dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 1rem;
+  text-align: left;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.dropdown-item:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+:deep(.dark) .dropdown-item {
+  color: #94a3b8;
+}
+
+:deep(.dark) .dropdown-item:hover {
+  background-color: #1a2744;
+  color: #f1f5f9;
+}
+
+.dropdown-item:first-child {
+  border-radius: 0.375rem 0.375rem 0 0;
+}
+
+.dropdown-item:last-child {
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+</style>

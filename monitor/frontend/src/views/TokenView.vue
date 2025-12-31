@@ -607,12 +607,24 @@ watch([burnSearch, burnTypeFilter], () => {
   currentPage.value = 1;
 });
 
-const API_BASE = '/api/token';
+const API_BASE = import.meta.env.VITE_TOKEN_API_URL || '/api/token';
 
 async function fetchData() {
   loading.value = true;
   error.value = null;
   try {
+    // Helper to safely parse JSON response
+    const safeJson = async (res: Response) => {
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+      const text = await res.text();
+      if (!text) {
+        throw new Error('Empty response from server');
+      }
+      return JSON.parse(text);
+    };
+
     const [metricsRes, infoRes, burnsRes, allBurnsRes, leaderboardRes, chartRes] = await Promise.all([
       fetch(`${API_BASE}/metrics`),
       fetch(`${API_BASE}/info`),
@@ -623,12 +635,12 @@ async function fetchData() {
     ]);
 
     const [metricsData, infoData, burnsData, allBurnsData, leaderboardData, chartDataRes] = await Promise.all([
-      metricsRes.json(),
-      infoRes.json(),
-      burnsRes.json(),
-      allBurnsRes.json(),
-      leaderboardRes.json(),
-      chartRes.json()
+      safeJson(metricsRes),
+      safeJson(infoRes),
+      safeJson(burnsRes),
+      safeJson(allBurnsRes),
+      safeJson(leaderboardRes),
+      safeJson(chartRes)
     ]);
 
     if (metricsData.success) {
@@ -653,7 +665,13 @@ async function fetchData() {
     }
   } catch (err) {
     console.error('Error fetching token data:', err);
-    error.value = err instanceof Error ? err.message : 'Failed to load token data';
+    const message = err instanceof Error ? err.message : 'Failed to load token data';
+    // Provide user-friendly error message
+    if (message.includes('Empty response') || message.includes('Server returned')) {
+      error.value = 'Backend server is not running. Token analytics requires the monitor backend to be active.';
+    } else {
+      error.value = message;
+    }
   } finally {
     loading.value = false;
   }

@@ -10,12 +10,21 @@ const NODE_REGISTRY_ABI = [
   'function getNodeCount() view returns (uint256)',
 ];
 
+// WorkflowCreated event topic for tracking historical registrations
+const WORKFLOW_CREATED_TOPIC = '0x26e34e505f5a896de7bab3f5beecaa9c201fe393d64d2e741b4394d4ad389ffb';
+
 interface NodeRegistrationInfo {
   address: string;
   isRegistered: boolean;
   nodeIndex?: number;
   blockRegistered?: number;
   timestampRegistered?: Date;
+}
+
+export interface HistoricalNode {
+  address: string;
+  blockRegistered: number;
+  timestampRegistered: Date | null;
 }
 
 let provider: ethers.providers.JsonRpcProvider | null = null;
@@ -157,6 +166,59 @@ export function useNodeRegistry() {
     }
   }
 
+  /**
+   * Fetch all historical registrations from WorkflowCreated events
+   */
+  async function getHistoricalRegistrations(): Promise<HistoricalNode[]> {
+    try {
+      // Use Snowtrace API to get WorkflowCreated events
+      const response = await fetch(
+        `https://api.snowtrace.io/api?module=logs&action=getLogs&address=${NODE_REGISTRY_ADDRESS}&topic0=${WORKFLOW_CREATED_TOPIC}&fromBlock=0&toBlock=latest`
+      );
+      const data = await response.json();
+
+      if (data.status !== '1' || !data.result) {
+        return [];
+      }
+
+      // Extract unique addresses from events (topic[1] is the node address)
+      const addressMap = new Map<string, HistoricalNode>();
+
+      for (const log of data.result) {
+        if (log.topics && log.topics[1]) {
+          // Address is in topic[1], padded to 32 bytes
+          const address = '0x' + log.topics[1].slice(26);
+          const blockNumber = parseInt(log.blockNumber, 16);
+          const timestamp = parseInt(log.timeStamp, 16);
+
+          // Keep the first (earliest) registration for each address
+          if (!addressMap.has(address.toLowerCase())) {
+            addressMap.set(address.toLowerCase(), {
+              address: ethers.utils.getAddress(address),
+              blockRegistered: blockNumber,
+              timestampRegistered: timestamp > 0 ? new Date(timestamp * 1000) : null
+            });
+          }
+        }
+      }
+
+      return Array.from(addressMap.values());
+    } catch (e) {
+      console.error('Failed to fetch historical registrations:', e);
+      return [];
+    }
+  }
+
+  /**
+   * Get nodes that were previously registered but are no longer active
+   */
+  async function getInactiveNodes(activeNodes: NodeRegistrationInfo[]): Promise<HistoricalNode[]> {
+    const historical = await getHistoricalRegistrations();
+    const activeAddresses = new Set(activeNodes.map(n => n.address.toLowerCase()));
+
+    return historical.filter(node => !activeAddresses.has(node.address.toLowerCase()));
+  }
+
   return {
     loading,
     error,
@@ -164,5 +226,7 @@ export function useNodeRegistry() {
     checkMultipleRegistrations,
     getNodeCount,
     getAllNodes,
+    getHistoricalRegistrations,
+    getInactiveNodes,
   };
 }

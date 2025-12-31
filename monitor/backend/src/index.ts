@@ -24,6 +24,8 @@ import { createInvoicesRouter } from './routes/invoices.js';
 import { createLogsRouter } from './routes/logs.js';
 import { createFederationRouter } from './routes/federation.js';
 import { createTokenRouter } from './routes/token.js';
+import { createAnalyticsRouter } from './routes/analytics.js';
+import { analyticsService } from './services/analyticsService.js';
 import TokenService from './services/tokenService.js';
 import FederationClient from './federation/client.js';
 import FederationAnonymizer from './federation/anonymizer.js';
@@ -739,6 +741,9 @@ app.use('/api/logs', createLogsRouter(db, {
 const tokenService = new TokenService(db);
 app.use('/api/token', createTokenRouter({ tokenService }));
 
+// Analytics routes (cached on-chain data for staking, nodes)
+app.use('/api/analytics', createAnalyticsRouter());
+
 // Federation route is registered in start() after client is created
 
 // Challenge-response authentication endpoints
@@ -849,9 +854,21 @@ async function start(): Promise<void> {
     tokenService.initialize().then(() => {
       // Load from cache, then sync new burns
       return tokenService.syncBurns();
-    }).then(result => {
+    }).then(async result => {
       console.log(`   ✓ Loaded ${result.totalBurns} burn events`);
-      // Set up periodic sync (every 10 minutes)
+      // Pre-cache token metrics
+      try {
+        await tokenService.getMetrics(true);
+        console.log('   ✓ Token metrics pre-cached');
+      } catch (err) {
+        console.error('   ✗ Token metrics pre-cache failed:', err);
+      }
+      // Set up periodic sync (every 3 minutes for metrics, 10 minutes for burns)
+      setInterval(() => {
+        tokenService.getMetrics(true).catch(err => {
+          console.error('Token metrics refresh error:', err);
+        });
+      }, 3 * 60 * 1000);
       setInterval(() => {
         tokenService.syncBurns().catch(err => {
           console.error('Token sync error:', err);
@@ -1056,33 +1073,39 @@ async function start(): Promise<void> {
       }
     }
 
-    // Check Docker connection
-    const dockerOk = await dockerClient.ping();
-    if (!dockerOk) {
-      throw new Error('Docker daemon is not accessible');
+    // Check Docker connection (optional - continue without it for analytics-only mode)
+    let dockerAvailable = false;
+    try {
+      const dockerOk = await dockerClient.ping();
+      if (dockerOk) {
+        await dockerClient.initialize();
+        dockerAvailable = true;
+
+        // Initialize readers with container object
+        eventDBReader = new EventDBReader(dockerClient.container!);
+        logFileReader = new LogFileReader(dockerClient.container!);
+      }
+    } catch (dockerError) {
+      console.warn('⚠️  Docker/container not available:', (dockerError as Error).message);
+      console.log('   Running in analytics-only mode (Token, Staking, Node Registry)');
+      console.log('   Node monitoring features disabled.\n');
     }
 
-    // Initialize Docker client
-    await dockerClient.initialize();
+    // Get container info and update node status (only if Docker available)
+    if (dockerAvailable) {
+      const containerInfo = await dockerClient.getContainerInfo();
+      if (containerInfo.startedAt) {
+        db.updateNodeStartTime(containerInfo.startedAt);
+      }
 
-    // Initialize readers with container object
-    eventDBReader = new EventDBReader(dockerClient.container!);
-    logFileReader = new LogFileReader(dockerClient.container!);
+      // === STEP 1: Process EventDB (Structured JSON) ===
+      console.log('📊 Reading EventDB (structured data)...');
+      const eventDB = await eventDBReader.readEventDB();
+      const parsedEvents = eventDBReader.parseEventDB(eventDB);
 
-    // Get container info and update node status
-    const containerInfo = await dockerClient.getContainerInfo();
-    if (containerInfo.startedAt) {
-      db.updateNodeStartTime(containerInfo.startedAt);
-    }
-
-    // === STEP 1: Process EventDB (Structured JSON) ===
-    console.log('📊 Reading EventDB (structured data)...');
-    const eventDB = await eventDBReader.readEventDB();
-    const parsedEvents = eventDBReader.parseEventDB(eventDB);
-
-    console.log(`   Tasks: ${parsedEvents.tasks.length}`);
-    console.log(`   Outcomes: ${parsedEvents.outcomes.length}`);
-    console.log(`   Invoices: ${parsedEvents.invoices.length}`);
+      console.log(`   Tasks: ${parsedEvents.tasks.length}`);
+      console.log(`   Outcomes: ${parsedEvents.outcomes.length}`);
+      console.log(`   Invoices: ${parsedEvents.invoices.length}`);
 
     // Process EventDB tasks
     for (const task of parsedEvents.tasks) {
@@ -1274,6 +1297,7 @@ async function start(): Promise<void> {
       await startDockerLogStream();
     }
     console.log();
+    } // End of dockerAvailable block
 
     // Start server
     server.listen(PORT, () => {
@@ -1311,12 +1335,20 @@ async function start(): Promise<void> {
         }
       }
       console.log();
+
+      // Initialize analytics cache on startup
+      analyticsService.initialize().then(() => {
+        console.log('   📊 Analytics cache initialized');
+      }).catch(err => {
+        console.error('   ⚠️  Analytics cache initialization failed:', err);
+      });
     });
 
     // Graceful shutdown handler
     const gracefulShutdown = async (signal: string) => {
       console.log(`\n🛑 Shutting down (${signal})...`);
-      logFileReader.stopTailing();
+      if (logFileReader) logFileReader.stopTailing();
+      analyticsService.stopAutoRefresh();
       if (federation.heartbeatInterval) clearInterval(federation.heartbeatInterval);
 
       // Publish node_left event before disconnecting
