@@ -388,6 +388,10 @@ app.use('/api/', (req, res, next) => {
   if (req.path === '/federation/location-lookup' && req.method === 'GET') {
     return next();
   }
+  // Skip CSRF for analytics endpoints (read-only data fetching)
+  if (req.path.startsWith('/analytics/')) {
+    return next();
+  }
 
   const csrfToken = req.headers['x-csrf-token'] as string;
   const sessionId = req.ip || 'anonymous';
