@@ -298,7 +298,7 @@ async function fetchStakes() {
   // Try API first, fallback to direct blockchain
   const apiStakes = await analyticsApi.getStakesForAddresses(addresses);
   if (apiStakes.size > 0) {
-    stakes.value = apiStakes;
+    stakes.value = apiStakes as Map<string, StakeInfo>;
   } else {
     stakes.value = await staking.getMultipleStakes(addresses);
   }

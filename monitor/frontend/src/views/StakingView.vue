@@ -219,7 +219,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useStaking, type StakeInfo, type StakingStats } from '../composables/useStaking';
 import { useNodeRegistry } from '../composables/useNodeRegistry';
-import { useAnalyticsApi } from '../composables/useAnalyticsApi';
+import { useAnalyticsApi, type StakeInfo as ApiStakeInfo } from '../composables/useAnalyticsApi';
 
 const STAKING_ADDRESS = '0x94D2e9CC66Ac140bC5C2DE552DdFbd32f80eEe86';
 const TRU_TOKEN = '0xf65B5C5104c4faFD4b709d9D60a185eAE063276c';
@@ -249,7 +249,7 @@ async function refreshData(forceRefresh = false) {
 
     if (cachedStaking && cachedStakes) {
       stats.value = { totalStaked: cachedStaking.totalStaked, tokenAddress: TRU_TOKEN };
-      stakers.value = cachedStakes;
+      stakers.value = cachedStakes as StakeInfo[];
       lastUpdated.value = analyticsApi.getStakingCacheTimestamp() || Date.now();
       return; // Use cached data, no loading needed
     }
@@ -271,28 +271,29 @@ async function refreshData(forceRefresh = false) {
       if (nodeData) {
         const nodeAddresses = nodeData.nodes.map(n => n.address);
         const stakesMap = await analyticsApi.getStakesForAddresses(nodeAddresses);
-        const stakesArray = Array.from(stakesMap.values()).sort((a, b) => b.amount - a.amount);
+        const stakesArray = Array.from(stakesMap.values()).sort((a, b) => b.amount - a.amount) as StakeInfo[];
         stakers.value = stakesArray;
-        analyticsApi.cacheStakes(stakesArray);
+        analyticsApi.cacheStakes(stakesArray as ApiStakeInfo[]);
       }
     } else {
       // Fallback to direct blockchain calls
       const statsData = await getStats();
       stats.value = statsData;
       lastUpdated.value = Date.now();
-      analyticsApi.cacheStakingData({
-        totalStaked: statsData.totalStaked,
-        lastUpdated: Date.now(),
-        network: 'ethereum',
-        contract: STAKING_ADDRESS
-      });
+      if (statsData) {
+        analyticsApi.cacheStakingData({
+          totalStaked: statsData.totalStaked,
+          lastUpdated: Date.now(),
+          network: 'ethereum',
+          contract: STAKING_ADDRESS
+        });
+      }
 
       const nodes = await getAllNodes();
       const nodeAddresses = nodes.map(n => n.address);
       const stakesMap = await getMultipleStakes(nodeAddresses);
       const stakesArray = Array.from(stakesMap.values()).sort((a, b) => b.amount - a.amount);
       stakers.value = stakesArray;
-      analyticsApi.cacheStakes(stakesArray);
     }
   } catch (e) {
     // Fallback to direct blockchain calls on API error
@@ -300,19 +301,20 @@ async function refreshData(forceRefresh = false) {
       const statsData = await getStats();
       stats.value = statsData;
       lastUpdated.value = Date.now();
-      analyticsApi.cacheStakingData({
-        totalStaked: statsData.totalStaked,
-        lastUpdated: Date.now(),
-        network: 'ethereum',
-        contract: STAKING_ADDRESS
-      });
+      if (statsData) {
+        analyticsApi.cacheStakingData({
+          totalStaked: statsData.totalStaked,
+          lastUpdated: Date.now(),
+          network: 'ethereum',
+          contract: STAKING_ADDRESS
+        });
+      }
 
       const nodes = await getAllNodes();
       const nodeAddresses = nodes.map(n => n.address);
       const stakesMap = await getMultipleStakes(nodeAddresses);
       const stakesArray = Array.from(stakesMap.values()).sort((a, b) => b.amount - a.amount);
       stakers.value = stakesArray;
-      analyticsApi.cacheStakes(stakesArray);
     } catch (fallbackError) {
       error.value = fallbackError instanceof Error ? fallbackError.message : 'Failed to load data';
     }

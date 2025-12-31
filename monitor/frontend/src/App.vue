@@ -8,7 +8,7 @@
         <div class="flex justify-between h-16">
           <div class="flex">
             <div class="flex-shrink-0 flex items-center gap-3">
-              <img src="/logo.png" alt="TruBit Watch" class="h-10 w-auto" />
+              <img src="/logo.png" alt="TruBit Watch" class="h-12 w-auto" />
               <div class="flex flex-col">
                 <h1 class="text-xl font-bold text-gray-900 dark:text-slate-100">TrueBit Node Monitor</h1>
                 <span class="text-xs text-gray-400 dark:text-slate-400">Global Network Statistics</span>

@@ -76,7 +76,7 @@ export interface NodeRegistryData {
 export interface StakeInfo {
   address: string;
   amount: number;
-  unlockTime: number | null;
+  unlockTime: Date | null;
   isLocked: boolean;
 }
 
@@ -157,7 +157,11 @@ export function useAnalyticsApi() {
 
       if (result.success && result.data.stakes) {
         for (const stake of result.data.stakes) {
-          results.set(stake.address, stake);
+          // Convert unlockTime from timestamp to Date
+          results.set(stake.address, {
+            ...stake,
+            unlockTime: stake.unlockTime ? new Date(stake.unlockTime * 1000) : null
+          });
         }
       }
     } catch {
