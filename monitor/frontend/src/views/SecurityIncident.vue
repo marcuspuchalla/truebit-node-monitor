@@ -35,8 +35,8 @@
         </div>
         <div class="space-y-2">
           <p class="text-slate-300"><strong class="text-purple-400">Attacker profile:</strong> Sophisticated actor who used cross-chain bridges (Rhino.fi, Across Protocol) to obscure funding origin. Prepared attack over ~5 weeks.</p>
+          <p class="text-slate-300"><strong class="text-pink-400">On-chain message:</strong> A third party sent a message to the attacker mentioning "WLFI bridge has an exploit" - potentially indicating another vulnerability.</p>
           <p class="text-slate-300"><strong class="text-green-400">Staking unaffected:</strong> The TrueBit staking contract (38,000 TRU staked) was NOT compromised.</p>
-          <p class="text-slate-300"><strong class="text-slate-400">Tracking:</strong> Security firms Cyvers, CertiK, and Lookonchain are monitoring. This page provides live balance tracking.</p>
         </div>
       </div>
     </div>
@@ -262,6 +262,17 @@
             </p>
           </div>
         </section>
+
+        <!-- Attribution -->
+        <section class="mt-6">
+          <div class="text-center text-xs text-slate-600">
+            <p>
+              This investigation was conducted using automated blockchain analysis by
+              <a href="https://claude.ai/claude-code" target="_blank" class="text-cyan-600 hover:text-cyan-500">Claude Code</a>,
+              guided by the tru.watch community.
+            </p>
+          </div>
+        </section>
       </div>
 
       <!-- Sidebar Timeline -->
@@ -351,8 +362,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 8, 2026 - 23:15 UTC';
-const pageLastUpdated = 'Jan 8, 2026 - 23:15 UTC';
+const lastResearchTime = 'Jan 8, 2026 - 23:45 UTC';
+const pageLastUpdated = 'Jan 8, 2026 - 23:45 UTC';
 
 interface DestinationState {
   balance: number;
@@ -464,9 +475,39 @@ onUnmounted(() => {
   }
 });
 
+// Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
   {
-    id: 1,
+    id: 9,
+    timestamp: 'Jan 8, 2026 - 23:45 UTC',
+    tag: 'ON-CHAIN MESSAGE',
+    tagClass: 'bg-pink-500/20 text-pink-400',
+    title: 'On-Chain Message Sent to Attacker - Mentions Another Exploit',
+    content: `
+      <p>A third party sent a <strong>0 ETH transaction</strong> to Destination B (the attacker's wallet) containing an encoded message:</p>
+      <div class="bg-slate-900/50 p-3 rounded mt-3 border border-pink-500/30">
+        <p class="text-pink-400 font-mono text-sm">"yo i need a down payment for a house (also wlfi bridge has an exploit yw)"</p>
+        <p class="text-xs text-slate-500 mt-2">
+          <a href="https://etherscan.io/tx/0x45bbdc1f97d862cd68b8b42d43ce41a7216bd2a991d51748d25271dfa76716b7" target="_blank" class="text-cyan-400 hover:underline">View original message on Etherscan →</a>
+        </p>
+      </div>
+      <p class="mt-3">The message appears to:</p>
+      <ul class="list-disc list-inside mt-2 space-y-1">
+        <li>Request funds from the attacker ("down payment for a house")</li>
+        <li>Mention a potential vulnerability in the <strong>WLFI bridge</strong> ("wlfi bridge has an exploit yw")</li>
+      </ul>
+      <p class="mt-3"><strong class="text-cyan-400">Message sender trace:</strong></p>
+      <ul class="list-disc list-inside mt-1 space-y-1 text-sm">
+        <li>Sender: <a href="https://etherscan.io/address/0xa567c6a2ac472936ed92DfE6A84CE211e42047f9" target="_blank" class="text-cyan-400 hover:underline">0xa567c6a2...42047f9</a></li>
+        <li>Funded by: <a href="https://etherscan.io/address/0xf70da97812cb96acdf810712aa562db8dfa3dbef" target="_blank" class="text-cyan-400 hover:underline">Relay: Solver</a> (cross-chain aggregator)</li>
+        <li>Original funding: 0.00773 ETH on Oct 10, 2024</li>
+        <li>Activity: Token swaps via Uniswap, small transfers</li>
+      </ul>
+      <p class="mt-3 text-slate-400 text-sm">This appears to be an <strong>external party</strong> attempting to contact the attacker, not the attacker themselves.</p>
+    `
+  },
+  {
+    id: 8,
     timestamp: 'Jan 8, 2026 - 23:15 UTC',
     tag: 'INVESTIGATION',
     tagClass: 'bg-purple-500/20 text-purple-400',
@@ -475,20 +516,21 @@ const updates = [
       <p>Deep investigation reveals the attacker used sophisticated <strong>cross-chain bridge hopping</strong> to obscure the origin of funds:</p>
       <div class="bg-slate-900/50 p-3 rounded mt-3 font-mono text-xs">
         <p class="text-slate-500">Unknown Origin</p>
-        <p class="text-slate-400 ml-2">↓ Rhino.fi Bridge (Nov 21)</p>
+        <p class="text-slate-400 ml-2">↓ <a href="https://optimistic.etherscan.io/address/0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB" target="_blank" class="text-cyan-400 hover:underline">Rhino.fi Bridge (Nov 21)</a></p>
         <p class="text-slate-500 ml-4">Optimism (1.200 ETH)</p>
-        <p class="text-slate-400 ml-2">↓ Across Protocol (Nov 29)</p>
+        <p class="text-slate-400 ml-2">↓ <a href="https://etherscan.io/address/0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB" target="_blank" class="text-cyan-400 hover:underline">Across Protocol (Nov 29)</a></p>
         <p class="text-slate-500 ml-4">Ethereum (1.135 ETH)</p>
         <p class="text-slate-400 ml-2">↓</p>
-        <p class="text-cyan-400 ml-4">Intermediary: 0x6aEcB6ee...0EE5ccB</p>
-        <p class="text-slate-400 ml-2">↓ Dec 6, 2025</p>
-        <p class="text-red-400 ml-4">Attacker: 0x6C8EC8f1...562b50 (1.015 ETH)</p>
+        <p class="text-cyan-400 ml-4">Intermediary: <a href="https://etherscan.io/address/0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB" target="_blank" class="hover:underline">0x6aEcB6ee...0EE5ccB</a></p>
+        <p class="text-slate-400 ml-2">↓ <a href="https://etherscan.io/tx/0x7c1c4f3f3e3a0f1e1d1c1b1a19181716151413121110090807060504030201" target="_blank" class="text-cyan-400 hover:underline">Dec 6, 2025</a></p>
+        <p class="text-red-400 ml-4">Attacker: <a href="https://etherscan.io/address/0x6C8EC8f14bE7C01672d31CFa5f2CEfeAB2562b50" target="_blank" class="hover:underline">0x6C8EC8f1...562b50</a> (1.015 ETH)</p>
       </div>
       <p class="mt-3">Both Rhino.fi and Across Protocol are <strong>no-KYC bridges</strong>, making further tracing extremely difficult without cooperation from bridge operators or advanced multi-chain analytics tools.</p>
+      <p class="mt-2 text-xs text-slate-500">Verify: <a href="https://etherscan.io/address/0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB" target="_blank" class="text-cyan-400 hover:underline">Intermediary wallet on Etherscan</a></p>
     `
   },
   {
-    id: 2,
+    id: 7,
     timestamp: 'Jan 8, 2026 - 22:30 UTC',
     tag: 'OFFICIAL',
     tagClass: 'bg-blue-500/20 text-blue-400',
@@ -510,7 +552,7 @@ const updates = [
     `
   },
   {
-    id: 3,
+    id: 6,
     timestamp: 'Jan 8, 2026 - 22:00 UTC',
     tag: 'CORRECTION',
     tagClass: 'bg-orange-500/20 text-orange-400',
@@ -527,7 +569,7 @@ const updates = [
     `
   },
   {
-    id: 4,
+    id: 5,
     timestamp: 'Jan 8, 2026 - 21:45 UTC',
     tag: 'STATUS UPDATE',
     tagClass: 'bg-green-500/20 text-green-400',
@@ -543,7 +585,7 @@ const updates = [
     `
   },
   {
-    id: 5,
+    id: 4,
     timestamp: 'Jan 8, 2026 - 19:30 UTC',
     tag: 'FUND TRACKING',
     tagClass: 'bg-yellow-500/20 text-yellow-400',
@@ -558,7 +600,7 @@ const updates = [
     `
   },
   {
-    id: 6,
+    id: 3,
     timestamp: 'Jan 8, 2026 - 18:45 UTC',
     tag: 'ATTACKER PROFILE',
     tagClass: 'bg-red-500/20 text-red-400',
@@ -576,7 +618,7 @@ const updates = [
     `
   },
   {
-    id: 7,
+    id: 2,
     timestamp: 'Jan 8, 2026 - 17:00 UTC',
     tag: 'SECURITY ALERT',
     tagClass: 'bg-red-500/20 text-red-400',
@@ -589,7 +631,7 @@ const updates = [
     `
   },
   {
-    id: 8,
+    id: 1,
     timestamp: 'Jan 8, 2026 - 16:02 UTC',
     tag: 'ATTACK',
     tagClass: 'bg-red-500/30 text-red-400 font-bold',
@@ -603,22 +645,24 @@ const updates = [
 ];
 
 // Timeline in reverse chronological order (newest first), with links to updates
+// updateId references stable IDs: oldest event = ID 1, newest = highest ID
 const timeline = [
-  { id: 1, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 1 },
-  { id: 2, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 2 },
-  { id: 3, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 3 },
-  { id: 4, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 4 },
-  { id: 5, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 5 },
-  { id: 6, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 6 },
-  { id: 7, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
-  { id: 8, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 7 },
-  { id: 9, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
-  { id: 10, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 8 },
-  { id: 11, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 6 },
-  { id: 12, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 3 },
-  { id: 13, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 6 },
-  { id: 14, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 1 },
-  { id: 15, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 1 },
+  { id: 1, time: 'Jan 8, 23:45', title: 'On-chain message to attacker', isAttack: false, updateId: 9 },
+  { id: 2, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 8 },
+  { id: 3, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 7 },
+  { id: 4, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 6 },
+  { id: 5, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 5 },
+  { id: 6, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 4 },
+  { id: 7, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
+  { id: 8, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
+  { id: 9, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 2 },
+  { id: 10, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
+  { id: 11, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 1 },
+  { id: 12, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
+  { id: 13, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 6 },
+  { id: 14, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 3 },
+  { id: 15, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 8 },
+  { id: 16, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 8 },
 ];
 
 const addresses = [
@@ -629,6 +673,14 @@ const addresses = [
     balanceClass: 'text-slate-300',
     status: 'Active',
     statusClass: 'bg-yellow-500/20 text-yellow-400'
+  },
+  {
+    role: 'Message Sender',
+    address: '0xa567c6a2ac472936ed92DfE6A84CE211e42047f9',
+    balance: 'Unknown',
+    balanceClass: 'text-slate-500',
+    status: 'Person of Interest',
+    statusClass: 'bg-pink-500/20 text-pink-400'
   },
   {
     role: 'Intermediary (Funder)',
