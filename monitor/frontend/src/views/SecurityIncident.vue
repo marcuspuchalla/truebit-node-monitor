@@ -127,7 +127,12 @@
           </h2>
 
           <!-- Update Entry - Latest -->
-          <article v-for="update in updates" :key="update.id" class="bg-slate-800/30 border border-slate-700 rounded-lg overflow-hidden">
+          <article
+            v-for="update in updates"
+            :key="update.id"
+            :id="`update-${update.id}`"
+            class="bg-slate-800/30 border border-slate-700 rounded-lg overflow-hidden scroll-mt-8"
+          >
             <div class="bg-slate-700/50 px-4 py-2 flex items-center justify-between">
               <span class="text-cyan-400 font-mono text-sm">{{ update.timestamp }}</span>
               <span
@@ -237,23 +242,33 @@
       <!-- Sidebar Timeline -->
       <div class="lg:col-span-1">
         <div class="sticky top-4">
-          <h3 class="text-slate-100 font-bold mb-4">Timeline</h3>
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-slate-100 font-bold">Timeline</h3>
+            <span class="text-xs text-slate-500">newest first</span>
+          </div>
           <div class="space-y-1">
             <div
               v-for="event in timeline"
-              :key="event.time"
-              class="relative pl-6 pb-4 border-l-2"
+              :key="event.id"
+              class="relative pl-6 pb-4 border-l-2 cursor-pointer group"
               :class="event.isAttack ? 'border-red-500' : 'border-slate-600'"
+              @click="scrollToUpdate(event.updateId)"
             >
               <div
-                class="absolute left-0 top-0 w-3 h-3 rounded-full -translate-x-[7px]"
-                :class="event.isAttack ? 'bg-red-500' : 'bg-slate-600'"
+                class="absolute left-0 top-0 w-3 h-3 rounded-full -translate-x-[7px] transition-transform group-hover:scale-125"
+                :class="event.isAttack ? 'bg-red-500' : 'bg-slate-600 group-hover:bg-cyan-500'"
               ></div>
               <div class="text-xs text-slate-500 font-mono">{{ event.time }}</div>
-              <div class="text-sm" :class="event.isAttack ? 'text-red-400 font-bold' : 'text-slate-300'">
+              <div class="text-sm transition-colors" :class="event.isAttack ? 'text-red-400 font-bold' : 'text-slate-300 group-hover:text-cyan-400'">
                 {{ event.title }}
               </div>
             </div>
+          </div>
+
+          <!-- Last Research -->
+          <div class="mt-6 p-3 bg-slate-800/50 border border-slate-700 rounded-lg">
+            <div class="text-xs text-slate-500 mb-1">Last Research Update</div>
+            <div class="text-sm text-cyan-400 font-mono">{{ lastResearchTime }}</div>
           </div>
 
           <!-- Quick Links -->
@@ -309,6 +324,9 @@ const DEST_B_INITIAL = 4001;
 
 // Tolerance for "not moved" (small gas payments don't count as moving)
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
+
+// Last research timestamp
+const lastResearchTime = 'Jan 8, 2026 - 21:45 UTC';
 
 interface DestinationState {
   balance: number;
@@ -378,6 +396,19 @@ async function refreshBalances() {
   destB.lastUpdated = formatTime();
 }
 
+function scrollToUpdate(updateId: number | null) {
+  if (!updateId) return;
+  const element = document.getElementById(`update-${updateId}`);
+  if (element) {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Flash effect
+    element.classList.add('ring-2', 'ring-cyan-500');
+    setTimeout(() => {
+      element.classList.remove('ring-2', 'ring-cyan-500');
+    }, 2000);
+  }
+}
+
 onMounted(() => {
   refreshBalances();
   // Refresh every 30 seconds
@@ -393,6 +424,23 @@ onUnmounted(() => {
 const updates = [
   {
     id: 1,
+    timestamp: 'Jan 8, 2026 - 21:45 UTC',
+    tag: 'STATUS UPDATE',
+    tagClass: 'bg-green-500/20 text-green-400',
+    title: 'Funds Verified - No Movement Detected',
+    content: `
+      <p>Live balance verification confirms stolen funds remain stationary:</p>
+      <ul class="list-disc list-inside mt-2 space-y-1">
+        <li><strong>Destination A:</strong> 4,267.09 ETH - <span class="text-green-400">No change</span></li>
+        <li><strong>Destination B:</strong> 4,001.00 ETH - <span class="text-green-400">No change</span></li>
+      </ul>
+      <p class="mt-2">The attacker appears to be in a holding pattern. Only 5 ETH was sent to Tornado Cash as a test on Dec 27.
+      The vast majority of funds (~$25.8M) remain unmoved in the two destination addresses.</p>
+      <p class="mt-2 text-slate-400 text-xs">Monitoring continues with 30-second balance refresh.</p>
+    `
+  },
+  {
+    id: 2,
     timestamp: 'Jan 8, 2026 - 19:30 UTC',
     tag: 'FUND TRACKING',
     tagClass: 'bg-yellow-500/20 text-yellow-400',
@@ -407,7 +455,7 @@ const updates = [
     `
   },
   {
-    id: 2,
+    id: 3,
     timestamp: 'Jan 8, 2026 - 18:45 UTC',
     tag: 'ATTACKER PROFILE',
     tagClass: 'bg-red-500/20 text-red-400',
@@ -416,14 +464,14 @@ const updates = [
       <p>Investigation reveals the attack was planned weeks in advance:</p>
       <ul class="list-disc list-inside mt-2 space-y-1">
         <li>Dec 6: Attacker wallet funded with 1.015 ETH</li>
-        <li>Dec 27: 6 ETH deposited to Tornado Cash (privacy mixer)</li>
+        <li>Dec 27: 5 ETH deposited to Tornado Cash (privacy mixer test)</li>
         <li>Dec 27: Test contract deployed</li>
         <li>Jan 8: Final attack contract deployed and executed</li>
       </ul>
     `
   },
   {
-    id: 3,
+    id: 4,
     timestamp: 'Jan 8, 2026 - 17:00 UTC',
     tag: 'SECURITY ALERT',
     tagClass: 'bg-red-500/20 text-red-400',
@@ -436,7 +484,7 @@ const updates = [
     `
   },
   {
-    id: 4,
+    id: 5,
     timestamp: 'Jan 8, 2026 - 16:02 UTC',
     tag: 'ATTACK',
     tagClass: 'bg-red-500/30 text-red-400 font-bold',
@@ -449,14 +497,18 @@ const updates = [
   }
 ];
 
+// Timeline in reverse chronological order (newest first), with links to updates
 const timeline = [
-  { time: 'Dec 6, 2025', title: 'Attacker funded', isAttack: false },
-  { time: 'Dec 27, 2025', title: 'Tornado Cash deposits', isAttack: false },
-  { time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false },
-  { time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true },
-  { time: 'Jan 8, 16:11', title: '4,267 ETH moved', isAttack: false },
-  { time: 'Jan 8, 18:29', title: '4,001 ETH moved', isAttack: false },
-  { time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false },
+  { id: 1, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 1 },
+  { id: 2, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 2 },
+  { id: 3, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
+  { id: 4, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
+  { id: 5, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 4 },
+  { id: 6, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
+  { id: 7, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 5 },
+  { id: 8, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
+  { id: 9, time: 'Dec 27, 2025', title: 'Tornado Cash test (5 ETH)', isAttack: false, updateId: 3 },
+  { id: 10, time: 'Dec 6, 2025', title: 'Attacker funded', isAttack: false, updateId: 3 },
 ];
 
 const addresses = [
