@@ -5,7 +5,7 @@
 # Two-stage process: analyze first, update only if significant
 #
 
-PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 STATE_DIR="$PROJECT_DIR/.incident-monitor"
 ETH_RPC="https://eth.llamarpc.com"
 CHECK_INTERVAL=300  # 5 minutes

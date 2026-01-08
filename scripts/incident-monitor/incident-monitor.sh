@@ -14,7 +14,7 @@ set -e
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$(dirname "$(dirname "$SCRIPT_DIR")")"
 STATE_DIR="$PROJECT_DIR/.incident-monitor"
 LOG_FILE="$STATE_DIR/monitor.log"
 LAST_TWEET_FILE="$STATE_DIR/last_tweet.txt"
@@ -203,7 +203,7 @@ check_x_for_news() {
 
   cd "$PROJECT_DIR"
 
-  claude --print "You are an X/Twitter monitoring agent for the TrueBit hack investigation.
+  claude --dangerously-skip-permissions --continue --chrome --print "You are an X/Twitter monitoring agent for the TrueBit hack investigation.
 
 YOUR TASK:
 1. Use the Chrome browser MCP tools to check xcancel.com for new TrueBit posts
@@ -267,16 +267,18 @@ update_page() {
   cd "$PROJECT_DIR"
 
   local research_instructions=""
+  local claude_cmd="claude --dangerously-skip-permissions"
   if [[ "$source" == "x" ]]; then
     research_instructions="1. Use Chrome browser MCP tools to revisit xcancel.com and get full details of the new posts
 2. Extract: usernames, timestamps, key information, any linked transactions
 3. Verify any mentioned transactions on Etherscan via WebFetch"
+    claude_cmd="claude --dangerously-skip-permissions --continue --chrome"
   else
     research_instructions="1. Research the change in detail using Etherscan (WebFetch)
 2. Find transaction hashes, amounts, destinations, any messages"
   fi
 
-  claude "You are an autonomous research agent for the TrueBit hack investigation.
+  $claude_cmd "You are an autonomous research agent for the TrueBit hack investigation.
 
 A significant change was detected: $finding_description
 Source: $source
