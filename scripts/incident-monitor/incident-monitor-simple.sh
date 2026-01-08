@@ -115,7 +115,11 @@ A significant change was detected: $description
 
 6. Update timestamps: lastResearchTime, pageLastUpdated
 
-7. Only bump monitor/frontend/package.json version (patch increment)
+7. Version bump (SUB-PATCH versioning):
+   - Only bump monitor/frontend/package.json version
+   - If version is 'X.Y.Z', change to 'X.Y.Z.1'
+   - If version is 'X.Y.Z.N', increment to 'X.Y.Z.(N+1)'
+   - Example: 0.1.17 -> 0.1.17.1 -> 0.1.17.2
 
 8. Commit format:
    feat(auto): <brief description>

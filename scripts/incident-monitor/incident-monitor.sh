@@ -318,10 +318,14 @@ $research_instructions
    - lastResearchTime = '$utc_timestamp'
    - pageLastUpdated = '$utc_timestamp'
 
-7. Version bump:
+7. Version bump (SUB-PATCH versioning for automated updates):
    - Only bump monitor/frontend/package.json version
-   - Increment patch version (e.g., 0.1.14 -> 0.1.15)
+   - Use SUB-PATCH version format: add .N suffix to current version
+   - If version is 'X.Y.Z' (3 parts), change to 'X.Y.Z.1'
+   - If version is 'X.Y.Z.N' (4 parts), increment N: 'X.Y.Z.(N+1)'
+   - Examples: 0.1.17 -> 0.1.17.1, then 0.1.17.1 -> 0.1.17.2
    - Do NOT bump backend or aggregator versions
+   - IMPORTANT: This sub-patch scheme is for automated updates only
 
 8. Commit message format (use HEREDOC):
    feat(auto): <brief description of finding>
