@@ -1,8 +1,14 @@
 #!/bin/bash
 #
 # TrueBit Incident Monitor
-# Continuously monitors attack-related addresses and X for new information
+# Continuously monitors attack-related addresses for new transactions
 # Spawns Claude Code instances to analyze and update the site when changes detected
+#
+# Runs every 5 minutes to check for:
+# - Balance changes on monitored addresses
+# - New outgoing transactions
+#
+# Note: X/Twitter monitoring requires manual browser check (xcancel blocks automated requests)
 #
 
 set -e
@@ -12,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 STATE_DIR="$PROJECT_DIR/.incident-monitor"
 LOG_FILE="$STATE_DIR/monitor.log"
-CHECK_INTERVAL=60  # seconds
+CHECK_INTERVAL=300  # 5 minutes in seconds
 
 # Ethereum RPC endpoint
 ETH_RPC="https://eth.llamarpc.com"
@@ -38,9 +44,6 @@ ADDRESS_VALUES=(
   "0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2"
 )
 
-# X/Twitter search terms
-SEARCH_TERMS=("truebit%20hack" "truebit%20exploit" "truebit%20security")
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -53,22 +56,11 @@ init_state() {
   mkdir -p "$STATE_DIR"
   touch "$LOG_FILE"
 
-  # Initialize transaction counts if not exists
   for name in "${ADDRESS_NAMES[@]}"; do
     if [[ ! -f "$STATE_DIR/${name}_txcount" ]]; then
       echo "0" > "$STATE_DIR/${name}_txcount"
     fi
   done
-
-  # Initialize X check timestamp
-  if [[ ! -f "$STATE_DIR/x_last_check" ]]; then
-    echo "0" > "$STATE_DIR/x_last_check"
-  fi
-
-  # Initialize seen tweets file
-  if [[ ! -f "$STATE_DIR/seen_tweets" ]]; then
-    touch "$STATE_DIR/seen_tweets"
-  fi
 }
 
 log() {
@@ -98,14 +90,13 @@ get_tx_count() {
 
   local hex_count=$(echo "$response" | grep -o '"result":"[^"]*"' | cut -d'"' -f4)
   if [[ -n "$hex_count" ]]; then
-    # Convert hex to decimal
     printf "%d" "$hex_count" 2>/dev/null || echo "0"
   else
     echo "0"
   fi
 }
 
-# Get balance for an address (to detect incoming txs)
+# Get balance for an address
 get_balance() {
   local address=$1
   local response=$(curl -s -X POST "$ETH_RPC" \
@@ -135,16 +126,16 @@ check_addresses() {
       log_alert "TX count changed: $stored_tx_count -> $current_tx_count"
       echo "$current_tx_count" > "$STATE_DIR/${name}_txcount"
       changes_detected=true
-      changed_addresses="$changed_addresses $name(outgoing)"
+      changed_addresses="$changed_addresses $name:$address(outgoing)"
     fi
 
-    # Check if balance changed (incoming tx)
+    # Check if balance changed (incoming tx or outgoing)
     if [[ "$current_balance" != "$stored_balance" ]]; then
       log_alert "Balance change detected on $name ($address)"
       log_alert "Balance changed: $stored_balance -> $current_balance"
       echo "$current_balance" > "$STATE_DIR/${name}_balance"
       changes_detected=true
-      changed_addresses="$changed_addresses $name(balance)"
+      changed_addresses="$changed_addresses $name:$address(balance)"
     fi
 
     i=$((i + 1))
@@ -157,122 +148,64 @@ check_addresses() {
   fi
 }
 
-# Check X (via xcancel) for new TrueBit-related posts
-check_x_for_news() {
-  local new_info=""
-
-  for term in "${SEARCH_TERMS[@]}"; do
-    local url="https://xcancel.com/search?q=${term}&f=live"
-
-    # Fetch and extract tweet snippets (simplified - just check for new content)
-    local content=$(curl -s "$url" 2>/dev/null | grep -oE 'tweet-content[^<]*<[^>]*>[^<]*' | head -5)
-    local content_hash=$(echo "$content" | md5 2>/dev/null || echo "$content" | md5sum 2>/dev/null | cut -d' ' -f1)
-
-    local stored_hash=$(cat "$STATE_DIR/x_hash_${term}" 2>/dev/null || echo "")
-
-    if [[ -n "$content" && "$content_hash" != "$stored_hash" ]]; then
-      log_alert "New X content detected for search: '$term'"
-      echo "$content_hash" > "$STATE_DIR/x_hash_${term}"
-      new_info="$new_info|$term"
-    fi
-  done
-
-  echo "$new_info"
-}
-
-# Spawn Claude Code to analyze new transaction
-analyze_transaction() {
+# STAGE 1: Spawn Claude Code to analyze if changes are significant
+analyze_changes() {
   local changed_addresses=$1
   local timestamp=$(date '+%Y%m%d_%H%M%S')
-  local report_file="$STATE_DIR/report_${timestamp}.md"
+  local analysis_file="$STATE_DIR/analysis_${timestamp}.txt"
 
-  log "Spawning Claude Code to analyze transaction changes..."
+  log "STAGE 1: Spawning Claude Code to analyze changes..."
 
-  local prompt="A change was detected in the TrueBit hack monitoring. Addresses with changes: $changed_addresses
-
-Please:
-1. Fetch the latest transactions from Etherscan for these addresses
-2. Analyze what happened (fund movement, new messages, etc.)
-3. Create a brief report of findings
-
-Save your findings as a markdown report. Focus on:
-- What changed (transaction details, amounts, destinations)
-- Any on-chain messages
-- Implications for the investigation
-
-Be concise but thorough. Output the report content.
-
-IMPORTANT: This report will be used by an autonomous monitoring system."
-
-  # Run Claude Code headlessly
   cd "$PROJECT_DIR"
-  claude --print "$prompt" > "$report_file" 2>&1
 
-  if [[ -s "$report_file" ]]; then
-    log_success "Analysis report saved to $report_file"
-    echo "$report_file"
-  else
-    log "No report generated"
-    echo ""
+  claude --print "You are an analysis agent for the TrueBit hack monitoring system.
+
+Changes detected on these addresses: $changed_addresses
+
+YOUR TASK:
+1. Use WebFetch to check Etherscan for the latest transactions on these addresses
+2. Determine if there are SIGNIFICANT changes worth documenting:
+   - Fund movements > 0.1 ETH
+   - New on-chain messages
+   - Transfers to new addresses
+   - Any laundering activity (Tornado Cash, bridges, etc.)
+
+RESPOND WITH EXACTLY ONE OF:
+- 'SIGNIFICANT: <brief description of what changed>' if changes warrant a page update
+- 'NOT_SIGNIFICANT: <brief reason>' if changes are minor (dust, gas, already known)
+
+Be concise. Only respond with one line starting with SIGNIFICANT or NOT_SIGNIFICANT." > "$analysis_file" 2>&1
+
+  local result=$(cat "$analysis_file" | grep -E "^(SIGNIFICANT|NOT_SIGNIFICANT):" | head -1)
+
+  if [[ -z "$result" ]]; then
+    log "Analysis did not return expected format, checking full output..."
+    result=$(cat "$analysis_file" | grep -E "(SIGNIFICANT|NOT_SIGNIFICANT)" | head -1)
   fi
+
+  echo "$result"
+
+  # Keep the analysis file for debugging
+  log "Analysis saved to: $analysis_file"
 }
 
-# Spawn Claude Code to analyze X news
-analyze_x_news() {
-  local search_terms=$1
+# STAGE 2: Spawn Claude Code to research and update the page
+update_page() {
+  local finding_description=$1
   local timestamp=$(date '+%Y%m%d_%H%M%S')
-  local report_file="$STATE_DIR/x_report_${timestamp}.md"
 
-  log "Spawning Claude Code to analyze X news..."
+  log "STAGE 2: Spawning Claude Code to research and update page..."
 
-  local prompt="New information about the TrueBit hack was detected on X/Twitter for these search terms: $search_terms
-
-Please:
-1. Search xcancel.com for the latest posts about the TrueBit hack/exploit
-2. Extract any new significant information (official statements, security firm updates, fund movements, etc.)
-3. Create a brief report of newsworthy findings
-
-Focus on:
-- Official TrueBit communications
-- Security firm analyses (Cyvers, CertiK, SlowMist, etc.)
-- Community discoveries
-- Any new addresses or transactions mentioned
-
-Be concise but thorough. Only report SIGNIFICANT new findings worth documenting.
-
-IMPORTANT: This report will be used by an autonomous monitoring system to update the SecurityIncident page."
-
-  # Run Claude Code headlessly
   cd "$PROJECT_DIR"
-  claude --print "$prompt" > "$report_file" 2>&1
 
-  if [[ -s "$report_file" ]]; then
-    log_success "X analysis report saved to $report_file"
-    echo "$report_file"
-  else
-    log "No X report generated"
-    echo ""
-  fi
-}
+  claude "You are an autonomous research agent for the TrueBit hack investigation.
 
-# Update the SecurityIncident.vue page with new findings
-update_site() {
-  local report_file=$1
+A significant change was detected: $finding_description
 
-  if [[ ! -f "$report_file" ]]; then
-    log "No report file to process"
-    return
-  fi
-
-  log "Spawning Claude Code to update SecurityIncident page..."
-
-  local report_content=$(cat "$report_file")
-
-  local prompt="You are an autonomous monitoring agent. Based on this new investigation report, update the SecurityIncident.vue page.
-
---- REPORT ---
-$report_content
---- END REPORT ---
+=== YOUR TASKS ===
+1. Research the change in detail using Etherscan (WebFetch)
+2. Find transaction hashes, amounts, destinations, any messages
+3. Update the SecurityIncident.vue page with a new entry
 
 === STRICT RULES - YOU MUST FOLLOW THESE ===
 
@@ -282,20 +215,22 @@ $report_content
 
 2. DO NOT modify any other files in the project.
 
-3. NEVER remove or modify existing content in SecurityIncident.vue. Only ADD new entries.
+3. NEVER remove or modify existing content. Only ADD new entries.
 
 4. When adding a new update entry:
-   - Find the highest existing ID in the updates array
+   - Read the file first to find the highest existing ID in the updates array
    - Use the next sequential ID (e.g., if highest is 9, use 10)
    - Add to the BEGINNING of the updates array (newest first display)
-   - Include this note in the update content: '<p class=\"text-xs text-slate-500 mt-2 italic\">This update was generated automatically by the tru.watch monitoring system.</p>'
+   - Include Etherscan links for any transactions mentioned
+   - Include this note at the end of the content:
+     '<p class=\"text-xs text-slate-500 mt-2 italic\">This update was generated automatically by the tru.watch monitoring system running every 5 minutes.</p>'
 
 5. Update the timeline array if adding significant events:
    - Add new entries at the BEGINNING (newest first)
    - Renumber the timeline IDs sequentially from 1
    - Link to the correct updateId
 
-6. Update these timestamps:
+6. Update these timestamps to current UTC time:
    - lastResearchTime
    - pageLastUpdated
 
@@ -304,46 +239,40 @@ $report_content
    - Increment patch version (e.g., 0.1.14 -> 0.1.15)
    - Do NOT bump backend or aggregator versions
 
-8. Commit message format:
-   - Use: feat(auto): <brief description of finding>
-   - Include: Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
-   - Include: Generated by tru.watch autonomous monitoring
+8. Commit message format (use HEREDOC):
+   feat(auto): <brief description of finding>
 
-9. Only make changes if the report contains SIGNIFICANT new information:
-   - Fund movements
-   - New transactions
-   - On-chain messages
-   - Official statements
-   - Security firm updates
+   Generated by tru.watch autonomous monitoring
 
-10. If the report has no significant findings, do NOT make any changes.
+   Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+9. After committing, push to origin main.
 
 === END RULES ===
 
-Proceed with the update if warranted."
+Proceed with the research and update." 2>&1 | tee -a "$LOG_FILE"
 
-  # Run Claude Code headlessly (this will modify files)
-  cd "$PROJECT_DIR"
-  claude "$prompt" 2>&1 | tee -a "$LOG_FILE"
-
-  log_success "Site update complete"
+  log_success "Page update complete"
 }
 
 # Main monitoring loop
 main() {
   echo -e "${CYAN}"
   echo "╔═══════════════════════════════════════════════════════════════╗"
-  echo "║          TrueBit Incident Monitor - Starting...               ║"
-  echo "║  Monitoring addresses and X for new information               ║"
+  echo "║          TrueBit Incident Monitor v2.0                        ║"
+  echo "║  Monitoring ${#ADDRESS_NAMES[@]} addresses every 5 minutes                     ║"
+  echo "║                                                               ║"
+  echo "║  Two-stage process:                                           ║"
+  echo "║    1. Analyze if changes are significant                      ║"
+  echo "║    2. Research and update page only if warranted              ║"
   echo "╚═══════════════════════════════════════════════════════════════╝"
   echo -e "${NC}"
 
   init_state
 
-  log "Monitoring ${#ADDRESS_NAMES[@]} addresses"
-  log "Check interval: ${CHECK_INTERVAL} seconds"
   log "State directory: $STATE_DIR"
   log "Log file: $LOG_FILE"
+  log "Check interval: ${CHECK_INTERVAL} seconds (5 minutes)"
   echo ""
 
   # Initial state capture (don't trigger on first run)
@@ -355,53 +284,51 @@ main() {
     local balance=$(get_balance "$address")
     echo "$tx_count" > "$STATE_DIR/${name}_txcount"
     echo "$balance" > "$STATE_DIR/${name}_balance"
-    log "  $name: txcount=$tx_count, balance=$balance"
+    log "  $name: txcount=$tx_count"
     i=$((i + 1))
   done
+  echo ""
+  log_success "Initial state captured. Starting monitoring loop..."
   echo ""
 
   local check_count=0
 
   while true; do
     check_count=$((check_count + 1))
-    log "Check #$check_count - Scanning for changes..."
+    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    log "Check #$check_count - Scanning addresses for changes..."
 
     # Check addresses for new transactions
     local address_changes=$(check_addresses)
 
-    # Check X for news (less frequently - every 5 minutes)
-    local x_news=""
-    if [[ $((check_count % 5)) -eq 0 ]]; then
-      log "Checking X for news..."
-      x_news=$(check_x_for_news)
-    fi
-
-    # If changes detected, spawn analysis
     if [[ -n "$address_changes" ]]; then
-      log_alert "ADDRESS CHANGES DETECTED!"
-      local report=$(analyze_transaction "$address_changes")
+      log_alert "CHANGES DETECTED!"
+      log "Changed addresses: $address_changes"
+      echo ""
 
-      if [[ -n "$report" ]]; then
-        update_site "$report"
+      # STAGE 1: Analyze if significant
+      local analysis=$(analyze_changes "$address_changes")
+      log "Analysis result: $analysis"
+
+      if [[ "$analysis" == SIGNIFICANT:* ]]; then
+        local description="${analysis#SIGNIFICANT: }"
+        log_alert "Change is SIGNIFICANT: $description"
+        echo ""
+
+        # STAGE 2: Research and update
+        update_page "$description"
+      else
+        log_success "Change is NOT significant, skipping page update"
+        log "Reason: ${analysis#NOT_SIGNIFICANT: }"
       fi
-    fi
-
-    # If X news detected, spawn analysis
-    if [[ -n "$x_news" ]]; then
-      log_alert "NEW X CONTENT DETECTED!"
-      local x_report=$(analyze_x_news "$x_news")
-
-      if [[ -n "$x_report" ]]; then
-        update_site "$x_report"
-      fi
-    fi
-
-    if [[ -z "$address_changes" && -z "$x_news" ]]; then
+    else
       log_success "No changes detected"
     fi
 
     echo ""
-    log "Sleeping for $CHECK_INTERVAL seconds... (Ctrl+C to stop)"
+    log "Next check in $CHECK_INTERVAL seconds (5 minutes)... (Ctrl+C to stop)"
+    log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
     sleep "$CHECK_INTERVAL"
   done
 }

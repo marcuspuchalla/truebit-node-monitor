@@ -4,31 +4,48 @@ Automated monitoring scripts for the TrueBit security incident investigation.
 
 ## Scripts
 
-### `incident-monitor-simple.sh` (Recommended)
+### `incident-monitor.sh` (Recommended)
 
-Lightweight monitor that checks addresses every 60 seconds.
-
-```bash
-./scripts/incident-monitor-simple.sh
-```
-
-**What it does:**
-- Monitors 5 key addresses (attacker, destinations, intermediary, message sender)
-- Checks transaction count and balance changes
-- Spawns Claude Code when changes detected to analyze and update the site
-
-### `incident-monitor.sh` (Full Version)
-
-More comprehensive monitor with X/Twitter checking.
+Full-featured monitor with two-stage analysis process.
 
 ```bash
 ./scripts/incident-monitor.sh
 ```
 
-**Additional features:**
-- Also monitors X (via xcancel.com) for new TrueBit-related posts
+**What it does:**
+- Monitors 7 key addresses every **5 minutes**
+- Two-stage process:
+  1. **Stage 1**: Spawns Claude to analyze if changes are significant
+  2. **Stage 2**: Only if significant, spawns another Claude to research and update the page
 - Detailed logging to `.incident-monitor/monitor.log`
-- Configurable check intervals
+- Only updates page if changes are meaningful (>0.1 ETH movement, messages, laundering activity)
+
+### `incident-monitor-simple.sh` (Lightweight)
+
+Simpler version with same two-stage process.
+
+```bash
+./scripts/incident-monitor-simple.sh
+```
+
+## Two-Stage Process
+
+The scripts use a two-stage approach to avoid unnecessary updates:
+
+1. **Analysis Stage**: Quick check if changes are significant
+   - Returns `SIGNIFICANT: <description>` or `NOT_SIGNIFICANT: <reason>`
+
+2. **Update Stage**: Only runs if Stage 1 returns SIGNIFICANT
+   - Researches the change in detail via Etherscan
+   - Updates SecurityIncident.vue with new entry
+   - Bumps version, commits, and pushes
+
+## X/Twitter Monitoring
+
+**Note:** xcancel.com blocks automated requests (403). For X monitoring:
+- Open https://xcancel.com/search?q=truebit&f=live in your browser
+- Manually check for significant new posts
+- The monitoring scripts focus on on-chain activity only
 
 ## Monitored Addresses
 
