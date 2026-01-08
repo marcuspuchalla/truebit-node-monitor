@@ -46,6 +46,79 @@
           </div>
         </div>
 
+        <!-- Live Fund Tracking -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          <!-- Destination A -->
+          <div class="bg-slate-800/50 border-2 rounded-lg p-4" :class="destA.moved ? 'border-red-500' : 'border-green-500/50'">
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-slate-400 text-sm font-medium">Destination A - Live Balance</div>
+              <span v-if="destA.loading" class="text-slate-500 text-xs">Loading...</span>
+              <span v-else class="text-slate-500 text-xs">Updated {{ destA.lastUpdated }}</span>
+            </div>
+            <div class="text-2xl font-bold font-mono" :class="destA.moved ? 'text-red-400' : 'text-green-400'">
+              {{ destA.loading ? '...' : destA.balance.toLocaleString(undefined, { maximumFractionDigits: 2 }) }} ETH
+            </div>
+            <a
+              href="https://etherscan.io/address/0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862"
+              target="_blank"
+              class="text-cyan-400 hover:text-cyan-300 text-xs font-mono mt-1 block"
+            >
+              0x62AfDD1B...Eb4862
+            </a>
+            <div class="mt-3 flex items-center gap-2">
+              <div
+                class="w-4 h-4 rounded border-2 flex items-center justify-center"
+                :class="destA.moved ? 'border-red-500 bg-red-500/20' : 'border-green-500 bg-green-500/20'"
+              >
+                <svg v-if="!destA.moved" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-green-400">
+                  <path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.739a.75.75 0 0 1 1.04-.208Z" clip-rule="evenodd" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-red-400">
+                  <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                </svg>
+              </div>
+              <span class="text-sm" :class="destA.moved ? 'text-red-400' : 'text-green-400'">
+                {{ destA.moved ? 'Funds have started moving!' : 'Funds have not moved' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Destination B -->
+          <div class="bg-slate-800/50 border-2 rounded-lg p-4" :class="destB.moved ? 'border-red-500' : 'border-green-500/50'">
+            <div class="flex items-center justify-between mb-2">
+              <div class="text-slate-400 text-sm font-medium">Destination B - Live Balance</div>
+              <span v-if="destB.loading" class="text-slate-500 text-xs">Loading...</span>
+              <span v-else class="text-slate-500 text-xs">Updated {{ destB.lastUpdated }}</span>
+            </div>
+            <div class="text-2xl font-bold font-mono" :class="destB.moved ? 'text-red-400' : 'text-green-400'">
+              {{ destB.loading ? '...' : destB.balance.toLocaleString(undefined, { maximumFractionDigits: 2 }) }} ETH
+            </div>
+            <a
+              href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a"
+              target="_blank"
+              class="text-cyan-400 hover:text-cyan-300 text-xs font-mono mt-1 block"
+            >
+              0x273589ca...cE850a
+            </a>
+            <div class="mt-3 flex items-center gap-2">
+              <div
+                class="w-4 h-4 rounded border-2 flex items-center justify-center"
+                :class="destB.moved ? 'border-red-500 bg-red-500/20' : 'border-green-500 bg-green-500/20'"
+              >
+                <svg v-if="!destB.moved" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-green-400">
+                  <path fill-rule="evenodd" d="M12.416 3.376a.75.75 0 0 1 .208 1.04l-5 7.5a.75.75 0 0 1-1.154.114l-3-3a.75.75 0 0 1 1.06-1.06l2.353 2.353 4.493-6.739a.75.75 0 0 1 1.04-.208Z" clip-rule="evenodd" />
+                </svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-3 h-3 text-red-400">
+                  <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
+                </svg>
+              </div>
+              <span class="text-sm" :class="destB.moved ? 'text-red-400' : 'text-green-400'">
+                {{ destB.moved ? 'Funds have started moving!' : 'Funds have not moved' }}
+              </span>
+            </div>
+          </div>
+        </div>
+
         <!-- Updates Section -->
         <div class="space-y-6">
           <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -224,6 +297,99 @@
 </template>
 
 <script setup lang="ts">
+import { reactive, onMounted, onUnmounted } from 'vue';
+
+const ETHEREUM_RPC = 'https://eth.llamarpc.com';
+const DEST_A_ADDRESS = '0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862';
+const DEST_B_ADDRESS = '0x273589ca3713e7becf42069f9fb3f0c164ce850a';
+
+// Known balances at time of hack (for comparison)
+const DEST_A_INITIAL = 4267.09;
+const DEST_B_INITIAL = 4001;
+
+// Tolerance for "not moved" (small gas payments don't count as moving)
+const MOVE_TOLERANCE = 1; // 1 ETH tolerance
+
+interface DestinationState {
+  balance: number;
+  loading: boolean;
+  moved: boolean;
+  lastUpdated: string;
+}
+
+const destA = reactive<DestinationState>({
+  balance: 0,
+  loading: true,
+  moved: false,
+  lastUpdated: ''
+});
+
+const destB = reactive<DestinationState>({
+  balance: 0,
+  loading: true,
+  moved: false,
+  lastUpdated: ''
+});
+
+let refreshInterval: ReturnType<typeof setInterval> | null = null;
+
+async function getBalance(address: string): Promise<number> {
+  try {
+    const response = await fetch(ETHEREUM_RPC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'eth_getBalance',
+        params: [address, 'latest']
+      })
+    });
+    const result = await response.json();
+    if (result.result) {
+      const wei = BigInt(result.result);
+      return Number(wei) / 1e18;
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+}
+
+function formatTime(): string {
+  const now = new Date();
+  return now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+async function refreshBalances() {
+  const [balA, balB] = await Promise.all([
+    getBalance(DEST_A_ADDRESS),
+    getBalance(DEST_B_ADDRESS)
+  ]);
+
+  destA.balance = balA;
+  destA.moved = balA < (DEST_A_INITIAL - MOVE_TOLERANCE);
+  destA.loading = false;
+  destA.lastUpdated = formatTime();
+
+  destB.balance = balB;
+  destB.moved = balB < (DEST_B_INITIAL - MOVE_TOLERANCE);
+  destB.loading = false;
+  destB.lastUpdated = formatTime();
+}
+
+onMounted(() => {
+  refreshBalances();
+  // Refresh every 30 seconds
+  refreshInterval = setInterval(refreshBalances, 30000);
+});
+
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
+});
+
 const updates = [
   {
     id: 1,
