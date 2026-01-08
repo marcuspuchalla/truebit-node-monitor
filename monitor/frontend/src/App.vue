@@ -55,6 +55,18 @@
                 About
               </router-link>
 
+              <!-- Security Incident (urgent) -->
+              <router-link
+                to="/security-incident"
+                class="inline-flex items-center gap-1 px-1 pt-1 border-b-2 text-sm font-medium"
+                :class="$route.name === 'security-incident' ? 'border-red-500 text-red-600 dark:text-red-400' : 'border-transparent text-red-500 hover:border-red-300 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300 dark:hover:border-red-600'"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" class="w-4 h-4">
+                  <path fill-rule="evenodd" d="M6.701 2.25c.577-1 2.02-1 2.598 0l5.196 9a1.5 1.5 0 0 1-1.299 2.25H2.804a1.5 1.5 0 0 1-1.3-2.25l5.197-9ZM8 5a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 8 5Zm0 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" clip-rule="evenodd" />
+                </svg>
+                Incident
+              </router-link>
+
               <!-- Operator Dropdown (secured) -->
               <div class="relative h-full flex items-center" @mouseenter="openDropdown = 'operator'" @mouseleave="openDropdown = null">
                 <button

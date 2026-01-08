@@ -11,6 +11,7 @@ import OnChainView from '../views/OnChainView.vue';
 import TokenView from '../views/TokenView.vue';
 import NodeRegistryView from '../views/NodeRegistryView.vue';
 import StakingView from '../views/StakingView.vue';
+import SecurityIncident from '../views/SecurityIncident.vue';
 import ProtectedRoute from '../views/ProtectedRoute.vue';
 
 // Extend route meta type
@@ -62,6 +63,12 @@ const routes: RouteRecordRaw[] = [
     name: 'staking',
     component: StakingView,
     meta: { requiresAuth: false, title: 'Staking' }
+  },
+  {
+    path: '/security-incident',
+    name: 'security-incident',
+    component: SecurityIncident,
+    meta: { requiresAuth: false, title: 'Security Incident' }
   },
 
   // Protected routes - auth required
