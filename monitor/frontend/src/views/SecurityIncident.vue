@@ -422,10 +422,14 @@ async function refreshBalances() {
   destB.lastUpdated = formatTime();
 }
 
-function scrollToUpdate(updateId: number | null) {
+function scrollToUpdate(updateId: number | null, updateHash = true) {
   if (!updateId) return;
   const element = document.getElementById(`update-${updateId}`);
   if (element) {
+    // Update URL hash for sharing
+    if (updateHash) {
+      history.pushState(null, '', `#update-${updateId}`);
+    }
     element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     // Flash effect
     element.classList.add('ring-2', 'ring-cyan-500');
@@ -435,10 +439,23 @@ function scrollToUpdate(updateId: number | null) {
   }
 }
 
+function checkHashOnLoad() {
+  const hash = window.location.hash;
+  if (hash && hash.startsWith('#update-')) {
+    const updateId = parseInt(hash.replace('#update-', ''), 10);
+    if (!isNaN(updateId)) {
+      // Small delay to ensure DOM is ready
+      setTimeout(() => scrollToUpdate(updateId, false), 100);
+    }
+  }
+}
+
 onMounted(() => {
   refreshBalances();
   // Refresh every 30 seconds
   refreshInterval = setInterval(refreshBalances, 30000);
+  // Check for anchor in URL
+  checkHashOnLoad();
 });
 
 onUnmounted(() => {
