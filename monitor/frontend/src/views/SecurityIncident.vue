@@ -1,7 +1,7 @@
 <template>
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Alert Banner -->
-    <div class="bg-red-900/40 border border-red-500/50 rounded-lg p-4 mb-8 animate-pulse-subtle">
+    <div class="bg-red-900/40 border border-red-500/50 rounded-lg p-4 mb-6 animate-pulse-subtle">
       <div class="flex items-start gap-3">
         <span class="text-red-400 text-2xl">🚨</span>
         <div>
@@ -10,9 +10,34 @@
             Investigation ongoing - This page is updated as new information becomes available
           </p>
         </div>
-        <span class="ml-auto px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full text-red-400 text-xs font-medium">
-          UNRESOLVED
-        </span>
+        <div class="ml-auto text-right">
+          <span class="px-3 py-1 bg-red-500/20 border border-red-500/50 rounded-full text-red-400 text-xs font-medium">
+            UNRESOLVED
+          </span>
+          <div class="text-xs text-slate-500 mt-1">Last updated: {{ pageLastUpdated }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TL;DR Summary -->
+    <div class="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-5 mb-8">
+      <h2 class="text-cyan-400 font-bold text-lg mb-3 flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
+        </svg>
+        TL;DR - What You Need to Know
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+        <div class="space-y-2">
+          <p class="text-slate-300"><strong class="text-red-400">What happened:</strong> On Jan 8, 2026 at 16:02 UTC, an attacker exploited the TrueBit Protocol Purchase contract, draining ~8,535 ETH ($26.6M).</p>
+          <p class="text-slate-300"><strong class="text-yellow-400">Current status:</strong> Funds are tracked but not recovered. The stolen ETH sits in two destination wallets and has NOT been laundered yet.</p>
+          <p class="text-slate-300"><strong class="text-cyan-400">Official response:</strong> TrueBit acknowledged the incident, warned users not to interact with the affected contract, and confirmed law enforcement contact.</p>
+        </div>
+        <div class="space-y-2">
+          <p class="text-slate-300"><strong class="text-purple-400">Attacker profile:</strong> Sophisticated actor who used cross-chain bridges (Rhino.fi, Across Protocol) to obscure funding origin. Prepared attack over ~5 weeks.</p>
+          <p class="text-slate-300"><strong class="text-green-400">Staking unaffected:</strong> The TrueBit staking contract (38,000 TRU staked) was NOT compromised.</p>
+          <p class="text-slate-300"><strong class="text-slate-400">Tracking:</strong> Security firms Cyvers, CertiK, and Lookonchain are monitoring. This page provides live balance tracking.</p>
+        </div>
       </div>
     </div>
 
@@ -326,7 +351,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 8, 2026 - 21:45 UTC';
+const lastResearchTime = 'Jan 8, 2026 - 23:15 UTC';
+const pageLastUpdated = 'Jan 8, 2026 - 23:15 UTC';
 
 interface DestinationState {
   balance: number;
@@ -424,6 +450,67 @@ onUnmounted(() => {
 const updates = [
   {
     id: 1,
+    timestamp: 'Jan 8, 2026 - 23:15 UTC',
+    tag: 'INVESTIGATION',
+    tagClass: 'bg-purple-500/20 text-purple-400',
+    title: 'Attacker Funding Chain Traced - Sophisticated Chain-Hopping Detected',
+    content: `
+      <p>Deep investigation reveals the attacker used sophisticated <strong>cross-chain bridge hopping</strong> to obscure the origin of funds:</p>
+      <div class="bg-slate-900/50 p-3 rounded mt-3 font-mono text-xs">
+        <p class="text-slate-500">Unknown Origin</p>
+        <p class="text-slate-400 ml-2">↓ Rhino.fi Bridge (Nov 21)</p>
+        <p class="text-slate-500 ml-4">Optimism (1.200 ETH)</p>
+        <p class="text-slate-400 ml-2">↓ Across Protocol (Nov 29)</p>
+        <p class="text-slate-500 ml-4">Ethereum (1.135 ETH)</p>
+        <p class="text-slate-400 ml-2">↓</p>
+        <p class="text-cyan-400 ml-4">Intermediary: 0x6aEcB6ee...0EE5ccB</p>
+        <p class="text-slate-400 ml-2">↓ Dec 6, 2025</p>
+        <p class="text-red-400 ml-4">Attacker: 0x6C8EC8f1...562b50 (1.015 ETH)</p>
+      </div>
+      <p class="mt-3">Both Rhino.fi and Across Protocol are <strong>no-KYC bridges</strong>, making further tracing extremely difficult without cooperation from bridge operators or advanced multi-chain analytics tools.</p>
+    `
+  },
+  {
+    id: 2,
+    timestamp: 'Jan 8, 2026 - 22:30 UTC',
+    tag: 'OFFICIAL',
+    tagClass: 'bg-blue-500/20 text-blue-400',
+    title: 'TrueBit Foundation Issues Official Statement',
+    content: `
+      <p>TrueBit has released their first official statement via Twitter/X:</p>
+      <blockquote class="border-l-2 border-blue-500 pl-3 mt-2 italic text-slate-400">
+        "Today, we became aware of a security incident involving one or more malicious actors. The affected smart contract is
+        0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2 and we strongly advise the public not to interact with this contract until further notice.
+        We are in contact with law enforcement and taking all available measures to address the situation. We will share updates through our official channels as they become available."
+      </blockquote>
+      <p class="mt-3"><strong class="text-blue-400">Key points:</strong></p>
+      <ul class="list-disc list-inside mt-1 space-y-1">
+        <li>Incident acknowledged officially</li>
+        <li>Affected contract identified (Purchase contract)</li>
+        <li>Public warned not to interact</li>
+        <li>Law enforcement contacted</li>
+      </ul>
+    `
+  },
+  {
+    id: 3,
+    timestamp: 'Jan 8, 2026 - 22:00 UTC',
+    tag: 'CORRECTION',
+    tagClass: 'bg-orange-500/20 text-orange-400',
+    title: 'Tornado Cash Deposit Amount Corrected',
+    content: `
+      <p>Etherscan analysis confirms <strong>4 deposits of 1 ETH each</strong> to Tornado Cash (not 5 or 6 as previously reported):</p>
+      <table class="mt-2 text-xs w-full">
+        <tr class="border-b border-slate-700"><td class="py-1 text-slate-500">Block 24101532</td><td class="text-slate-300">1 ETH</td><td class="text-slate-500">Dec 27, 2025</td></tr>
+        <tr class="border-b border-slate-700"><td class="py-1 text-slate-500">Block 24101530</td><td class="text-slate-300">1 ETH</td><td class="text-slate-500">Dec 27, 2025</td></tr>
+        <tr class="border-b border-slate-700"><td class="py-1 text-slate-500">Block 24101527</td><td class="text-slate-300">1 ETH</td><td class="text-slate-500">Dec 27, 2025</td></tr>
+        <tr><td class="py-1 text-slate-500">Block 24101524</td><td class="text-slate-300">1 ETH</td><td class="text-slate-500">Dec 27, 2025</td></tr>
+      </table>
+      <p class="mt-2 text-slate-400">Total: <strong>4 ETH</strong> sent to Tornado Cash Router (0xd90e2f92...4f31b) - likely a test before the main attack.</p>
+    `
+  },
+  {
+    id: 4,
     timestamp: 'Jan 8, 2026 - 21:45 UTC',
     tag: 'STATUS UPDATE',
     tagClass: 'bg-green-500/20 text-green-400',
@@ -434,13 +521,12 @@ const updates = [
         <li><strong>Destination A:</strong> 4,267.09 ETH - <span class="text-green-400">No change</span></li>
         <li><strong>Destination B:</strong> 4,001.00 ETH - <span class="text-green-400">No change</span></li>
       </ul>
-      <p class="mt-2">The attacker appears to be in a holding pattern. Only 5 ETH was sent to Tornado Cash as a test on Dec 27.
-      The vast majority of funds (~$25.8M) remain unmoved in the two destination addresses.</p>
+      <p class="mt-2">The attacker appears to be in a holding pattern. The vast majority of funds (~$25.8M) remain unmoved.</p>
       <p class="mt-2 text-slate-400 text-xs">Monitoring continues with 30-second balance refresh.</p>
     `
   },
   {
-    id: 2,
+    id: 5,
     timestamp: 'Jan 8, 2026 - 19:30 UTC',
     tag: 'FUND TRACKING',
     tagClass: 'bg-yellow-500/20 text-yellow-400',
@@ -455,7 +541,7 @@ const updates = [
     `
   },
   {
-    id: 3,
+    id: 6,
     timestamp: 'Jan 8, 2026 - 18:45 UTC',
     tag: 'ATTACKER PROFILE',
     tagClass: 'bg-red-500/20 text-red-400',
@@ -463,15 +549,17 @@ const updates = [
     content: `
       <p>Investigation reveals the attack was planned weeks in advance:</p>
       <ul class="list-disc list-inside mt-2 space-y-1">
+        <li>Nov 21: Funds bridged from Optimism via Rhino.fi</li>
+        <li>Nov 29: Funds bridged to Ethereum via Across Protocol</li>
         <li>Dec 6: Attacker wallet funded with 1.015 ETH</li>
-        <li>Dec 27: 5 ETH deposited to Tornado Cash (privacy mixer test)</li>
+        <li>Dec 27: 4 ETH deposited to Tornado Cash (test)</li>
         <li>Dec 27: Test contract deployed</li>
         <li>Jan 8: Final attack contract deployed and executed</li>
       </ul>
     `
   },
   {
-    id: 4,
+    id: 7,
     timestamp: 'Jan 8, 2026 - 17:00 UTC',
     tag: 'SECURITY ALERT',
     tagClass: 'bg-red-500/20 text-red-400',
@@ -480,11 +568,11 @@ const updates = [
       <p>Blockchain security firm <strong>Cyvers</strong> flagged an anomalous transaction involving
       the TrueBit Protocol Purchase contract. Their monitoring systems detected approximately
       8,535 ETH (~$26M) being transferred through unusual patterns.</p>
-      <p class="mt-2">TrueBit Foundation has not yet released an official statement.</p>
+      <p class="mt-2">Additional tracking by <strong>CertiK</strong> via their SKYLENS platform and <strong>Lookonchain</strong> confirmed the exploit.</p>
     `
   },
   {
-    id: 5,
+    id: 8,
     timestamp: 'Jan 8, 2026 - 16:02 UTC',
     tag: 'ATTACK',
     tagClass: 'bg-red-500/30 text-red-400 font-bold',
@@ -499,16 +587,21 @@ const updates = [
 
 // Timeline in reverse chronological order (newest first), with links to updates
 const timeline = [
-  { id: 1, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 1 },
-  { id: 2, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 2 },
-  { id: 3, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
-  { id: 4, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
-  { id: 5, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 4 },
-  { id: 6, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
-  { id: 7, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 5 },
-  { id: 8, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
-  { id: 9, time: 'Dec 27, 2025', title: 'Tornado Cash test (5 ETH)', isAttack: false, updateId: 3 },
-  { id: 10, time: 'Dec 6, 2025', title: 'Attacker funded', isAttack: false, updateId: 3 },
+  { id: 1, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 1 },
+  { id: 2, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 2 },
+  { id: 3, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 3 },
+  { id: 4, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 4 },
+  { id: 5, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 5 },
+  { id: 6, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 6 },
+  { id: 7, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
+  { id: 8, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 7 },
+  { id: 9, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
+  { id: 10, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 8 },
+  { id: 11, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 6 },
+  { id: 12, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 3 },
+  { id: 13, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 6 },
+  { id: 14, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 1 },
+  { id: 15, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 1 },
 ];
 
 const addresses = [
@@ -519,6 +612,14 @@ const addresses = [
     balanceClass: 'text-slate-300',
     status: 'Active',
     statusClass: 'bg-yellow-500/20 text-yellow-400'
+  },
+  {
+    role: 'Intermediary (Funder)',
+    address: '0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB',
+    balance: '~0.12 ETH',
+    balanceClass: 'text-slate-500',
+    status: 'Chain-hopped',
+    statusClass: 'bg-purple-500/20 text-purple-400'
   },
   {
     role: 'Attack Contract',
