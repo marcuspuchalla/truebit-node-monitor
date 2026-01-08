@@ -17,19 +17,29 @@ CHECK_INTERVAL=60  # seconds
 # Ethereum RPC endpoint
 ETH_RPC="https://eth.llamarpc.com"
 
-# Addresses to monitor
-declare -A ADDRESSES=(
-  ["attacker_eoa"]="0x6C8EC8f14bE7C01672d31CFa5f2CEfeAB2562b50"
-  ["destination_a"]="0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862"
-  ["destination_b"]="0x273589ca3713e7becf42069f9fb3f0c164ce850a"
-  ["intermediary"]="0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB"
-  ["message_sender"]="0xa567c6a2ac472936ed92DfE6A84CE211e42047f9"
-  ["attack_contract"]="0x1De399967B206e446B4E9AeEb3Cb0A0991bF11b8"
-  ["victim_contract"]="0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2"
+# Addresses to monitor (parallel arrays for bash 3.x compatibility)
+ADDRESS_NAMES=(
+  "attacker_eoa"
+  "destination_a"
+  "destination_b"
+  "intermediary"
+  "message_sender"
+  "attack_contract"
+  "victim_contract"
+)
+
+ADDRESS_VALUES=(
+  "0x6C8EC8f14bE7C01672d31CFa5f2CEfeAB2562b50"
+  "0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862"
+  "0x273589ca3713e7becf42069f9fb3f0c164ce850a"
+  "0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB"
+  "0xa567c6a2ac472936ed92DfE6A84CE211e42047f9"
+  "0x1De399967B206e446B4E9AeEb3Cb0A0991bF11b8"
+  "0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2"
 )
 
 # X/Twitter search terms
-SEARCH_TERMS=("truebit hack" "truebit exploit" "truebit security" "0x764C64b2" "8535 ETH")
+SEARCH_TERMS=("truebit%20hack" "truebit%20exploit" "truebit%20security")
 
 # Colors for output
 RED='\033[0;31m'
@@ -44,7 +54,7 @@ init_state() {
   touch "$LOG_FILE"
 
   # Initialize transaction counts if not exists
-  for name in "${!ADDRESSES[@]}"; do
+  for name in "${ADDRESS_NAMES[@]}"; do
     if [[ ! -f "$STATE_DIR/${name}_txcount" ]]; then
       echo "0" > "$STATE_DIR/${name}_txcount"
     fi
@@ -110,9 +120,10 @@ get_balance() {
 check_addresses() {
   local changes_detected=false
   local changed_addresses=""
+  local i=0
 
-  for name in "${!ADDRESSES[@]}"; do
-    local address="${ADDRESSES[$name]}"
+  for name in "${ADDRESS_NAMES[@]}"; do
+    local address="${ADDRESS_VALUES[$i]}"
     local current_tx_count=$(get_tx_count "$address")
     local current_balance=$(get_balance "$address")
     local stored_tx_count=$(cat "$STATE_DIR/${name}_txcount" 2>/dev/null || echo "0")
@@ -135,6 +146,8 @@ check_addresses() {
       changes_detected=true
       changed_addresses="$changed_addresses $name(balance)"
     fi
+
+    i=$((i + 1))
   done
 
   if [[ "$changes_detected" == "true" ]]; then
@@ -149,19 +162,17 @@ check_x_for_news() {
   local new_info=""
 
   for term in "${SEARCH_TERMS[@]}"; do
-    # URL encode the search term
-    local encoded_term=$(echo "$term" | sed 's/ /%20/g')
-    local url="https://xcancel.com/search?q=${encoded_term}&f=live"
+    local url="https://xcancel.com/search?q=${term}&f=live"
 
     # Fetch and extract tweet snippets (simplified - just check for new content)
     local content=$(curl -s "$url" 2>/dev/null | grep -oE 'tweet-content[^<]*<[^>]*>[^<]*' | head -5)
-    local content_hash=$(echo "$content" | md5sum | cut -d' ' -f1)
+    local content_hash=$(echo "$content" | md5 2>/dev/null || echo "$content" | md5sum 2>/dev/null | cut -d' ' -f1)
 
-    local stored_hash=$(cat "$STATE_DIR/x_hash_${encoded_term}" 2>/dev/null || echo "")
+    local stored_hash=$(cat "$STATE_DIR/x_hash_${term}" 2>/dev/null || echo "")
 
     if [[ -n "$content" && "$content_hash" != "$stored_hash" ]]; then
       log_alert "New X content detected for search: '$term'"
-      echo "$content_hash" > "$STATE_DIR/x_hash_${encoded_term}"
+      echo "$content_hash" > "$STATE_DIR/x_hash_${term}"
       new_info="$new_info|$term"
     fi
   done
@@ -288,7 +299,7 @@ main() {
 
   init_state
 
-  log "Monitoring ${#ADDRESSES[@]} addresses"
+  log "Monitoring ${#ADDRESS_NAMES[@]} addresses"
   log "Check interval: ${CHECK_INTERVAL} seconds"
   log "State directory: $STATE_DIR"
   log "Log file: $LOG_FILE"
@@ -296,13 +307,15 @@ main() {
 
   # Initial state capture (don't trigger on first run)
   log "Capturing initial state..."
-  for name in "${!ADDRESSES[@]}"; do
-    local address="${ADDRESSES[$name]}"
+  local i=0
+  for name in "${ADDRESS_NAMES[@]}"; do
+    local address="${ADDRESS_VALUES[$i]}"
     local tx_count=$(get_tx_count "$address")
     local balance=$(get_balance "$address")
     echo "$tx_count" > "$STATE_DIR/${name}_txcount"
     echo "$balance" > "$STATE_DIR/${name}_balance"
     log "  $name: txcount=$tx_count, balance=$balance"
+    i=$((i + 1))
   done
   echo ""
 
