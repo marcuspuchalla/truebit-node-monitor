@@ -206,11 +206,13 @@ check_x_for_news() {
   claude --dangerously-skip-permissions --continue --chrome --print "You are an X/Twitter monitoring agent for the TrueBit hack investigation.
 
 YOUR TASK:
-1. Use the Chrome browser MCP tools to check xcancel.com for new TrueBit posts
-2. Navigate to: https://xcancel.com/search?q=truebit&f=live
-3. Use mcp__claude-in-chrome__tabs_context_mcp first to get tab context
-4. Create a new tab or use existing one to navigate to the search
-5. Take a screenshot to see the tweets
+1. Use mcp__claude-in-chrome__tabs_context_mcp first to get tab context
+2. Create a new tab or use existing one
+3. Navigate to: https://xcancel.com/search?q=truebit&f=live
+4. IMPORTANT: Verify you are on the 'Latest' tab, NOT 'Top' or 'People'
+   - The URL parameter f=live should show latest, but verify visually
+   - If showing 'Top' results, click on 'Latest' tab to switch
+5. Take a screenshot to see the tweets (sorted by newest first)
 6. Scroll down to see more tweets if needed (2-3 scrolls max)
 7. Look for tweets about: hack, exploit, fund movement, official statements, security alerts
 
@@ -269,9 +271,10 @@ update_page() {
   local research_instructions=""
   local claude_cmd="claude --dangerously-skip-permissions"
   if [[ "$source" == "x" ]]; then
-    research_instructions="1. Use Chrome browser MCP tools to revisit xcancel.com and get full details of the new posts
-2. Extract: usernames, timestamps, key information, any linked transactions
-3. Verify any mentioned transactions on Etherscan via WebFetch"
+    research_instructions="1. Use Chrome browser MCP tools to revisit xcancel.com/search?q=truebit&f=live
+2. Ensure you are on the 'Latest' tab (not 'Top') to see newest posts first
+3. Extract: usernames, timestamps, key information, any linked transactions
+4. Verify any mentioned transactions on Etherscan via WebFetch"
     claude_cmd="claude --dangerously-skip-permissions --continue --chrome"
   else
     research_instructions="1. Research the change in detail using Etherscan (WebFetch)
