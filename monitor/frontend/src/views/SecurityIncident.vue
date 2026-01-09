@@ -286,6 +286,13 @@
             >
               BeInCrypto Report
             </a>
+            <a
+              href="https://truebitstats.io/fund-flow/"
+              target="_blank"
+              class="block text-cyan-400 hover:text-cyan-300"
+            >
+              Fund Flow Visualization ↗
+            </a>
           </div>
 
           <!-- Staking Status -->
@@ -317,8 +324,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 9, 2026 - 09:15 UTC';
-const pageLastUpdated = 'Jan 9, 2026 - 09:15 UTC';
+const lastResearchTime = 'Jan 9, 2026 - 14:30 UTC';
+const pageLastUpdated = 'Jan 9, 2026 - 14:30 UTC';
 
 interface DestinationState {
   balance: number;
@@ -432,6 +439,45 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 12,
+    timestamp: 'Jan 9, 2026 - 14:30 UTC',
+    tag: 'STATUS UPDATE',
+    tagClass: 'bg-blue-500/20 text-blue-400',
+    title: 'Funds Still Stationary After 13+ Hours - No Official Communication',
+    content: `
+      <p>As of <strong>14:30 UTC on Jan 9, 2026</strong>, approximately <strong>13 hours</strong> after the initial fund movement, all stolen ETH remains stationary in attacker-controlled addresses.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">New Holding Address</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">4,267.09 ETH</div>
+          <div class="text-slate-500 text-xs">~$13.1M at current prices</div>
+          <div class="text-yellow-400 text-xs mt-1">⏳ No outgoing transactions</div>
+        </div>
+        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">4,001.00 ETH</div>
+          <div class="text-slate-500 text-xs">~$12.3M at current prices</div>
+          <div class="text-yellow-400 text-xs mt-1">⏳ No outgoing transactions</div>
+        </div>
+      </div>
+
+      <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 mt-4">
+        <h4 class="text-orange-400 font-bold mb-2">⚠️ No Official Communication</h4>
+        <p class="text-sm text-slate-300">There has been <strong>no official statement</strong> from the TrueBit team since their initial acknowledgment on Jan 8. Be cautious of unofficial sources, rumors, or social media gossip claiming to have insider information.</p>
+        <p class="text-xs text-slate-500 mt-2">Only trust announcements from official TrueBit channels.</p>
+      </div>
+
+      <div class="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4 mt-4">
+        <h4 class="text-cyan-400 font-bold mb-2">📊 Fund Flow Visualization</h4>
+        <p class="text-sm text-slate-300">The team at <strong>truebitstats.io</strong> has built an interactive visualization showing how the stolen funds have moved:</p>
+        <a href="https://truebitstats.io/fund-flow/" target="_blank" class="inline-block mt-2 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded text-sm font-medium">View Fund Flow Diagram →</a>
+      </div>
+
+      <p class="mt-4 text-slate-400 text-sm"><strong class="text-cyan-400">Summary:</strong> Total stolen funds (~8,268 ETH / $25.4M) remain untouched. The attacker has not initiated any laundering activity. Monitoring continues.</p>
+    `
+  },
   {
     id: 11,
     timestamp: 'Jan 9, 2026 - 09:15 UTC',
