@@ -13,10 +13,11 @@ CHECK_INTERVAL=300  # 5 minutes
 # Addresses to watch
 ADDRESSES=(
   "0x6C8EC8f14bE7C01672d31CFa5f2CEfeAB2562b50"  # Attacker EOA
-  "0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862"  # Destination A
+  "0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862"  # Destination A (drained)
   "0x273589ca3713e7becf42069f9fb3f0c164ce850a"  # Destination B
   "0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB"  # Intermediary
   "0xa567c6a2ac472936ed92DfE6A84CE211e42047f9"  # Message sender
+  "0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60"  # New Holding Address (from Dest A)
 )
 
 mkdir -p "$STATE_DIR"
@@ -56,7 +57,9 @@ analyze_changes() {
 
   cd "$PROJECT_DIR"
 
-  local result=$(claude --print "You are an analysis agent for the TrueBit hack monitoring system.
+  local output_file="$STATE_DIR/analysis_output.txt"
+
+  claude --dangerously-skip-permissions "You are an analysis agent for the TrueBit hack monitoring system.
 
 Changes detected on these addresses: $changed_addrs
 
@@ -68,11 +71,24 @@ YOUR TASK:
    - Transfers to new addresses
    - Any laundering activity (Tornado Cash, bridges, etc.)
 
-RESPOND WITH EXACTLY ONE OF:
-- 'SIGNIFICANT: <brief description of what changed>' if changes warrant a page update
-- 'NOT_SIGNIFICANT: <brief reason>' if changes are minor (dust, gas, already known)
+VERY IMPORTANT: Your FINAL OUTPUT must be EXACTLY one of these two lines (nothing else):
+SIGNIFICANT: <brief description of what changed>
+NOT_SIGNIFICANT: <brief reason>
 
-Be concise. Only respond with one line starting with SIGNIFICANT or NOT_SIGNIFICANT." 2>&1 | grep -E "(SIGNIFICANT|NOT_SIGNIFICANT)" | head -1)
+Write your result to a file at $output_file using the Write tool.
+Do NOT output anything else after writing the file." 2>&1 | tee "$STATE_DIR/analysis.log"
+
+  # Read result from file
+  local result=""
+  if [[ -f "$output_file" ]]; then
+    result=$(cat "$output_file")
+    rm -f "$output_file"
+  fi
+
+  # Fallback: try to parse from log if file not created
+  if [[ -z "$result" ]]; then
+    result=$(grep -E "^(SIGNIFICANT|NOT_SIGNIFICANT):" "$STATE_DIR/analysis.log" 2>/dev/null | head -1)
+  fi
 
   echo "$result"
 }
@@ -134,8 +150,8 @@ Proceed with the research and update."
 }
 
 echo "╔════════════════════════════════════════════════════════════╗"
-echo "║   TrueBit Incident Monitor v2.0 (Simple)                   ║"
-echo "║   Watching ${#ADDRESSES[@]} addresses every 5 minutes                   ║"
+echo "║   TrueBit Incident Monitor v2.1 (Simple)                   ║"
+echo "║   Watching ${#ADDRESSES[@]} addresses every 5 minutes                  ║"
 echo "║                                                            ║"
 echo "║   Two-stage process:                                       ║"
 echo "║     1. Analyze if changes are significant                  ║"

@@ -59,12 +59,13 @@ The full monitor uses Claude Code with Chrome browser integration (`--chrome` fl
 | Role | Address |
 |------|---------|
 | Attacker EOA | `0x6C8EC8f14bE7C01672d31CFa5f2CEfeAB2562b50` |
-| Destination A | `0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862` |
+| Destination A (drained) | `0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862` |
 | Destination B | `0x273589ca3713e7becf42069f9fb3f0c164ce850a` |
 | Intermediary | `0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB` |
 | Message Sender | `0xa567c6a2ac472936ed92DfE6A84CE211e42047f9` |
 | Attack Contract | `0x1De399967B206e446B4E9AeEb3Cb0A0991bF11b8` |
 | Victim Contract | `0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2` |
+| New Holding (from Dest A) | `0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60` |
 
 ## Requirements
 

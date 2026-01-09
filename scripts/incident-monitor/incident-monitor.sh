@@ -32,6 +32,7 @@ ADDRESS_NAMES=(
   "message_sender"
   "attack_contract"
   "victim_contract"
+  "new_holding"
 )
 
 ADDRESS_VALUES=(
@@ -42,6 +43,7 @@ ADDRESS_VALUES=(
   "0xa567c6a2ac472936ed92DfE6A84CE211e42047f9"
   "0x1De399967B206e446B4E9AeEb3Cb0A0991bF11b8"
   "0x764C64b2A09b09Acb100B80d8c505Aa6a0302EF2"
+  "0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60"
 )
 
 # Colors for output
