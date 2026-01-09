@@ -324,8 +324,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 9, 2026 - 14:30 UTC';
-const pageLastUpdated = 'Jan 9, 2026 - 14:30 UTC';
+const lastResearchTime = 'Jan 9, 2026 - 15:00 UTC';
+const pageLastUpdated = 'Jan 9, 2026 - 15:00 UTC';
 
 interface DestinationState {
   balance: number;
@@ -439,6 +439,43 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 13,
+    timestamp: 'Jan 9, 2026 - 15:00 UTC',
+    tag: 'OFFICIAL',
+    tagClass: 'bg-green-500/30 text-green-400 font-bold',
+    title: 'TrueBit Team Issues Second Official Statement',
+    content: `
+      <p>The TrueBit team has released a <strong>second official statement</strong> via their verified X/Twitter account:</p>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-green-500/30">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 rounded-full bg-green-600 flex items-center justify-center text-white font-bold text-sm flex-shrink-0">TB</div>
+          <div>
+            <div class="flex items-center gap-2">
+              <span class="font-bold text-slate-100">Truebit</span>
+              <span class="text-cyan-400 text-sm">@Truebitprotocol</span>
+              <span class="text-green-400 text-xs">✓ Verified</span>
+            </div>
+            <p class="text-slate-200 mt-2 italic">"Our team is tirelessly working to address the incident we reported yesterday, and has engaged additional resources to strengthen tracing and recovery. Updates will follow through our official channels."</p>
+            <p class="text-xs text-slate-500 mt-2">Posted ~29 minutes ago (Jan 9, 2026)</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-500/30">
+        <h4 class="text-slate-300 font-bold mb-2">Key Points:</h4>
+        <ul class="list-disc list-inside space-y-1 text-sm text-slate-400">
+          <li>Team is actively working on the incident</li>
+          <li><strong class="text-slate-200">Additional resources engaged</strong> for tracing and recovery</li>
+          <li>Further updates will come through official channels only</li>
+        </ul>
+      </div>
+
+      <p class="mt-4 text-slate-400 text-sm"><strong class="text-cyan-400">Note:</strong> This is the first substantive update since the initial acknowledgment. The mention of "tracing and recovery" suggests potential efforts to recover funds or identify the attacker.</p>
+      <p class="mt-2 text-xs text-slate-500">Source: <a href="https://x.com/Truebitprotocol" target="_blank" class="text-cyan-400 hover:underline">@Truebitprotocol on X</a></p>
+    `
+  },
   {
     id: 12,
     timestamp: 'Jan 9, 2026 - 14:30 UTC',
