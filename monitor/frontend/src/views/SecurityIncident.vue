@@ -317,8 +317,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 9, 2026 - 01:23 UTC';
-const pageLastUpdated = 'Jan 9, 2026 - 01:23 UTC';
+const lastResearchTime = 'Jan 9, 2026 - 09:15 UTC';
+const pageLastUpdated = 'Jan 9, 2026 - 09:15 UTC';
 
 interface DestinationState {
   balance: number;
@@ -432,6 +432,49 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 11,
+    timestamp: 'Jan 9, 2026 - 09:15 UTC',
+    tag: 'STATUS UPDATE',
+    tagClass: 'bg-blue-500/20 text-blue-400',
+    title: 'Funds Remain Stationary - Dust Transactions Observed',
+    content: `
+      <p>As of <strong>09:15 UTC on Jan 9, 2026</strong>, the major stolen funds remain stationary:</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">New Holding Address</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">4,267.09 ETH</div>
+          <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="text-cyan-400 hover:text-cyan-300 text-xs font-mono">0xD12f6E0f...31a60</a>
+          <div class="text-yellow-400 text-xs mt-1">⏳ Unchanged</div>
+        </div>
+        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">4,001.00 ETH</div>
+          <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="text-cyan-400 hover:text-cyan-300 text-xs font-mono">0x273589ca...cE850a</a>
+          <div class="text-yellow-400 text-xs mt-1">⏳ Unchanged</div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-blue-500/30">
+        <h4 class="text-blue-400 font-bold mb-2">Dust Transaction Activity:</h4>
+        <p class="text-sm text-slate-300">Multiple small transactions (0 ETH - 0.000001 ETH) have been sent TO the new holding address by third parties:</p>
+        <ul class="list-disc list-inside mt-2 space-y-1 text-sm text-slate-400">
+          <li>~8 incoming transactions since fund movement</li>
+          <li>Includes on-chain messages from random actors attempting contact</li>
+          <li>One message soliciting investment from the attacker</li>
+          <li>These are NOT outgoing transactions - funds remain intact</li>
+        </ul>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-500/30">
+        <h4 class="text-slate-300 font-bold mb-2">TrueBit Team Response:</h4>
+        <p class="text-sm text-slate-400">The team acknowledged the breach on Jan 8 and advised users not to interact with the affected contract. They stated they are working with law enforcement. No compensation plan has been announced.</p>
+      </div>
+
+      <p class="mt-4 text-slate-400 text-sm"><strong class="text-cyan-400">Summary:</strong> Total stolen funds (~8,268 ETH / $25.8M) remain in attacker-controlled addresses. No laundering activity detected yet.</p>
+    `
+  },
   {
     id: 10,
     timestamp: 'Jan 9, 2026 - 01:23 UTC',
