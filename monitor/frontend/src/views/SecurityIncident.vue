@@ -293,6 +293,20 @@
             >
               Fund Flow Visualization ↗
             </a>
+            <a
+              href="https://etherscan.io/accounts/label/truebit-exploit"
+              target="_blank"
+              class="block text-cyan-400 hover:text-cyan-300"
+            >
+              Etherscan Labeled Addresses ↗
+            </a>
+            <a
+              href="https://truebitstats.io/"
+              target="_blank"
+              class="block text-cyan-400 hover:text-cyan-300"
+            >
+              TrueBitStats Dashboard ↗
+            </a>
           </div>
 
           <!-- Staking Status -->
