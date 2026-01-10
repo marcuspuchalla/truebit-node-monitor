@@ -460,21 +460,21 @@ const updates = [
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">New Holding (Updated)</div>
+        <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">New Holding (Updated) ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">3,267 ETH</div>
           <div class="text-red-400 text-xs mt-1">↓ -1,000 ETH</div>
-        </div>
-        <div class="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">New: 0x7720C2f5...</div>
+        </a>
+        <a href="https://etherscan.io/address/0x7720C2f59391Fe6339310913Ad13A8119393a59D" target="_blank" class="bg-red-900/20 border border-red-500/50 rounded-lg p-3 hover:bg-red-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">New: 0x7720C2f5... ↗</div>
           <div class="text-xl font-bold text-red-400 font-mono">1,000 ETH</div>
           <div class="text-red-400 text-xs mt-1">🆕 Just received</div>
-        </div>
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+        </a>
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,001 ETH</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ No change</div>
-        </div>
+        </a>
       </div>
 
       <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 mt-4">
@@ -512,18 +512,18 @@ const updates = [
       <p>It has been approximately <strong>44 hours</strong> since the attack. Here is the current status:</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">New Holding Address</div>
+        <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">New Holding Address ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,267.09 ETH</div>
           <div class="text-slate-500 text-xs">~$13.2M</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ No movement</div>
-        </div>
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+        </a>
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,001.00 ETH</div>
           <div class="text-slate-500 text-xs">~$12.4M</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ No movement</div>
-        </div>
+        </a>
       </div>
 
       <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-500/30">
@@ -587,18 +587,18 @@ const updates = [
       <p>As of <strong>14:30 UTC on Jan 9, 2026</strong>, approximately <strong>13 hours</strong> after the initial fund movement, all stolen ETH remains stationary in attacker-controlled addresses.</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">New Holding Address</div>
+        <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">New Holding Address ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,267.09 ETH</div>
           <div class="text-slate-500 text-xs">~$13.1M at current prices</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ No outgoing transactions</div>
-        </div>
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+        </a>
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,001.00 ETH</div>
           <div class="text-slate-500 text-xs">~$12.3M at current prices</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ No outgoing transactions</div>
-        </div>
+        </a>
       </div>
 
       <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 mt-4">
@@ -626,18 +626,18 @@ const updates = [
       <p>As of <strong>09:15 UTC on Jan 9, 2026</strong>, the major stolen funds remain stationary:</p>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">New Holding Address</div>
+        <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">New Holding Address ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,267.09 ETH</div>
-          <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="text-cyan-400 hover:text-cyan-300 text-xs font-mono">0xD12f6E0f...31a60</a>
+          <div class="text-cyan-400 text-xs font-mono">0xD12f6E0f...31a60</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ Unchanged</div>
-        </div>
-        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+        </a>
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B ↗</div>
           <div class="text-xl font-bold text-yellow-400 font-mono">4,001.00 ETH</div>
-          <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="text-cyan-400 hover:text-cyan-300 text-xs font-mono">0x273589ca...cE850a</a>
+          <div class="text-cyan-400 text-xs font-mono">0x273589ca...cE850a</div>
           <div class="text-yellow-400 text-xs mt-1">⏳ Unchanged</div>
-        </div>
+        </a>
       </div>
 
       <div class="bg-slate-900/50 p-4 rounded mt-4 border border-blue-500/30">
@@ -685,18 +685,18 @@ const updates = [
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-        <div class="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">Destination A (Original)</div>
+        <a href="https://etherscan.io/address/0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862" target="_blank" class="bg-red-900/20 border border-red-500/50 rounded-lg p-3 hover:bg-red-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination A (Original) ↗</div>
           <div class="text-xl font-bold text-red-400 font-mono">~0 ETH</div>
-          <a href="https://etherscan.io/address/0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862" target="_blank" class="text-cyan-400 hover:text-cyan-300 text-xs font-mono">0x62AfDD1B...Eb4862</a>
+          <div class="text-cyan-400 text-xs font-mono">0x62AfDD1B...Eb4862</div>
           <div class="text-red-400 text-xs mt-1">✗ DRAINED</div>
-        </div>
-        <div class="bg-green-900/20 border border-green-500/50 rounded-lg p-3">
-          <div class="text-xs text-slate-400 mb-1">Destination B (Unchanged)</div>
+        </a>
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-green-900/20 border border-green-500/50 rounded-lg p-3 hover:bg-green-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B (Unchanged) ↗</div>
           <div class="text-xl font-bold text-green-400 font-mono">~4,001 ETH</div>
-          <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="text-cyan-400 hover:text-cyan-300 text-xs font-mono">0x273589ca...cE850a</a>
+          <div class="text-cyan-400 text-xs font-mono">0x273589ca...cE850a</div>
           <div class="text-green-400 text-xs mt-1">✓ No movement</div>
-        </div>
+        </a>
       </div>
 
       <p class="mt-4 text-slate-400 text-sm"><strong class="text-cyan-400">Analysis:</strong> The attacker is consolidating funds into a new address. This could indicate preparation for laundering (Tornado Cash, bridges) or simply repositioning. The small 0.1 ETH transaction first may have been a test.</p>
