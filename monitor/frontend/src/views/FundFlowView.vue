@@ -13,16 +13,20 @@
       </div>
       <div class="legend">
         <div class="legend-item">
-          <span class="legend-dot victim"></span>
-          <span>Victim</span>
+          <span class="legend-dot bridge"></span>
+          <span>Bridge</span>
         </div>
         <div class="legend-item">
           <span class="legend-dot attacker"></span>
           <span>Attacker</span>
         </div>
         <div class="legend-item">
+          <span class="legend-dot victim"></span>
+          <span>Victim</span>
+        </div>
+        <div class="legend-item">
           <span class="legend-dot holding"></span>
-          <span>Holding Funds</span>
+          <span>Holding</span>
         </div>
         <div class="legend-item">
           <span class="legend-dot drained"></span>
@@ -93,125 +97,48 @@ import '@vue-flow/controls/dist/style.css';
 
 const lastUpdated = 'Jan 10, 2026 - 20:00 UTC';
 
-// Node positions - laid out to show flow from left to right
+// Node positions - laid out top-to-bottom chronologically
+// Phase 1 (top): Preparation - funding the attacker (Nov-Dec 2025)
+// Phase 2 (middle): Attack execution (Jan 8, 2026)
+// Phase 3 (bottom): Fund movement and laundering (Jan 8-10, 2026)
 const nodes = ref([
-  // Victim Contract (leftmost)
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 1: PREPARATION (Top) - Nov-Dec 2025
+  // ═══════════════════════════════════════════════════════════════
+
+  // Rhino.fi Bridge - Nov 21, 2025
   {
-    id: 'victim',
+    id: 'rhino',
     type: 'custom',
-    position: { x: 0, y: 250 },
+    position: { x: 150, y: 0 },
     data: {
-      label: 'Victim Contract',
-      address: '0x764C...0302EF2',
-      balance: '~15.87 ETH',
-      status: 'DRAINED',
-      statusClass: 'status-drained',
-      type: 'victim'
-    }
-  },
-  // Attack Contract
-  {
-    id: 'attack-contract',
-    type: 'custom',
-    position: { x: 250, y: 250 },
-    data: {
-      label: 'Attack Contract',
-      address: '0x1De3...bF11b8',
-      balance: '0 ETH',
-      status: 'Unverified',
+      label: 'Rhino.fi Bridge',
+      address: 'From Optimism',
+      balance: '1.2 ETH',
+      status: 'Nov 21, 2025',
       statusClass: 'status-neutral',
-      type: 'attacker'
+      type: 'bridge'
     }
   },
-  // Attacker EOA
+  // Across Protocol - Nov 29, 2025
   {
-    id: 'attacker-eoa',
+    id: 'across',
     type: 'custom',
-    position: { x: 500, y: 250 },
+    position: { x: 450, y: 0 },
     data: {
-      label: 'Attacker EOA',
-      address: '0x6C8E...62b50',
-      balance: '267.71 ETH',
-      status: 'Active',
-      statusClass: 'status-active',
-      type: 'attacker'
+      label: 'Across Protocol',
+      address: 'Cross-chain Bridge',
+      balance: '1.135 ETH',
+      status: 'Nov 29, 2025',
+      statusClass: 'status-neutral',
+      type: 'bridge'
     }
   },
-  // Destination A
-  {
-    id: 'dest-a',
-    type: 'custom',
-    position: { x: 750, y: 100 },
-    data: {
-      label: 'Destination A',
-      address: '0x62Af...2562b50',
-      balance: '~0 ETH',
-      status: 'Drained Jan 9',
-      statusClass: 'status-drained',
-      type: 'drained'
-    }
-  },
-  // Destination B
-  {
-    id: 'dest-b',
-    type: 'custom',
-    position: { x: 750, y: 400 },
-    data: {
-      label: 'Destination B',
-      address: '0x2735...E850a',
-      balance: '~4,001 ETH',
-      status: 'HOLDING',
-      statusClass: 'status-holding',
-      type: 'holding'
-    }
-  },
-  // New Holding Address
-  {
-    id: 'new-holding',
-    type: 'custom',
-    position: { x: 1000, y: 100 },
-    data: {
-      label: 'New Holding',
-      address: '0xD12f...31a60',
-      balance: '~0 ETH',
-      status: 'Emptied Jan 10',
-      statusClass: 'status-drained',
-      type: 'drained'
-    }
-  },
-  // Laundering Address
-  {
-    id: 'laundering',
-    type: 'custom',
-    position: { x: 1250, y: 100 },
-    data: {
-      label: 'Laundering Address',
-      address: '0x7720...3a59D',
-      balance: '~0.6 ETH',
-      status: 'TORNADO CASH',
-      statusClass: 'status-mixer',
-      type: 'attacker'
-    }
-  },
-  // Tornado Cash
-  {
-    id: 'tornado',
-    type: 'custom',
-    position: { x: 1500, y: 100 },
-    data: {
-      label: 'Tornado Cash',
-      address: '0xd90e...4f31b',
-      balance: '~4,267 ETH received',
-      status: 'MIXER',
-      statusClass: 'status-mixer',
-      type: 'mixer'
-    }
-  },
-  // Intermediary (funding chain - above)
+  // Intermediary - Chain hopping
   {
     id: 'intermediary',
     type: 'custom',
-    position: { x: 250, y: 0 },
+    position: { x: 300, y: 120 },
     data: {
       label: 'Intermediary',
       address: '0x6aEc...5ccB',
@@ -221,39 +148,133 @@ const nodes = ref([
       type: 'drained'
     }
   },
-  // Rhino.fi Bridge
+  // Attacker EOA - Dec 6, 2025 funded
   {
-    id: 'rhino',
+    id: 'attacker-eoa',
     type: 'custom',
-    position: { x: 0, y: 0 },
+    position: { x: 300, y: 240 },
     data: {
-      label: 'Rhino.fi Bridge',
-      address: 'Optimism',
-      balance: '1.2 ETH',
-      status: 'Nov 21, 2025',
-      statusClass: 'status-neutral',
+      label: 'Attacker EOA',
+      address: '0x6C8E...62b50',
+      balance: '267.71 ETH',
+      status: 'Funded Dec 6',
+      statusClass: 'status-active',
+      type: 'attacker'
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 2: ATTACK (Middle) - Jan 8, 2026 16:02 UTC
+  // ═══════════════════════════════════════════════════════════════
+
+  // Attack Contract - deployed Jan 8
+  {
+    id: 'attack-contract',
+    type: 'custom',
+    position: { x: 300, y: 380 },
+    data: {
+      label: 'Attack Contract',
+      address: '0x1De3...bF11b8',
+      balance: '0 ETH',
+      status: 'Jan 8, 16:02',
+      statusClass: 'status-attack',
+      type: 'attacker'
+    }
+  },
+  // Victim Contract
+  {
+    id: 'victim',
+    type: 'custom',
+    position: { x: 550, y: 380 },
+    data: {
+      label: 'TrueBit Purchase',
+      address: '0x764C...0302EF2',
+      balance: '~15.87 ETH',
+      status: 'EXPLOITED',
+      statusClass: 'status-drained',
+      type: 'victim'
+    }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 3: FUND MOVEMENT (Bottom) - Jan 8-10, 2026
+  // ═══════════════════════════════════════════════════════════════
+
+  // Destination A - received 4,267 ETH
+  {
+    id: 'dest-a',
+    type: 'custom',
+    position: { x: 100, y: 520 },
+    data: {
+      label: 'Destination A',
+      address: '0x62Af...Eb4862',
+      balance: '~0 ETH',
+      status: 'Drained Jan 9',
+      statusClass: 'status-drained',
       type: 'drained'
     }
   },
-  // Across Protocol
+  // Destination B - received 4,001 ETH (still holding)
   {
-    id: 'across',
+    id: 'dest-b',
     type: 'custom',
-    position: { x: 0, y: 500 },
+    position: { x: 500, y: 520 },
     data: {
-      label: 'Across Protocol',
-      address: 'Bridge',
-      balance: '1.135 ETH',
-      status: 'Nov 29, 2025',
-      statusClass: 'status-neutral',
+      label: 'Destination B',
+      address: '0x2735...E850a',
+      balance: '~4,001 ETH',
+      status: 'STILL HOLDING',
+      statusClass: 'status-holding',
+      type: 'holding'
+    }
+  },
+  // New Holding Address - Jan 9
+  {
+    id: 'new-holding',
+    type: 'custom',
+    position: { x: 100, y: 640 },
+    data: {
+      label: 'New Holding',
+      address: '0xD12f...31a60',
+      balance: '~0 ETH',
+      status: 'Emptied Jan 10',
+      statusClass: 'status-drained',
       type: 'drained'
     }
   },
-  // Message Sender
+  // Laundering Address - Jan 10
+  {
+    id: 'laundering',
+    type: 'custom',
+    position: { x: 100, y: 760 },
+    data: {
+      label: 'Laundering Wallet',
+      address: '0x7720...3a59D',
+      balance: '~0.6 ETH',
+      status: '57+ txns out',
+      statusClass: 'status-mixer',
+      type: 'attacker'
+    }
+  },
+  // Tornado Cash - final destination
+  {
+    id: 'tornado',
+    type: 'custom',
+    position: { x: 100, y: 880 },
+    data: {
+      label: 'Tornado Cash',
+      address: 'Mixer Protocol',
+      balance: '~4,267 ETH',
+      status: 'LAUNDERED',
+      statusClass: 'status-mixer',
+      type: 'mixer'
+    }
+  },
+  // Message Sender - side note
   {
     id: 'message-sender',
     type: 'custom',
-    position: { x: 750, y: 550 },
+    position: { x: 500, y: 640 },
     data: {
       label: 'Message Sender',
       address: '0xa567...047f9',
@@ -265,90 +286,19 @@ const nodes = ref([
   }
 ]);
 
-// Edges - fund flow connections
+// Edges - fund flow connections (chronological top-to-bottom)
 const edges = ref([
-  // Attack flow
-  {
-    id: 'e-victim-attack',
-    source: 'victim',
-    target: 'attack-contract',
-    label: '8,535 ETH',
-    animated: false,
-    style: { stroke: '#ef4444', strokeWidth: 3 },
-    labelStyle: { fill: '#ef4444', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  {
-    id: 'e-attack-eoa',
-    source: 'attack-contract',
-    target: 'attacker-eoa',
-    label: '8,535 ETH',
-    animated: false,
-    style: { stroke: '#ef4444', strokeWidth: 3 },
-    labelStyle: { fill: '#ef4444', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  // Split to destinations
-  {
-    id: 'e-eoa-desta',
-    source: 'attacker-eoa',
-    target: 'dest-a',
-    label: '4,267 ETH',
-    animated: false,
-    style: { stroke: '#f97316', strokeWidth: 2 },
-    labelStyle: { fill: '#f97316', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  {
-    id: 'e-eoa-destb',
-    source: 'attacker-eoa',
-    target: 'dest-b',
-    label: '4,001 ETH',
-    animated: true,
-    style: { stroke: '#eab308', strokeWidth: 2 },
-    labelStyle: { fill: '#eab308', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  // Destination A chain
-  {
-    id: 'e-desta-newholding',
-    source: 'dest-a',
-    target: 'new-holding',
-    label: '4,267 ETH',
-    animated: false,
-    style: { stroke: '#f97316', strokeWidth: 2 },
-    labelStyle: { fill: '#f97316', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  {
-    id: 'e-newholding-laundering',
-    source: 'new-holding',
-    target: 'laundering',
-    label: '4,267 ETH',
-    animated: false,
-    style: { stroke: '#ef4444', strokeWidth: 2 },
-    labelStyle: { fill: '#ef4444', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  {
-    id: 'e-laundering-tornado',
-    source: 'laundering',
-    target: 'tornado',
-    label: '57+ txns',
-    animated: false,
-    style: { stroke: '#ef4444', strokeWidth: 3 },
-    labelStyle: { fill: '#ef4444', fontWeight: 'bold' },
-    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
-  // Funding chain
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 1: PREPARATION - Funding chain (Nov-Dec 2025)
+  // ═══════════════════════════════════════════════════════════════
   {
     id: 'e-rhino-inter',
     source: 'rhino',
     target: 'intermediary',
     label: '1.2 ETH',
     animated: false,
-    style: { stroke: '#64748b', strokeWidth: 1 },
-    labelStyle: { fill: '#94a3b8' },
+    style: { stroke: '#64748b', strokeWidth: 2 },
+    labelStyle: { fill: '#94a3b8', fontSize: '11px' },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   },
   {
@@ -357,29 +307,123 @@ const edges = ref([
     target: 'intermediary',
     label: '1.135 ETH',
     animated: false,
-    style: { stroke: '#64748b', strokeWidth: 1 },
-    labelStyle: { fill: '#94a3b8' },
+    style: { stroke: '#64748b', strokeWidth: 2 },
+    labelStyle: { fill: '#94a3b8', fontSize: '11px' },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   },
   {
     id: 'e-inter-eoa',
     source: 'intermediary',
     target: 'attacker-eoa',
-    label: '1.015 ETH',
+    label: '1.015 ETH (Dec 6)',
     animated: false,
-    style: { stroke: '#64748b', strokeWidth: 1 },
-    labelStyle: { fill: '#94a3b8' },
+    style: { stroke: '#64748b', strokeWidth: 2 },
+    labelStyle: { fill: '#94a3b8', fontSize: '11px' },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   },
-  // Message to attacker
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 2: ATTACK - Jan 8, 2026 16:02 UTC
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: 'e-eoa-attack',
+    source: 'attacker-eoa',
+    target: 'attack-contract',
+    label: 'Deploys',
+    animated: false,
+    style: { stroke: '#f97316', strokeWidth: 2 },
+    labelStyle: { fill: '#f97316', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+  {
+    id: 'e-attack-victim',
+    source: 'attack-contract',
+    target: 'victim',
+    label: 'Exploits',
+    animated: false,
+    style: { stroke: '#ef4444', strokeWidth: 3 },
+    labelStyle: { fill: '#ef4444', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+  {
+    id: 'e-victim-attack',
+    source: 'victim',
+    target: 'attack-contract',
+    label: '8,535 ETH drained',
+    animated: false,
+    type: 'straight',
+    style: { stroke: '#ef4444', strokeWidth: 3, strokeDasharray: '5,5' },
+    labelStyle: { fill: '#ef4444', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 3: FUND DISTRIBUTION - Jan 8, 2026
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: 'e-attack-desta',
+    source: 'attack-contract',
+    target: 'dest-a',
+    label: '4,267 ETH',
+    animated: false,
+    style: { stroke: '#f97316', strokeWidth: 3 },
+    labelStyle: { fill: '#f97316', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+  {
+    id: 'e-attack-destb',
+    source: 'attack-contract',
+    target: 'dest-b',
+    label: '4,001 ETH',
+    animated: true,
+    style: { stroke: '#eab308', strokeWidth: 3 },
+    labelStyle: { fill: '#eab308', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+
+  // ═══════════════════════════════════════════════════════════════
+  // PHASE 4: LAUNDERING CHAIN - Jan 9-10, 2026
+  // ═══════════════════════════════════════════════════════════════
+  {
+    id: 'e-desta-newholding',
+    source: 'dest-a',
+    target: 'new-holding',
+    label: '4,267 ETH (Jan 9)',
+    animated: false,
+    style: { stroke: '#f97316', strokeWidth: 2 },
+    labelStyle: { fill: '#f97316', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+  {
+    id: 'e-newholding-laundering',
+    source: 'new-holding',
+    target: 'laundering',
+    label: '4,267 ETH (Jan 10)',
+    animated: false,
+    style: { stroke: '#ef4444', strokeWidth: 2 },
+    labelStyle: { fill: '#ef4444', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+  {
+    id: 'e-laundering-tornado',
+    source: 'laundering',
+    target: 'tornado',
+    label: '57+ deposits',
+    animated: false,
+    style: { stroke: '#a855f7', strokeWidth: 3 },
+    labelStyle: { fill: '#a855f7', fontWeight: 'bold', fontSize: '11px' },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  },
+
+  // Message to attacker (side connection)
   {
     id: 'e-message-destb',
     source: 'message-sender',
     target: 'dest-b',
-    label: 'On-chain msg',
+    label: 'On-chain message',
     animated: false,
     style: { stroke: '#ec4899', strokeWidth: 1, strokeDasharray: '5,5' },
-    labelStyle: { fill: '#ec4899' },
+    labelStyle: { fill: '#ec4899', fontSize: '10px' },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   }
 ]);
@@ -441,6 +485,10 @@ const edges = ref([
   border-radius: 50%;
 }
 
+.legend-dot.bridge {
+  background: #3b82f6;
+}
+
 .legend-dot.victim {
   background: #ef4444;
 }
@@ -496,6 +544,11 @@ const edges = ref([
   animation: pulse-border 2s infinite;
 }
 
+.custom-node.bridge {
+  background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%);
+  border: 2px solid #3b82f6;
+}
+
 .custom-node.drained {
   background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
   border: 2px solid #64748b;
@@ -546,6 +599,11 @@ const edges = ref([
 .status-active {
   background: #365314;
   color: #a3e635;
+}
+
+.status-attack {
+  background: #7f1d1d;
+  color: #fca5a5;
 }
 
 .status-holding {
