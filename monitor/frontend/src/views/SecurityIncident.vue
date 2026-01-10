@@ -474,7 +474,19 @@ const updates = [
           Many of us believed in the vision and supported the project for years.
         </p>
 
-        <div class="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4 mt-6">
+        <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4 mt-6">
+          <h4 class="text-green-400 font-bold mb-3">Looking Forward</h4>
+          <p class="text-slate-300 mb-3">
+            The TrueBit Monitor and tru.watch will continue to look forward to the release and broader usage of the TrueBit platform.
+            We are excited to provide more features and tools for the community.
+          </p>
+          <p class="text-slate-300">
+            We remain optimistic that there will be a future for the token and for this community.
+            The underlying technology is real, the product works, and we believe in what TrueBit set out to build.
+          </p>
+        </div>
+
+        <div class="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4 mt-4">
           <h4 class="text-cyan-400 font-bold mb-3">To Our Fellow Holders</h4>
           <p class="text-slate-300 mb-3">
             We want to wish all other holders all the best. Please stay safe out there.
