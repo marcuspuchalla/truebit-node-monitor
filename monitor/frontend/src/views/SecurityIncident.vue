@@ -324,8 +324,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 10, 2026 - 12:00 UTC';
-const pageLastUpdated = 'Jan 10, 2026 - 12:00 UTC';
+const lastResearchTime = 'Jan 10, 2026 - 17:45 UTC';
+const pageLastUpdated = 'Jan 10, 2026 - 17:45 UTC';
 
 interface DestinationState {
   balance: number;
@@ -439,6 +439,69 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 15,
+    timestamp: 'Jan 10, 2026 - 17:45 UTC',
+    tag: 'FUND MOVEMENT',
+    tagClass: 'bg-red-500/30 text-red-400 font-bold',
+    title: '1,000 ETH Moved - Dust Transaction Pattern Analyzed',
+    content: `
+      <p class="text-lg text-red-400 font-bold mb-3">⚠️ Fund movement detected!</p>
+      <p>At <strong>17:02 UTC on Jan 10, 2026</strong>, 1,000 ETH (~$3.1M) was transferred from the New Holding Address to a new address.</p>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-red-500/30">
+        <h4 class="text-red-400 font-bold mb-2">Movement Details:</h4>
+        <ul class="list-disc list-inside space-y-1 text-sm">
+          <li><strong>Amount:</strong> 1,000 ETH (~$3.1M)</li>
+          <li><strong>From:</strong> <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="text-cyan-400 hover:underline">0xD12f6E0f...31a60</a> (New Holding)</li>
+          <li><strong>To:</strong> <a href="https://etherscan.io/address/0x7720C2f59391Fe6339310913Ad13A8119393a59D" target="_blank" class="text-cyan-400 hover:underline">0x7720C2f5...3a59D</a></li>
+          <li><strong>Tx:</strong> <a href="https://etherscan.io/tx/0xeb77dcd953d80301716123709d916f601d84c60fb784b845ec86cc93ea2f7323" target="_blank" class="text-cyan-400 hover:underline">View on Etherscan</a></li>
+        </ul>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">New Holding (Updated)</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">3,267 ETH</div>
+          <div class="text-red-400 text-xs mt-1">↓ -1,000 ETH</div>
+        </div>
+        <div class="bg-red-900/20 border border-red-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">New: 0x7720C2f5...</div>
+          <div class="text-xl font-bold text-red-400 font-mono">1,000 ETH</div>
+          <div class="text-red-400 text-xs mt-1">🆕 Just received</div>
+        </div>
+        <div class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3">
+          <div class="text-xs text-slate-400 mb-1">Destination B</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">4,001 ETH</div>
+          <div class="text-yellow-400 text-xs mt-1">⏳ No change</div>
+        </div>
+      </div>
+
+      <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 mt-4">
+        <h4 class="text-purple-400 font-bold mb-2">🔍 Dust Transaction Analysis</h4>
+        <p class="text-sm text-slate-300 mb-3">Multiple tiny transactions (0.00000001 ETH) have been sent to the holding address from addresses starting with <code class="bg-slate-800 px-1 rounded">0x772...</code>. The 1,000 ETH was sent to an address with the <strong>same prefix</strong>.</p>
+
+        <p class="text-sm text-slate-300 font-bold mt-3">Two possible explanations:</p>
+        <div class="mt-2 space-y-3">
+          <div class="bg-slate-800/50 p-3 rounded">
+            <p class="text-sm"><strong class="text-green-400">1. Attacker's Distribution Network</strong></p>
+            <p class="text-xs text-slate-400 mt-1">The attacker pre-generated many 0x772... addresses they control. The dust transactions were preparation to "seed" these addresses. Now they're using them to distribute stolen funds for laundering. This appears most likely.</p>
+          </div>
+          <div class="bg-slate-800/50 p-3 rounded">
+            <p class="text-sm"><strong class="text-orange-400">2. Address Poisoning Attack</strong></p>
+            <p class="text-xs text-slate-400 mt-1">A third party created similar-looking addresses (0x772...) and sent dust hoping the attacker would copy the wrong address. If so, the attacker may have accidentally sent 1,000 ETH to a scammer's address. This seems less likely given the pattern.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-500/30">
+        <h4 class="text-slate-300 font-bold mb-2">Official Communication</h4>
+        <p class="text-sm text-slate-400">We are still waiting for more official announcements from the TrueBit team. No new statements have been released since January 9.</p>
+      </div>
+
+      <p class="mt-4 text-slate-400 text-sm"><strong class="text-cyan-400">Summary:</strong> Fund distribution appears to have begun. Total stolen funds across all known addresses: ~8,268 ETH ($25.6M). Monitoring continues on all addresses.</p>
+    `
+  },
   {
     id: 14,
     timestamp: 'Jan 10, 2026 - 12:00 UTC',
@@ -810,27 +873,28 @@ const updates = [
 // Timeline in reverse chronological order (newest first), with links to updates
 // updateId references stable IDs: oldest event = ID 1, newest = highest ID
 const timeline = [
-  { id: 1, time: 'Jan 10, 12:00', title: 'Day 2: CertiK report, no news', isAttack: false, updateId: 14 },
-  { id: 2, time: 'Jan 9, 15:00', title: 'TrueBit 2nd official statement', isAttack: false, updateId: 13 },
-  { id: 3, time: 'Jan 9, 14:30', title: 'Status: funds stationary 13+ hrs', isAttack: false, updateId: 12 },
-  { id: 4, time: 'Jan 9, 09:15', title: 'Dust transactions observed', isAttack: false, updateId: 11 },
-  { id: 5, time: 'Jan 9, 01:14', title: 'FUNDS MOVING - 4,267 ETH relocated', isAttack: true, updateId: 10 },
-  { id: 6, time: 'Jan 8, 23:45', title: 'On-chain message to attacker', isAttack: false, updateId: 9 },
-  { id: 7, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 8 },
-  { id: 8, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 7 },
-  { id: 9, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 6 },
-  { id: 10, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 5 },
-  { id: 11, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 4 },
-  { id: 12, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
-  { id: 13, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
-  { id: 14, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 2 },
-  { id: 15, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
-  { id: 16, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 1 },
-  { id: 17, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
-  { id: 18, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 6 },
-  { id: 19, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 3 },
-  { id: 20, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 8 },
-  { id: 21, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 8 },
+  { id: 1, time: 'Jan 10, 17:02', title: '1,000 ETH moved to 0x772... address', isAttack: true, updateId: 15 },
+  { id: 2, time: 'Jan 10, 12:00', title: 'Day 2: CertiK report, no news', isAttack: false, updateId: 14 },
+  { id: 3, time: 'Jan 9, 15:00', title: 'TrueBit 2nd official statement', isAttack: false, updateId: 13 },
+  { id: 4, time: 'Jan 9, 14:30', title: 'Status: funds stationary 13+ hrs', isAttack: false, updateId: 12 },
+  { id: 5, time: 'Jan 9, 09:15', title: 'Dust transactions observed', isAttack: false, updateId: 11 },
+  { id: 6, time: 'Jan 9, 01:14', title: 'FUNDS MOVING - 4,267 ETH relocated', isAttack: true, updateId: 10 },
+  { id: 7, time: 'Jan 8, 23:45', title: 'On-chain message to attacker', isAttack: false, updateId: 9 },
+  { id: 8, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 8 },
+  { id: 9, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 7 },
+  { id: 10, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 6 },
+  { id: 11, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 5 },
+  { id: 12, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 4 },
+  { id: 13, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
+  { id: 14, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
+  { id: 15, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 2 },
+  { id: 16, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
+  { id: 17, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 1 },
+  { id: 18, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
+  { id: 19, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 6 },
+  { id: 20, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 3 },
+  { id: 21, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 8 },
+  { id: 22, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 8 },
 ];
 
 const addresses = [
