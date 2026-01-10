@@ -30,7 +30,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div class="space-y-2">
           <p class="text-slate-300"><strong class="text-red-400">What happened:</strong> On Jan 8, 2026 at 16:02 UTC, an attacker exploited the TrueBit Protocol Purchase contract, draining ~8,535 ETH ($26.6M).</p>
-          <p class="text-slate-300"><strong class="text-red-400">Current status:</strong> FUNDS ARE MOVING! ~4,267 ETH from Destination A moved to new address on Jan 9. Destination B (~4,001 ETH) remains stationary.</p>
+          <p class="text-slate-300"><strong class="text-red-400">Current status:</strong> 🚨 ACTIVE LAUNDERING! ~4,267 ETH (~51% of stolen funds) has been deposited to Tornado Cash via 57+ transactions. Destination B (~4,001 ETH) remains stationary.</p>
           <p class="text-slate-300"><strong class="text-cyan-400">Official response:</strong> TrueBit acknowledged the incident, warned users not to interact with the affected contract, and confirmed law enforcement contact.</p>
         </div>
         <div class="space-y-2">
@@ -64,10 +64,10 @@
             <div class="text-2xl font-bold text-slate-500">0 ETH</div>
             <div class="text-slate-500 text-sm">No recovery yet</div>
           </div>
-          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4">
+          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4 animate-pulse-subtle">
             <div class="text-slate-400 text-sm">Funds Status</div>
-            <div class="text-2xl font-bold text-red-400">MOVING</div>
-            <div class="text-slate-500 text-sm">~4,267 ETH relocated Jan 9</div>
+            <div class="text-2xl font-bold text-red-400">LAUNDERING</div>
+            <div class="text-slate-500 text-sm">~4,267 ETH to Tornado Cash</div>
           </div>
         </div>
 
@@ -310,8 +310,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 10, 2026 - 17:45 UTC';
-const pageLastUpdated = 'Jan 10, 2026 - 17:45 UTC';
+const lastResearchTime = 'Jan 10, 2026 - 20:00 UTC';
+const pageLastUpdated = 'Jan 10, 2026 - 20:00 UTC';
 
 interface DestinationState {
   balance: number;
@@ -425,6 +425,132 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 16,
+    timestamp: 'Jan 10, 2026 - 20:00 UTC',
+    tag: 'CRITICAL',
+    tagClass: 'bg-red-500/50 text-red-300 font-bold animate-pulse',
+    title: '🚨 ACTIVE LAUNDERING - ~4,267 ETH Deposited to Tornado Cash',
+    content: `
+      <p class="text-lg text-red-400 font-bold mb-3">⚠️ CRITICAL: The attacker is actively laundering funds through Tornado Cash!</p>
+      <p>Between <strong>17:02 - 19:35 UTC on Jan 10, 2026</strong>, all ~4,267 ETH from the "New Holding Address" chain has been deposited to Tornado Cash via <strong>57+ transactions</strong>.</p>
+
+      <div class="bg-red-900/30 border-2 border-red-500 rounded-lg p-4 mt-4">
+        <h4 class="text-red-400 font-bold mb-2">🔴 LAUNDERING STATISTICS</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-red-400">~4,267</div>
+            <div class="text-xs text-slate-400">ETH Laundered</div>
+          </div>
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-red-400">57+</div>
+            <div class="text-xs text-slate-400">Transactions</div>
+          </div>
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-red-400">51%</div>
+            <div class="text-xs text-slate-400">Of Total Stolen</div>
+          </div>
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-yellow-400">4,001</div>
+            <div class="text-xs text-slate-400">ETH Remaining</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-600">
+        <h4 class="text-cyan-400 font-bold mb-2">Fund Flow Chain:</h4>
+        <div class="font-mono text-xs text-slate-300 overflow-x-auto">
+          <div>Destination A (4,267 ETH) → New Holding (0xD12f...) → Laundering Address (0x7720C2f5...) → <span class="text-red-400 font-bold">Tornado Cash</span></div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-600">
+        <h4 class="text-cyan-400 font-bold mb-2">Tornado Cash Deposit Pattern:</h4>
+        <ul class="list-disc list-inside space-y-1 text-sm">
+          <li><strong>34+ deposits</strong> of 100 ETH each (~3,400 ETH)</li>
+          <li><strong>6+ deposits</strong> of 10 ETH each (~60 ETH)</li>
+          <li><strong>8+ deposits</strong> of 1 ETH each (~8 ETH)</li>
+          <li><strong>Several deposits</strong> of 0.1 ETH each</li>
+        </ul>
+        <p class="text-xs text-slate-400 mt-2">All deposits sent to <a href="https://etherscan.io/address/0xd90e2f925da726b50c4ed8d0fb90ad053324f31b" target="_blank" class="text-cyan-400 hover:underline">Tornado.Cash: Router</a></p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <a href="https://etherscan.io/address/0x7720C2f59391Fe6339310913Ad13A8119393a59D" target="_blank" class="bg-red-900/30 border-2 border-red-500 rounded-lg p-3 hover:bg-red-900/40 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Laundering Address ↗</div>
+          <div class="text-xl font-bold text-red-400 font-mono">~0.6 ETH</div>
+          <div class="text-red-400 text-xs mt-1">⚠️ DRAINED TO TORNADO</div>
+        </a>
+        <a href="https://etherscan.io/address/0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60" target="_blank" class="bg-slate-800/50 border border-slate-600 rounded-lg p-3 hover:bg-slate-800/70 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">New Holding (Drained) ↗</div>
+          <div class="text-xl font-bold text-slate-500 font-mono">~0 ETH</div>
+          <div class="text-slate-500 text-xs mt-1">EMPTIED</div>
+        </a>
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-yellow-900/20 border border-yellow-500/50 rounded-lg p-3 hover:bg-yellow-900/30 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B ↗</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">4,001 ETH</div>
+          <div class="text-yellow-400 text-xs mt-1">⏳ Still stationary</div>
+        </a>
+      </div>
+
+      <div class="bg-purple-900/20 border border-purple-500/30 rounded-lg p-4 mt-4">
+        <h4 class="text-purple-400 font-bold mb-2">📊 Complete Address Statistics</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-slate-400">
+                <th class="text-left p-2">Address</th>
+                <th class="text-right p-2">Balance</th>
+                <th class="text-right p-2">Txns</th>
+                <th class="text-left p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody class="text-slate-300">
+              <tr class="border-t border-slate-700">
+                <td class="p-2">Attacker EOA (0x6C8E...)</td>
+                <td class="p-2 text-right font-mono">267.71 ETH</td>
+                <td class="p-2 text-right">44</td>
+                <td class="p-2 text-yellow-400">Holding</td>
+              </tr>
+              <tr class="border-t border-slate-700">
+                <td class="p-2">Destination B (0x2735...)</td>
+                <td class="p-2 text-right font-mono">4,001 ETH</td>
+                <td class="p-2 text-right">7</td>
+                <td class="p-2 text-yellow-400">No Movement</td>
+              </tr>
+              <tr class="border-t border-slate-700">
+                <td class="p-2">Laundering (0x7720C2f5...)</td>
+                <td class="p-2 text-right font-mono">~0.6 ETH</td>
+                <td class="p-2 text-right">65</td>
+                <td class="p-2 text-red-400">TORNADO DEPOSITS</td>
+              </tr>
+              <tr class="border-t border-slate-700">
+                <td class="p-2">New Holding (0xD12f...)</td>
+                <td class="p-2 text-right font-mono">~0 ETH</td>
+                <td class="p-2 text-right">39</td>
+                <td class="p-2 text-slate-500">Drained</td>
+              </tr>
+              <tr class="border-t border-slate-700">
+                <td class="p-2">Destination A (0x62Af...)</td>
+                <td class="p-2 text-right font-mono">~0 ETH</td>
+                <td class="p-2 text-right">16</td>
+                <td class="p-2 text-slate-500">Drained</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 mt-4">
+        <h4 class="text-orange-400 font-bold mb-2">⚠️ Current Situation</h4>
+        <ul class="list-disc list-inside space-y-1 text-sm">
+          <li><strong class="text-red-400">~51% of stolen funds</strong> (~4,267 ETH / $13.2M) now laundered through Tornado Cash</li>
+          <li><strong class="text-yellow-400">~49% remaining</strong> (~4,001 ETH / $12.4M) still in Destination B - has not moved</li>
+          <li><strong class="text-slate-300">Recovery increasingly unlikely</strong> for laundered portion unless Tornado Cash withdrawals are traced</li>
+        </ul>
+      </div>
+    `
+  },
   {
     id: 15,
     timestamp: 'Jan 10, 2026 - 17:45 UTC',
@@ -859,31 +985,50 @@ const updates = [
 // Timeline in reverse chronological order (newest first), with links to updates
 // updateId references stable IDs: oldest event = ID 1, newest = highest ID
 const timeline = [
-  { id: 1, time: 'Jan 10, 17:02', title: '1,000 ETH moved to 0x772... address', isAttack: true, updateId: 15 },
-  { id: 2, time: 'Jan 10, 12:00', title: 'Day 2: CertiK report, no news', isAttack: false, updateId: 14 },
-  { id: 3, time: 'Jan 9, 15:00', title: 'TrueBit 2nd official statement', isAttack: false, updateId: 13 },
-  { id: 4, time: 'Jan 9, 14:30', title: 'Status: funds stationary 13+ hrs', isAttack: false, updateId: 12 },
-  { id: 5, time: 'Jan 9, 09:15', title: 'Dust transactions observed', isAttack: false, updateId: 11 },
-  { id: 6, time: 'Jan 9, 01:14', title: 'FUNDS MOVING - 4,267 ETH relocated', isAttack: true, updateId: 10 },
-  { id: 7, time: 'Jan 8, 23:45', title: 'On-chain message to attacker', isAttack: false, updateId: 9 },
-  { id: 8, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 8 },
-  { id: 9, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 7 },
-  { id: 10, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 6 },
-  { id: 11, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 5 },
-  { id: 12, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 4 },
-  { id: 13, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
-  { id: 14, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
-  { id: 15, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 2 },
-  { id: 16, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
-  { id: 17, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 1 },
-  { id: 18, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
-  { id: 19, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 6 },
-  { id: 20, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 3 },
-  { id: 21, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 8 },
-  { id: 22, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 8 },
+  { id: 1, time: 'Jan 10, 19:35', title: 'TORNADO CASH LAUNDERING COMPLETE - 4,267 ETH', isAttack: true, updateId: 16 },
+  { id: 2, time: 'Jan 10, 18:39', title: '3,266 ETH sent to laundering address', isAttack: true, updateId: 16 },
+  { id: 3, time: 'Jan 10, 18:18', title: 'Tornado Cash deposits begin', isAttack: true, updateId: 16 },
+  { id: 4, time: 'Jan 10, 17:02', title: '1,000 ETH moved to 0x7720C2f5...', isAttack: true, updateId: 15 },
+  { id: 5, time: 'Jan 10, 12:00', title: 'Day 2: CertiK report, no news', isAttack: false, updateId: 14 },
+  { id: 6, time: 'Jan 9, 15:00', title: 'TrueBit 2nd official statement', isAttack: false, updateId: 13 },
+  { id: 7, time: 'Jan 9, 14:30', title: 'Status: funds stationary 13+ hrs', isAttack: false, updateId: 12 },
+  { id: 8, time: 'Jan 9, 09:15', title: 'Dust transactions observed', isAttack: false, updateId: 11 },
+  { id: 9, time: 'Jan 9, 01:14', title: 'FUNDS MOVING - 4,267 ETH relocated', isAttack: true, updateId: 10 },
+  { id: 10, time: 'Jan 8, 23:45', title: 'On-chain message to attacker', isAttack: false, updateId: 9 },
+  { id: 11, time: 'Jan 8, 23:15', title: 'Chain-hopping traced', isAttack: false, updateId: 8 },
+  { id: 12, time: 'Jan 8, 22:30', title: 'TrueBit official statement', isAttack: false, updateId: 7 },
+  { id: 13, time: 'Jan 8, 22:00', title: 'Tornado Cash corrected (4 ETH)', isAttack: false, updateId: 6 },
+  { id: 14, time: 'Jan 8, 21:45', title: 'Funds verified stationary', isAttack: false, updateId: 5 },
+  { id: 15, time: 'Jan 8, 19:30', title: 'Funds traced', isAttack: false, updateId: 4 },
+  { id: 16, time: 'Jan 8, 18:45', title: 'Attacker profile', isAttack: false, updateId: 3 },
+  { id: 17, time: 'Jan 8, 18:29', title: '4,001 ETH to Dest B', isAttack: false, updateId: null },
+  { id: 18, time: 'Jan 8, 17:00', title: 'Cyvers alert', isAttack: false, updateId: 2 },
+  { id: 19, time: 'Jan 8, 16:11', title: '4,267 ETH to Dest A', isAttack: false, updateId: null },
+  { id: 20, time: 'Jan 8, 16:02', title: 'ATTACK EXECUTED', isAttack: true, updateId: 1 },
+  { id: 21, time: 'Dec 27, 2025', title: 'Test contract deployed', isAttack: false, updateId: 3 },
+  { id: 22, time: 'Dec 27, 2025', title: 'Tornado Cash test (4 ETH)', isAttack: false, updateId: 6 },
+  { id: 23, time: 'Dec 6, 2025', title: 'Attacker funded (1.015 ETH)', isAttack: false, updateId: 3 },
+  { id: 24, time: 'Nov 29, 2025', title: 'Across Protocol bridge', isAttack: false, updateId: 8 },
+  { id: 25, time: 'Nov 21, 2025', title: 'Rhino.fi bridge from Optimism', isAttack: false, updateId: 8 },
 ];
 
 const addresses = [
+  {
+    role: 'Laundering Address',
+    address: '0x7720C2f59391Fe6339310913Ad13A8119393a59D',
+    balance: '~0.6 ETH',
+    balanceClass: 'text-red-400 font-bold',
+    status: 'TORNADO CASH',
+    statusClass: 'bg-red-500/30 text-red-400 font-bold'
+  },
+  {
+    role: 'Destination B',
+    address: '0x273589ca3713e7becf42069f9fb3f0c164ce850a',
+    balance: '~4,001 ETH',
+    balanceClass: 'text-yellow-400 font-bold',
+    status: 'Holding Funds',
+    statusClass: 'bg-yellow-500/20 text-yellow-400'
+  },
   {
     role: 'Attacker EOA',
     address: '0x6C8EC8f14bE7C01672d31CFa5f2CEfeAB2562b50',
@@ -891,6 +1036,22 @@ const addresses = [
     balanceClass: 'text-slate-300',
     status: 'Active',
     statusClass: 'bg-yellow-500/20 text-yellow-400'
+  },
+  {
+    role: 'New Holding (Drained)',
+    address: '0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60',
+    balance: '~0 ETH',
+    balanceClass: 'text-slate-500',
+    status: 'Emptied Jan 10',
+    statusClass: 'bg-slate-500/20 text-slate-400'
+  },
+  {
+    role: 'Destination A (Drained)',
+    address: '0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862',
+    balance: '~0 ETH',
+    balanceClass: 'text-slate-500',
+    status: 'Drained Jan 9',
+    statusClass: 'bg-slate-500/20 text-slate-400'
   },
   {
     role: 'Message Sender',
@@ -903,7 +1064,7 @@ const addresses = [
   {
     role: 'Intermediary (Funder)',
     address: '0x6aEcB6ee5D7fa4f5b7B5553ED0173442F0EE5ccB',
-    balance: '~0.12 ETH',
+    balance: '~0 ETH',
     balanceClass: 'text-slate-500',
     status: 'Chain-hopped',
     statusClass: 'bg-purple-500/20 text-purple-400'
@@ -922,30 +1083,6 @@ const addresses = [
     balance: '~15.87 ETH',
     balanceClass: 'text-red-400',
     status: 'Drained',
-    statusClass: 'bg-red-500/20 text-red-400'
-  },
-  {
-    role: 'New Holding Address',
-    address: '0xD12f6E0fa7FBF4e3A1c7996E3F0Dd26AB9031a60',
-    balance: '~4,267 ETH',
-    balanceClass: 'text-yellow-400 font-bold',
-    status: 'Monitoring',
-    statusClass: 'bg-yellow-500/20 text-yellow-400'
-  },
-  {
-    role: 'Destination A (Drained)',
-    address: '0x62AfDD1BD84F6b152572404BE90679Ae58Eb4862',
-    balance: '~0 ETH',
-    balanceClass: 'text-slate-500',
-    status: 'Drained Jan 9',
-    statusClass: 'bg-slate-500/20 text-slate-400'
-  },
-  {
-    role: 'Destination B',
-    address: '0x273589ca3713e7becf42069f9fb3f0c164ce850a',
-    balance: '~4,001 ETH',
-    balanceClass: 'text-red-400 font-bold',
-    status: 'Holding Funds',
     statusClass: 'bg-red-500/20 text-red-400'
   },
 ];
