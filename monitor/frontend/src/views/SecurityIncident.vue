@@ -30,7 +30,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div class="space-y-2">
           <p class="text-slate-300"><strong class="text-red-400">What happened:</strong> On Jan 8, 2026 at 16:02 UTC, an attacker exploited the TrueBit Protocol Purchase contract, draining ~8,535 ETH ($26.6M).</p>
-          <p class="text-slate-300"><strong class="text-red-400">Current status:</strong> 🚨 ACTIVE LAUNDERING! ~4,267 ETH (~51% of stolen funds) has been deposited to Tornado Cash via 57+ transactions. Destination B (~4,001 ETH) remains stationary.</p>
+          <p class="text-slate-300"><strong class="text-red-400">Current status:</strong> 🚨 BOTH CHAINS NOW LAUNDERING! Dest A fully laundered (~4,267 ETH). Dest B now draining to Tornado Cash (~400 ETH done, ~3,600 ETH in progress). Recovery increasingly unlikely.</p>
           <p class="text-slate-300"><strong class="text-cyan-400">Official response:</strong> TrueBit acknowledged the incident, warned users not to interact with the affected contract, and confirmed law enforcement contact.</p>
         </div>
         <div class="space-y-2">
@@ -59,20 +59,20 @@
             <div class="text-2xl font-bold text-red-400">~8,535 ETH</div>
             <div class="text-slate-500 text-sm">$26.6M USD</div>
           </div>
-          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4">
+          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4 animate-pulse-subtle">
             <div class="text-slate-400 text-sm">Funds Lost (Tornado)</div>
-            <div class="text-2xl font-bold text-red-400">~4,267 ETH</div>
-            <div class="text-slate-500 text-sm">$13.2M - Unrecoverable</div>
+            <div class="text-2xl font-bold text-red-400">~4,667 ETH</div>
+            <div class="text-slate-500 text-sm">$14.4M - Unrecoverable</div>
+          </div>
+          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4 animate-pulse-subtle">
+            <div class="text-slate-400 text-sm">Being Laundered NOW</div>
+            <div class="text-2xl font-bold text-red-400">~3,600 ETH</div>
+            <div class="text-slate-500 text-sm">$11.1M - Dest B chain</div>
           </div>
           <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <div class="text-slate-400 text-sm">Funds Recovered</div>
             <div class="text-2xl font-bold text-slate-500">0 ETH</div>
             <div class="text-slate-500 text-sm">No recovery yet</div>
-          </div>
-          <div class="bg-slate-800/50 border border-yellow-500/50 rounded-lg p-4">
-            <div class="text-slate-400 text-sm">Still Trackable</div>
-            <div class="text-2xl font-bold text-yellow-400">~4,001 ETH</div>
-            <div class="text-slate-500 text-sm">$12.4M in Dest B</div>
           </div>
         </div>
 
@@ -336,8 +336,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 10, 2026 - 20:00 UTC';
-const pageLastUpdated = 'Jan 10, 2026 - 20:00 UTC';
+const lastResearchTime = 'Jan 10, 2026 - 20:30 UTC';
+const pageLastUpdated = 'Jan 10, 2026 - 20:30 UTC';
 
 interface DestinationState {
   balance: number;
@@ -451,6 +451,114 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 17,
+    timestamp: 'Jan 10, 2026 - 20:30 UTC',
+    tag: 'CRITICAL',
+    tagClass: 'bg-red-500/50 text-red-300 font-bold animate-pulse',
+    title: '🚨 DESTINATION B NOW DRAINING - Both Chains Being Laundered',
+    content: `
+      <p class="text-lg text-red-400 font-bold mb-3">⚠️ BREAKING: Destination B has been drained and is now being laundered!</p>
+      <p>At <strong>19:50 UTC on Jan 10, 2026</strong>, the attacker began draining Destination B (~4,001 ETH) through a new laundering address.</p>
+
+      <div class="bg-red-900/30 border-2 border-red-500 rounded-lg p-4 mt-4">
+        <h4 class="text-red-400 font-bold mb-2">🔴 DESTINATION B LAUNDERING STATUS</h4>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-red-400">4,001</div>
+            <div class="text-xs text-slate-400">ETH Drained</div>
+          </div>
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-red-400">~400</div>
+            <div class="text-xs text-slate-400">ETH to Tornado</div>
+          </div>
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-yellow-400">~3,600</div>
+            <div class="text-xs text-slate-400">ETH Remaining</div>
+          </div>
+          <div class="bg-slate-900/50 rounded p-2">
+            <div class="text-2xl font-bold text-red-400">4+</div>
+            <div class="text-xs text-slate-400">Tornado Deposits</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-slate-900/50 p-4 rounded mt-4 border border-slate-600">
+        <h4 class="text-cyan-400 font-bold mb-2">New Laundering Chain (Dest B):</h4>
+        <div class="font-mono text-xs text-slate-300 overflow-x-auto">
+          <div>Destination B (4,001 ETH) → <span class="text-yellow-400">0xd841c52b...19b0b135</span> → <span class="text-red-400 font-bold">Tornado Cash</span></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+        <a href="https://etherscan.io/address/0x273589ca3713e7becf42069f9fb3f0c164ce850a" target="_blank" class="bg-slate-800/50 border border-slate-600 rounded-lg p-3 hover:bg-slate-800/70 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Destination B (Drained) ↗</div>
+          <div class="text-xl font-bold text-slate-500 font-mono">~0 ETH</div>
+          <div class="text-red-400 text-xs mt-1">EMPTIED</div>
+        </a>
+        <a href="https://etherscan.io/address/0xd841c52b68c5db133078aba039bd9eaf19b0b135" target="_blank" class="bg-red-900/30 border-2 border-red-500 rounded-lg p-3 hover:bg-red-900/40 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Laundering Wallet 2 ↗</div>
+          <div class="text-xl font-bold text-yellow-400 font-mono">~3,600 ETH</div>
+          <div class="text-red-400 text-xs mt-1">⚠️ ACTIVELY LAUNDERING</div>
+        </a>
+        <a href="https://etherscan.io/address/0xd90e2f925da726b50c4ed8d0fb90ad053324f31b" target="_blank" class="bg-purple-900/30 border border-purple-500 rounded-lg p-3 hover:bg-purple-900/40 transition-colors">
+          <div class="text-xs text-slate-400 mb-1">Tornado Cash Router ↗</div>
+          <div class="text-xl font-bold text-purple-400 font-mono">~400 ETH</div>
+          <div class="text-purple-400 text-xs mt-1">From Dest B chain</div>
+        </a>
+      </div>
+
+      <div class="bg-red-900/30 border border-red-500/50 rounded-lg p-4 mt-4">
+        <h4 class="text-red-400 font-bold mb-2">📊 TOTAL LAUNDERING STATUS</h4>
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs">
+            <thead>
+              <tr class="text-slate-400">
+                <th class="text-left p-2">Chain</th>
+                <th class="text-right p-2">Original</th>
+                <th class="text-right p-2">Laundered</th>
+                <th class="text-right p-2">Remaining</th>
+                <th class="text-left p-2">Status</th>
+              </tr>
+            </thead>
+            <tbody class="text-slate-300">
+              <tr class="border-t border-slate-700">
+                <td class="p-2">Dest A Chain</td>
+                <td class="p-2 text-right font-mono">4,267 ETH</td>
+                <td class="p-2 text-right font-mono text-red-400">4,267 ETH</td>
+                <td class="p-2 text-right font-mono">0 ETH</td>
+                <td class="p-2 text-red-400">COMPLETE</td>
+              </tr>
+              <tr class="border-t border-slate-700">
+                <td class="p-2">Dest B Chain</td>
+                <td class="p-2 text-right font-mono">4,001 ETH</td>
+                <td class="p-2 text-right font-mono text-red-400">~400 ETH</td>
+                <td class="p-2 text-right font-mono text-yellow-400">~3,600 ETH</td>
+                <td class="p-2 text-yellow-400">IN PROGRESS</td>
+              </tr>
+              <tr class="border-t border-slate-700 font-bold">
+                <td class="p-2">TOTAL</td>
+                <td class="p-2 text-right font-mono">8,268 ETH</td>
+                <td class="p-2 text-right font-mono text-red-400">~4,667 ETH</td>
+                <td class="p-2 text-right font-mono text-yellow-400">~3,600 ETH</td>
+                <td class="p-2 text-red-400">56% GONE</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-orange-900/20 border border-orange-500/30 rounded-lg p-4 mt-4">
+        <h4 class="text-orange-400 font-bold mb-2">⚠️ Critical Assessment</h4>
+        <ul class="list-disc list-inside space-y-1 text-sm">
+          <li><strong class="text-red-400">~56% of stolen funds</strong> (~4,667 ETH / $14.4M) now in Tornado Cash</li>
+          <li><strong class="text-yellow-400">~44% in active laundering</strong> (~3,600 ETH / $11.1M) - moving to Tornado rapidly</li>
+          <li><strong class="text-slate-300">Attacker working quickly</strong> - likely to complete within hours</li>
+          <li><strong class="text-slate-300">Recovery now extremely unlikely</strong> for majority of funds</li>
+        </ul>
+      </div>
+    `
+  },
   {
     id: 16,
     timestamp: 'Jan 10, 2026 - 20:00 UTC',
@@ -1011,7 +1119,8 @@ const updates = [
 // Timeline in reverse chronological order (newest first), with links to updates
 // updateId references stable IDs: oldest event = ID 1, newest = highest ID
 const timeline = [
-  { id: 1, time: 'Jan 10, 19:35', title: 'TORNADO CASH LAUNDERING COMPLETE - 4,267 ETH', isAttack: true, updateId: 16 },
+  { id: 1, time: 'Jan 10, 19:50', title: 'DEST B DRAINED - 4,001 ETH to laundering wallet 2', isAttack: true, updateId: 17 },
+  { id: 2, time: 'Jan 10, 19:35', title: 'TORNADO CASH LAUNDERING COMPLETE - 4,267 ETH', isAttack: true, updateId: 16 },
   { id: 2, time: 'Jan 10, 18:39', title: '3,266 ETH sent to laundering address', isAttack: true, updateId: 16 },
   { id: 3, time: 'Jan 10, 18:18', title: 'Tornado Cash deposits begin', isAttack: true, updateId: 16 },
   { id: 4, time: 'Jan 10, 17:02', title: '1,000 ETH moved to 0x7720C2f5...', isAttack: true, updateId: 15 },
@@ -1040,7 +1149,15 @@ const timeline = [
 
 const addresses = [
   {
-    role: 'Laundering Address',
+    role: 'Laundering Wallet 2 (NEW)',
+    address: '0xd841c52b68c5db133078aba039bd9eaf19b0b135',
+    balance: '~3,600 ETH',
+    balanceClass: 'text-red-400 font-bold animate-pulse',
+    status: 'LAUNDERING NOW',
+    statusClass: 'bg-red-500/30 text-red-400 font-bold animate-pulse'
+  },
+  {
+    role: 'Laundering Wallet 1',
     address: '0x7720C2f59391Fe6339310913Ad13A8119393a59D',
     balance: '~0.6 ETH',
     balanceClass: 'text-red-400 font-bold',
@@ -1048,12 +1165,12 @@ const addresses = [
     statusClass: 'bg-red-500/30 text-red-400 font-bold'
   },
   {
-    role: 'Destination B',
+    role: 'Destination B (Drained)',
     address: '0x273589ca3713e7becf42069f9fb3f0c164ce850a',
-    balance: '~4,001 ETH',
-    balanceClass: 'text-yellow-400 font-bold',
-    status: 'Holding Funds',
-    statusClass: 'bg-yellow-500/20 text-yellow-400'
+    balance: '~0 ETH',
+    balanceClass: 'text-slate-500',
+    status: 'DRAINED',
+    statusClass: 'bg-red-500/30 text-red-400'
   },
   {
     role: 'Attacker EOA',

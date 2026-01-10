@@ -1,6 +1,6 @@
 {
   "name": "truebit-node-monitor-frontend",
-  "version": "0.1.19.2",
+  "version": "0.1.20",
   "description": "Frontend for TrueBit Node Monitor",
   "type": "module",
   "repository": {
