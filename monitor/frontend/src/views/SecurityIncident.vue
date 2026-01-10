@@ -336,8 +336,8 @@ const DEST_B_INITIAL = 4001;
 const MOVE_TOLERANCE = 1; // 1 ETH tolerance
 
 // Last research timestamp
-const lastResearchTime = 'Jan 10, 2026 - 20:30 UTC';
-const pageLastUpdated = 'Jan 10, 2026 - 20:30 UTC';
+const lastResearchTime = 'Jan 10, 2026 - 21:00 UTC';
+const pageLastUpdated = 'Jan 10, 2026 - 21:00 UTC';
 
 interface DestinationState {
   balance: number;
@@ -451,6 +451,49 @@ onUnmounted(() => {
 
 // Updates ordered newest first for display, but IDs are stable (oldest = lowest ID)
 const updates = [
+  {
+    id: 18,
+    timestamp: 'Jan 10, 2026 - 21:00 UTC',
+    tag: 'FINAL',
+    tagClass: 'bg-cyan-500/50 text-cyan-300 font-bold',
+    title: 'A Message to the TrueBit Community',
+    content: `
+      <div class="bg-slate-800/50 border border-cyan-500/30 rounded-lg p-6 mt-4">
+        <p class="text-slate-300 mb-4">
+          This page will only be updated again if there are new official communications from the TrueBit team.
+        </p>
+
+        <p class="text-slate-300 mb-4">
+          We would like to express our deep hope that this situation will somehow be resolved by the team.
+          The technology behind TrueBit is still outstanding - they have built a working product that represents
+          real innovation in verifiable computation. We hope the team finds a path forward.
+        </p>
+
+        <p class="text-slate-300 mb-4">
+          To the TrueBit team: We hope you think of the many people who lost their funds in this incident.
+          Many of us believed in the vision and supported the project for years.
+        </p>
+
+        <div class="bg-cyan-900/20 border border-cyan-500/30 rounded-lg p-4 mt-6">
+          <h4 class="text-cyan-400 font-bold mb-3">To Our Fellow Holders</h4>
+          <p class="text-slate-300 mb-3">
+            We want to wish all other holders all the best. Please stay safe out there.
+          </p>
+          <p class="text-slate-300 mb-3">
+            Always remember - it's most important to be healthy. Money can be recovered, but health and wellbeing
+            come first. Take care of yourselves and your loved ones.
+          </p>
+          <p class="text-cyan-300 font-medium">
+            There will be better days. Let's hope for them together.
+          </p>
+        </div>
+
+        <p class="text-slate-500 text-sm mt-6 italic">
+          - The tru.watch community
+        </p>
+      </div>
+    `
+  },
   {
     id: 17,
     timestamp: 'Jan 10, 2026 - 20:30 UTC',
@@ -1119,8 +1162,9 @@ const updates = [
 // Timeline in reverse chronological order (newest first), with links to updates
 // updateId references stable IDs: oldest event = ID 1, newest = highest ID
 const timeline = [
-  { id: 1, time: 'Jan 10, 19:50', title: 'DEST B DRAINED - 4,001 ETH to laundering wallet 2', isAttack: true, updateId: 17 },
-  { id: 2, time: 'Jan 10, 19:35', title: 'TORNADO CASH LAUNDERING COMPLETE - 4,267 ETH', isAttack: true, updateId: 16 },
+  { id: 1, time: 'Jan 10, 21:00', title: 'Final update - Message to the community', isAttack: false, updateId: 18 },
+  { id: 2, time: 'Jan 10, 19:50', title: 'DEST B DRAINED - 4,001 ETH to laundering wallet 2', isAttack: true, updateId: 17 },
+  { id: 3, time: 'Jan 10, 19:35', title: 'TORNADO CASH LAUNDERING COMPLETE - 4,267 ETH', isAttack: true, updateId: 16 },
   { id: 2, time: 'Jan 10, 18:39', title: '3,266 ETH sent to laundering address', isAttack: true, updateId: 16 },
   { id: 3, time: 'Jan 10, 18:18', title: 'Tornado Cash deposits begin', isAttack: true, updateId: 16 },
   { id: 4, time: 'Jan 10, 17:02', title: '1,000 ETH moved to 0x7720C2f5...', isAttack: true, updateId: 15 },
