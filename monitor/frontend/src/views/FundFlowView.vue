@@ -70,12 +70,12 @@
       <div class="info-title">Last Updated: {{ lastUpdated }}</div>
       <div class="info-stats">
         <div class="stat">
-          <span class="stat-value text-red-400">~6,700 ETH</span>
+          <span class="stat-value text-red-400">~8,267 ETH</span>
           <span class="stat-label">Laundered</span>
         </div>
         <div class="stat">
-          <span class="stat-value text-yellow-400">~1,570 ETH</span>
-          <span class="stat-label">Being Laundered</span>
+          <span class="stat-value text-red-400">COMPLETE</span>
+          <span class="stat-label">Status</span>
         </div>
         <div class="stat">
           <span class="stat-value text-slate-400">~268 ETH</span>
@@ -95,7 +95,7 @@ import '@vue-flow/core/dist/style.css';
 import '@vue-flow/core/dist/theme-default.css';
 import '@vue-flow/controls/dist/style.css';
 
-const lastUpdated = 'Jan 10, 2026 - 21:30 UTC';
+const lastUpdated = 'Jan 10, 2026 - 22:00 UTC';
 
 // Node positions - laid out top-to-bottom chronologically
 // Phase 1 (top): Preparation - funding the attacker (Nov-Dec 2025)
@@ -354,7 +354,7 @@ const nodes = ref([
   // DESTINATION B LAUNDERING CHAIN - Jan 10, 2026 (NEW)
   // ═══════════════════════════════════════════════════════════════
 
-  // Laundering Wallet 2 - receiving from Dest B
+  // Laundering Wallet 2 - receiving from Dest B (NOW EMPTY)
   {
     id: 'laundering-2',
     type: 'custom',
@@ -362,18 +362,18 @@ const nodes = ref([
     data: {
       label: 'Laundering Wallet 2',
       address: '0xd841...0b135',
-      balance: '~1,570 ETH',
-      status: 'LAUNDERING NOW',
-      statusClass: 'status-holding',
-      type: 'holding'
+      balance: '~0.5 ETH',
+      status: 'EMPTIED',
+      statusClass: 'status-drained',
+      type: 'drained'
     }
   },
 
-  // Dest B Tornado Cash deposits - 24 x 100 ETH so far (positioned to the right)
-  ...Array.from({ length: 24 }, (_, i) => ({
+  // Dest B Tornado Cash deposits - 40 x 100 ETH (completed)
+  ...Array.from({ length: 40 }, (_, i) => ({
     id: `tc-b-100-${i + 1}`,
     type: 'custom',
-    position: { x: 1350 + (i % 4) * 180, y: 920 + Math.floor(i / 4) * 130 },
+    position: { x: 1350 + (i % 5) * 160, y: 920 + Math.floor(i / 5) * 110 },
     data: {
       label: '100 ETH',
       address: `B#${i + 1}`,
@@ -384,17 +384,17 @@ const nodes = ref([
     }
   })),
 
-  // Dest B Summary (in progress)
+  // Dest B Summary (COMPLETE)
   {
     id: 'tornado-total-b',
     type: 'custom',
-    position: { x: 1500, y: 1720 },
+    position: { x: 1550, y: 1850 },
     data: {
       label: 'DEST B TORNADO',
-      address: '24+ deposits',
-      balance: '~2,430 ETH',
-      status: 'IN PROGRESS',
-      statusClass: 'status-holding',
+      address: '40 deposits',
+      balance: '~4,000 ETH',
+      status: 'COMPLETE',
+      statusClass: 'status-mixer',
       type: 'mixer'
     }
   }
@@ -586,19 +586,19 @@ const edges = ref([
     source: 'dest-b',
     target: 'laundering-2',
     label: '4,001 ETH (Jan 10)',
-    animated: true,
-    style: { stroke: '#ef4444', strokeWidth: 3 },
-    labelStyle: { fill: '#ef4444', fontWeight: 'bold', fontSize: '11px' },
+    animated: false,
+    style: { stroke: '#64748b', strokeWidth: 3 },
+    labelStyle: { fill: '#64748b', fontWeight: 'bold', fontSize: '11px' },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   },
 
-  // Dest B Tornado Cash deposit edges (24 x 100 ETH)
-  ...Array.from({ length: 24 }, (_, i) => ({
+  // Dest B Tornado Cash deposit edges (40 x 100 ETH - COMPLETE)
+  ...Array.from({ length: 40 }, (_, i) => ({
     id: `e-tc-b-100-${i + 1}`,
     source: 'laundering-2',
     target: `tc-b-100-${i + 1}`,
     label: '',
-    animated: true,
+    animated: false,
     style: { stroke: '#a855f7', strokeWidth: 1 },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   }))

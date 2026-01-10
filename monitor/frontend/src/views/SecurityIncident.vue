@@ -30,7 +30,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
         <div class="space-y-2">
           <p class="text-slate-300"><strong class="text-red-400">What happened:</strong> On Jan 8, 2026 at 16:02 UTC, an attacker exploited the TrueBit Protocol Purchase contract, draining ~8,535 ETH ($26.6M).</p>
-          <p class="text-slate-300"><strong class="text-red-400">Current status:</strong> 🚨 LAUNDERING NEARLY COMPLETE! ~6,700 ETH (~79%) already in Tornado Cash. Only ~1,570 ETH remaining in laundering wallet. Recovery no longer possible for vast majority of funds.</p>
+          <p class="text-slate-300"><strong class="text-red-400">Current status:</strong> LAUNDERING COMPLETE. All ~8,267 ETH (~97% of stolen funds) has been deposited to Tornado Cash. Recovery is no longer possible.</p>
           <p class="text-slate-300"><strong class="text-cyan-400">Official response:</strong> TrueBit acknowledged the incident, warned users not to interact with the affected contract, and confirmed law enforcement contact.</p>
         </div>
         <div class="space-y-2">
@@ -59,15 +59,15 @@
             <div class="text-2xl font-bold text-red-400">~8,535 ETH</div>
             <div class="text-slate-500 text-sm">$26.6M USD</div>
           </div>
-          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4 animate-pulse-subtle">
+          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4">
             <div class="text-slate-400 text-sm">Funds Lost (Tornado)</div>
-            <div class="text-2xl font-bold text-red-400">~6,700 ETH</div>
-            <div class="text-slate-500 text-sm">$20.7M - Unrecoverable</div>
+            <div class="text-2xl font-bold text-red-400">~8,267 ETH</div>
+            <div class="text-slate-500 text-sm">$25.5M - Unrecoverable</div>
           </div>
-          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4 animate-pulse-subtle">
-            <div class="text-slate-400 text-sm">Being Laundered NOW</div>
-            <div class="text-2xl font-bold text-red-400">~1,570 ETH</div>
-            <div class="text-slate-500 text-sm">$4.8M - Dest B chain</div>
+          <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+            <div class="text-slate-400 text-sm">Laundering Status</div>
+            <div class="text-2xl font-bold text-red-400">COMPLETE</div>
+            <div class="text-slate-500 text-sm">All funds in Tornado Cash</div>
           </div>
           <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <div class="text-slate-400 text-sm">Funds Recovered</div>
@@ -1207,10 +1207,10 @@ const addresses = [
   {
     role: 'Laundering Wallet 2',
     address: '0xd841c52b68c5db133078aba039bd9eaf19b0b135',
-    balance: '~1,570 ETH',
-    balanceClass: 'text-red-400 font-bold animate-pulse',
-    status: 'LAUNDERING NOW',
-    statusClass: 'bg-red-500/30 text-red-400 font-bold animate-pulse'
+    balance: '~0.5 ETH',
+    balanceClass: 'text-slate-500',
+    status: 'EMPTIED',
+    statusClass: 'bg-slate-500/30 text-slate-400'
   },
   {
     role: 'Laundering Wallet 1',
