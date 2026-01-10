@@ -204,7 +204,7 @@ const nodes = ref([
   {
     id: 'dest-a',
     type: 'custom',
-    position: { x: 100, y: 520 },
+    position: { x: 200, y: 520 },
     data: {
       label: 'Destination A',
       address: '0x62Af...Eb4862',
@@ -218,7 +218,7 @@ const nodes = ref([
   {
     id: 'dest-b',
     type: 'custom',
-    position: { x: 500, y: 520 },
+    position: { x: 600, y: 520 },
     data: {
       label: 'Destination B',
       address: '0x2735...E850a',
@@ -232,7 +232,7 @@ const nodes = ref([
   {
     id: 'new-holding',
     type: 'custom',
-    position: { x: 100, y: 640 },
+    position: { x: 200, y: 640 },
     data: {
       label: 'New Holding',
       address: '0xD12f...31a60',
@@ -246,24 +246,89 @@ const nodes = ref([
   {
     id: 'laundering',
     type: 'custom',
-    position: { x: 100, y: 760 },
+    position: { x: 450, y: 760 },
     data: {
       label: 'Laundering Wallet',
       address: '0x7720...3a59D',
       balance: '~0.6 ETH',
-      status: '57+ txns out',
+      status: '57 txns to Tornado',
       statusClass: 'status-mixer',
       type: 'attacker'
     }
   },
-  // Tornado Cash - final destination
-  {
-    id: 'tornado',
+
+  // ═══════════════════════════════════════════════════════════════
+  // TORNADO CASH DEPOSITS - Individual transactions
+  // ═══════════════════════════════════════════════════════════════
+
+  // 100 ETH deposits (34 transactions) - Row 1-5, spread across 7 columns
+  ...Array.from({ length: 34 }, (_, i) => ({
+    id: `tc-100-${i + 1}`,
     type: 'custom',
-    position: { x: 100, y: 880 },
+    position: { x: (i % 7) * 180 + 50, y: 920 + Math.floor(i / 7) * 130 },
     data: {
-      label: 'Tornado Cash',
-      address: 'Mixer Protocol',
+      label: '100 ETH',
+      address: `#${i + 1}`,
+      balance: '',
+      status: '',
+      statusClass: '',
+      type: 'mixer'
+    }
+  })),
+
+  // 10 ETH deposits (6 transactions)
+  ...Array.from({ length: 6 }, (_, i) => ({
+    id: `tc-10-${i + 1}`,
+    type: 'custom',
+    position: { x: i * 180 + 140, y: 1580 },
+    data: {
+      label: '10 ETH',
+      address: `#${35 + i}`,
+      balance: '',
+      status: '',
+      statusClass: '',
+      type: 'mixer-10'
+    }
+  })),
+
+  // 1 ETH deposits (8 transactions)
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: `tc-1-${i + 1}`,
+    type: 'custom',
+    position: { x: i * 160 + 80, y: 1730 },
+    data: {
+      label: '1 ETH',
+      address: `#${41 + i}`,
+      balance: '',
+      status: '',
+      statusClass: '',
+      type: 'mixer-1'
+    }
+  })),
+
+  // 0.1 ETH deposits (9 transactions)
+  ...Array.from({ length: 9 }, (_, i) => ({
+    id: `tc-01-${i + 1}`,
+    type: 'custom',
+    position: { x: i * 150 + 50, y: 1880 },
+    data: {
+      label: '0.1 ETH',
+      address: `#${49 + i}`,
+      balance: '',
+      status: '',
+      statusClass: '',
+      type: 'mixer-01'
+    }
+  })),
+
+  // Summary node at the bottom
+  {
+    id: 'tornado-total',
+    type: 'custom',
+    position: { x: 450, y: 2050 },
+    data: {
+      label: 'TORNADO CASH TOTAL',
+      address: '57 deposits',
       balance: '~4,267 ETH',
       status: 'LAUNDERED',
       statusClass: 'status-mixer',
@@ -404,16 +469,53 @@ const edges = ref([
     labelStyle: { fill: '#ef4444', fontWeight: 'bold', fontSize: '11px' },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   },
-  {
-    id: 'e-laundering-tornado',
+  // ═══════════════════════════════════════════════════════════════
+  // TORNADO CASH DEPOSIT EDGES - Individual transactions
+  // ═══════════════════════════════════════════════════════════════
+
+  // 100 ETH deposits (34 edges)
+  ...Array.from({ length: 34 }, (_, i) => ({
+    id: `e-tc-100-${i + 1}`,
     source: 'laundering',
-    target: 'tornado',
-    label: '57+ deposits',
+    target: `tc-100-${i + 1}`,
+    label: '',
     animated: false,
-    style: { stroke: '#a855f7', strokeWidth: 3 },
-    labelStyle: { fill: '#a855f7', fontWeight: 'bold', fontSize: '11px' },
+    style: { stroke: '#a855f7', strokeWidth: 1 },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
-  },
+  })),
+
+  // 10 ETH deposits (6 edges)
+  ...Array.from({ length: 6 }, (_, i) => ({
+    id: `e-tc-10-${i + 1}`,
+    source: 'laundering',
+    target: `tc-10-${i + 1}`,
+    label: '',
+    animated: false,
+    style: { stroke: '#8b5cf6', strokeWidth: 1 },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  })),
+
+  // 1 ETH deposits (8 edges)
+  ...Array.from({ length: 8 }, (_, i) => ({
+    id: `e-tc-1-${i + 1}`,
+    source: 'laundering',
+    target: `tc-1-${i + 1}`,
+    label: '',
+    animated: false,
+    style: { stroke: '#7c3aed', strokeWidth: 1 },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  })),
+
+  // 0.1 ETH deposits (9 edges)
+  ...Array.from({ length: 9 }, (_, i) => ({
+    id: `e-tc-01-${i + 1}`,
+    source: 'laundering',
+    target: `tc-01-${i + 1}`,
+    label: '',
+    animated: false,
+    style: { stroke: '#6d28d9', strokeWidth: 1 },
+    labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
+  })),
 
   // Message to attacker (side connection)
   {
@@ -557,6 +659,45 @@ const edges = ref([
 .custom-node.mixer {
   background: linear-gradient(135deg, #581c87 0%, #7c3aed 100%);
   border: 2px solid #a855f7;
+  min-width: 80px;
+  padding: 8px 10px;
+}
+
+.custom-node.mixer-10 {
+  background: linear-gradient(135deg, #4c1d95 0%, #6d28d9 100%);
+  border: 2px solid #8b5cf6;
+  min-width: 70px;
+  padding: 6px 8px;
+}
+
+.custom-node.mixer-1 {
+  background: linear-gradient(135deg, #3b0764 0%, #5b21b6 100%);
+  border: 2px solid #7c3aed;
+  min-width: 60px;
+  padding: 5px 6px;
+}
+
+.custom-node.mixer-01 {
+  background: linear-gradient(135deg, #2e1065 0%, #4c1d95 100%);
+  border: 2px solid #6d28d9;
+  min-width: 55px;
+  padding: 4px 5px;
+}
+
+.custom-node.mixer .node-label,
+.custom-node.mixer-10 .node-label,
+.custom-node.mixer-1 .node-label,
+.custom-node.mixer-01 .node-label {
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.custom-node.mixer .node-address,
+.custom-node.mixer-10 .node-address,
+.custom-node.mixer-1 .node-address,
+.custom-node.mixer-01 .node-address {
+  font-size: 0.6rem;
+  margin-bottom: 0;
 }
 
 @keyframes pulse-border {
