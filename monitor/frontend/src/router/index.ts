@@ -12,6 +12,7 @@ import TokenView from '../views/TokenView.vue';
 import NodeRegistryView from '../views/NodeRegistryView.vue';
 import StakingView from '../views/StakingView.vue';
 import SecurityIncident from '../views/SecurityIncident.vue';
+import FundFlowView from '../views/FundFlowView.vue';
 import ProtectedRoute from '../views/ProtectedRoute.vue';
 
 // Extend route meta type
@@ -69,6 +70,12 @@ const routes: RouteRecordRaw[] = [
     name: 'security-incident',
     component: SecurityIncident,
     meta: { requiresAuth: false, title: 'Security Incident' }
+  },
+  {
+    path: '/security-incident/fund-flow',
+    name: 'fund-flow',
+    component: FundFlowView,
+    meta: { requiresAuth: false, title: 'Fund Flow' }
   },
 
   // Protected routes - auth required

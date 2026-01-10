@@ -53,23 +53,49 @@
         </div>
 
         <!-- Summary Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <div class="text-slate-400 text-sm">Total Stolen</div>
             <div class="text-2xl font-bold text-red-400">~8,535 ETH</div>
             <div class="text-slate-500 text-sm">$26.6M USD</div>
+          </div>
+          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4">
+            <div class="text-slate-400 text-sm">Funds Lost (Tornado)</div>
+            <div class="text-2xl font-bold text-red-400">~4,267 ETH</div>
+            <div class="text-slate-500 text-sm">$13.2M - Unrecoverable</div>
           </div>
           <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
             <div class="text-slate-400 text-sm">Funds Recovered</div>
             <div class="text-2xl font-bold text-slate-500">0 ETH</div>
             <div class="text-slate-500 text-sm">No recovery yet</div>
           </div>
-          <div class="bg-slate-800/50 border border-red-500/50 rounded-lg p-4 animate-pulse-subtle">
-            <div class="text-slate-400 text-sm">Funds Status</div>
-            <div class="text-2xl font-bold text-red-400">LAUNDERING</div>
-            <div class="text-slate-500 text-sm">~4,267 ETH to Tornado Cash</div>
+          <div class="bg-slate-800/50 border border-yellow-500/50 rounded-lg p-4">
+            <div class="text-slate-400 text-sm">Still Trackable</div>
+            <div class="text-2xl font-bold text-yellow-400">~4,001 ETH</div>
+            <div class="text-slate-500 text-sm">$12.4M in Dest B</div>
           </div>
         </div>
+
+        <!-- Fund Flow Link -->
+        <router-link
+          to="/security-incident/fund-flow"
+          class="block bg-purple-900/30 border border-purple-500/50 rounded-lg p-4 mb-8 hover:bg-purple-900/40 transition-colors"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-purple-400">
+                <path fill-rule="evenodd" d="M3 6a3 3 0 0 1 3-3h12a3 3 0 0 1 3 3v12a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3V6Zm4.5 7.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0v-2.25a.75.75 0 0 1 .75-.75Zm3.75-1.5a.75.75 0 0 0-1.5 0v4.5a.75.75 0 0 0 1.5 0V12Zm2.25-3a.75.75 0 0 1 .75.75v6.75a.75.75 0 0 1-1.5 0V9.75A.75.75 0 0 1 13.5 9Zm3.75-1.5a.75.75 0 0 0-1.5 0v9a.75.75 0 0 0 1.5 0v-9Z" clip-rule="evenodd" />
+              </svg>
+              <div>
+                <div class="text-purple-400 font-bold">View Interactive Fund Flow Graph</div>
+                <div class="text-slate-400 text-sm">Visualize how funds moved from the exploit to Tornado Cash</div>
+              </div>
+            </div>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5 text-purple-400">
+              <path fill-rule="evenodd" d="M3 10a.75.75 0 0 1 .75-.75h10.638L10.23 5.29a.75.75 0 1 1 1.04-1.08l5.5 5.25a.75.75 0 0 1 0 1.08l-5.5 5.25a.75.75 0 1 1-1.04-1.08l4.158-3.96H3.75A.75.75 0 0 1 3 10Z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </router-link>
 
         <!-- Updates Section -->
         <div class="space-y-6">
