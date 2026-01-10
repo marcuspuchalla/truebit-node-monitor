@@ -70,11 +70,11 @@
       <div class="info-title">Last Updated: {{ lastUpdated }}</div>
       <div class="info-stats">
         <div class="stat">
-          <span class="stat-value text-red-400">~4,667 ETH</span>
+          <span class="stat-value text-red-400">~6,700 ETH</span>
           <span class="stat-label">Laundered</span>
         </div>
         <div class="stat">
-          <span class="stat-value text-yellow-400">~3,600 ETH</span>
+          <span class="stat-value text-yellow-400">~1,570 ETH</span>
           <span class="stat-label">Being Laundered</span>
         </div>
         <div class="stat">
@@ -95,7 +95,7 @@ import '@vue-flow/core/dist/style.css';
 import '@vue-flow/core/dist/theme-default.css';
 import '@vue-flow/controls/dist/style.css';
 
-const lastUpdated = 'Jan 10, 2026 - 20:30 UTC';
+const lastUpdated = 'Jan 10, 2026 - 21:30 UTC';
 
 // Node positions - laid out top-to-bottom chronologically
 // Phase 1 (top): Preparation - funding the attacker (Nov-Dec 2025)
@@ -362,18 +362,18 @@ const nodes = ref([
     data: {
       label: 'Laundering Wallet 2',
       address: '0xd841...0b135',
-      balance: '~3,600 ETH',
+      balance: '~1,570 ETH',
       status: 'LAUNDERING NOW',
       statusClass: 'status-holding',
       type: 'holding'
     }
   },
 
-  // Dest B Tornado Cash deposits - 4 x 100 ETH so far (positioned to the right)
-  ...Array.from({ length: 4 }, (_, i) => ({
+  // Dest B Tornado Cash deposits - 24 x 100 ETH so far (positioned to the right)
+  ...Array.from({ length: 24 }, (_, i) => ({
     id: `tc-b-100-${i + 1}`,
     type: 'custom',
-    position: { x: 1350 + (i % 2) * 180, y: 920 + Math.floor(i / 2) * 130 },
+    position: { x: 1350 + (i % 4) * 180, y: 920 + Math.floor(i / 4) * 130 },
     data: {
       label: '100 ETH',
       address: `B#${i + 1}`,
@@ -388,11 +388,11 @@ const nodes = ref([
   {
     id: 'tornado-total-b',
     type: 'custom',
-    position: { x: 1400, y: 1200 },
+    position: { x: 1500, y: 1720 },
     data: {
       label: 'DEST B TORNADO',
-      address: '4+ deposits',
-      balance: '~400 ETH',
+      address: '24+ deposits',
+      balance: '~2,430 ETH',
       status: 'IN PROGRESS',
       statusClass: 'status-holding',
       type: 'mixer'
@@ -592,14 +592,14 @@ const edges = ref([
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   },
 
-  // Dest B Tornado Cash deposit edges (4 x 100 ETH)
-  ...Array.from({ length: 4 }, (_, i) => ({
+  // Dest B Tornado Cash deposit edges (24 x 100 ETH)
+  ...Array.from({ length: 24 }, (_, i) => ({
     id: `e-tc-b-100-${i + 1}`,
     source: 'laundering-2',
     target: `tc-b-100-${i + 1}`,
     label: '',
     animated: true,
-    style: { stroke: '#a855f7', strokeWidth: 2 },
+    style: { stroke: '#a855f7', strokeWidth: 1 },
     labelBgStyle: { fill: '#1e293b', fillOpacity: 0.9 }
   }))
 ]);
