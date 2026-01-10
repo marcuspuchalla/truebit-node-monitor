@@ -71,34 +71,6 @@
           </div>
         </div>
 
-        <!-- Fund Movement Alert -->
-        <div class="bg-red-900/30 border-2 border-red-500 rounded-lg p-4 mb-8">
-          <div class="flex items-center gap-3 mb-3">
-            <span class="text-2xl">⚠️</span>
-            <h3 class="text-red-400 font-bold text-lg">FUND MOVEMENT DETECTED - Jan 9, 2026</h3>
-          </div>
-          <p class="text-slate-300 text-sm mb-3">
-            ~4,267 ETH from Destination A has been moved to a new holding address. See Update #10 below for full details and live tracking.
-          </p>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div class="bg-slate-900/50 rounded p-2">
-              <div class="text-slate-500 text-xs">Destination A (old)</div>
-              <div class="text-red-400 font-mono">~0 ETH</div>
-              <div class="text-red-400 text-xs">DRAINED</div>
-            </div>
-            <div class="bg-slate-900/50 rounded p-2">
-              <div class="text-slate-500 text-xs">New Holding Address</div>
-              <div class="text-yellow-400 font-mono">~4,267 ETH</div>
-              <div class="text-yellow-400 text-xs">MONITORING</div>
-            </div>
-            <div class="bg-slate-900/50 rounded p-2">
-              <div class="text-slate-500 text-xs">Destination B</div>
-              <div class="text-green-400 font-mono">~4,001 ETH</div>
-              <div class="text-green-400 text-xs">NO MOVEMENT</div>
-            </div>
-          </div>
-        </div>
-
         <!-- Updates Section -->
         <div class="space-y-6">
           <h2 class="text-xl font-bold text-slate-100 flex items-center gap-2">
