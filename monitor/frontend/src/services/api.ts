@@ -63,6 +63,36 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Response interceptor to silently handle federation API errors
+// This allows aggregator-only deployments (like tru.watch) to work without a backend
+api.interceptors.response.use(
+  (response) => response,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (error: any) => {
+    const isFederationEndpoint = error.config?.url?.includes('/federation/');
+    const isBackendUnavailable = error.response?.status === 502 || error.response?.status === 401 || !error.response;
+
+    if (isFederationEndpoint && isBackendUnavailable) {
+      // Return placeholder data for federation endpoints when backend isn't available
+      const url = error.config?.url || '';
+
+      if (url.includes('/federation/status')) {
+        return Promise.resolve({ data: { enabled: false, connected: false, status: 'not_initialized' } });
+      } else if (url.includes('/federation/messages')) {
+        return Promise.resolve({ data: { messages: [], pagination: { limit: 100, offset: 0, hasMore: false } } });
+      } else if (url.includes('/federation/peers')) {
+        return Promise.resolve({ data: { peers: [], count: 0 } });
+      } else if (url.includes('/federation/network-stats')) {
+        return Promise.resolve({ data: { activeNodes: 0, totalNodes: 0, totalTasks: 0, completedTasks: 0, failedTasks: 0, cachedTasks: 0, tasksLast24h: 0, totalInvoices: 0, invoicesLast24h: 0, successRate: 0, cacheHitRate: 0, executionTimeDistribution: {}, gasUsageDistribution: {}, stepsComputedDistribution: {}, memoryUsedDistribution: {}, chainDistribution: {}, taskTypeDistribution: {}, locationDistribution: {}, continentDistribution: {}, lastUpdated: null, status: 'awaiting_data' } });
+      } else if (url.includes('/federation/settings')) {
+        return Promise.resolve({ data: { enabled: false, privacyLevel: 'balanced', shareTasks: true, shareStats: true, natsServers: [], tlsEnabled: true, locationEnabled: true, locationLabel: null, locationLat: null, locationLon: null, nodeId: null } });
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
 // API response types
 export interface StatusResponse {
   node: NodeStatus;
