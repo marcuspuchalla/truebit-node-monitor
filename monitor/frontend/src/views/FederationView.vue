@@ -1,20 +1,5 @@
 <template>
   <div class="federation-view">
-    <!-- Security Incident Alert -->
-    <router-link to="/security-incident" class="incident-alert">
-      <div class="incident-alert-icon">🚨</div>
-      <div class="incident-alert-content">
-        <div class="incident-alert-title">ACTIVE SECURITY INCIDENT</div>
-        <div class="incident-alert-text">TrueBit Protocol Purchase contract exploited - ~$26M drained. Click for live investigation updates.</div>
-      </div>
-      <div class="incident-alert-arrow">→</div>
-    </router-link>
-
-    <!-- Work in Progress Banner - compact -->
-    <div class="wip-banner">
-      Work in progress - features will change
-    </div>
-
     <!-- Connection Status -->
     <div class="status-card" :class="statusClass">
       <div class="status-indicator" :class="statusClass"></div>
@@ -940,78 +925,6 @@ function formatNumber(num) {
   padding: 1rem 2rem 2rem 2rem;
   max-width: 1000px;
   margin: 0 auto;
-}
-
-.wip-banner {
-  background: var(--info-bg);
-  border: 1px solid var(--info-border);
-  color: var(--info-text);
-  padding: 0.375rem 1rem;
-  border-radius: 0.375rem;
-  margin-bottom: 1rem;
-  text-align: center;
-  font-size: 0.75rem;
-}
-
-/* Security Incident Alert Banner */
-.incident-alert {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 50%, #7f1d1d 100%);
-  border: 1px solid #dc2626;
-  border-radius: 0.5rem;
-  margin-bottom: 0.75rem;
-  text-decoration: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 0 15px rgba(220, 38, 38, 0.3);
-}
-
-.incident-alert:hover {
-  background: linear-gradient(135deg, #991b1b 0%, #b91c1c 50%, #991b1b 100%);
-  box-shadow: 0 0 25px rgba(220, 38, 38, 0.5);
-  transform: translateY(-1px);
-}
-
-.incident-alert-icon {
-  font-size: 1.5rem;
-  animation: pulse-alert 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse-alert {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(1.1); }
-}
-
-.incident-alert-content {
-  flex: 1;
-}
-
-.incident-alert-title {
-  font-weight: 700;
-  font-size: 0.875rem;
-  color: #fca5a5;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  margin-bottom: 0.125rem;
-}
-
-.incident-alert-text {
-  font-size: 0.8rem;
-  color: #fecaca;
-  line-height: 1.3;
-}
-
-.incident-alert-arrow {
-  font-size: 1.25rem;
-  color: #fca5a5;
-  transition: transform 0.2s ease;
-}
-
-.incident-alert:hover .incident-alert-arrow {
-  transform: translateX(3px);
 }
 
 .unofficial-notice {
