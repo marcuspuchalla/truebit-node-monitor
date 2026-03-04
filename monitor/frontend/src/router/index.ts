@@ -12,6 +12,7 @@ import TokenView from '../views/TokenView.vue';
 import NodeRegistryView from '../views/NodeRegistryView.vue';
 import StakingView from '../views/StakingView.vue';
 import SecurityIncident from '../views/SecurityIncident.vue';
+import CommunityStatementView from '../views/CommunityStatementView.vue';
 import FundFlowView from '../views/FundFlowView.vue';
 import ProtectedRoute from '../views/ProtectedRoute.vue';
 
@@ -70,6 +71,12 @@ const routes: RouteRecordRaw[] = [
     name: 'security-incident',
     component: SecurityIncident,
     meta: { requiresAuth: false, title: 'Security Incident' }
+  },
+  {
+    path: '/community-statement',
+    name: 'community-statement',
+    component: CommunityStatementView,
+    meta: { requiresAuth: false, title: 'Community Statement' }
   },
   {
     path: '/security-incident/fund-flow',

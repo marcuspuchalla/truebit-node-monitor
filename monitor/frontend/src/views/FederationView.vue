@@ -1,5 +1,15 @@
 <template>
   <div class="federation-view">
+    <!-- Community Statement Banner -->
+    <router-link to="/community-statement" class="community-banner">
+      <div class="community-banner-icon">⚠</div>
+      <div class="community-banner-content">
+        <div class="community-banner-title">Community Statement</div>
+        <div class="community-banner-text">An open letter to the TrueBit team regarding the ongoing communication failure. Click to read.</div>
+      </div>
+      <div class="community-banner-arrow">→</div>
+    </router-link>
+
     <!-- Connection Status -->
     <div class="status-card" :class="statusClass">
       <div class="status-indicator" :class="statusClass"></div>
@@ -921,6 +931,61 @@ function formatNumber(num) {
 </script>
 
 <style scoped>
+.community-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #451a03 100%);
+  border: 1px solid #d97706;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 0 15px rgba(217, 119, 6, 0.25);
+}
+
+.community-banner:hover {
+  background: linear-gradient(135deg, #78350f 0%, #92400e 50%, #78350f 100%);
+  box-shadow: 0 0 25px rgba(217, 119, 6, 0.45);
+  transform: translateY(-1px);
+}
+
+.community-banner-icon {
+  font-size: 1.5rem;
+  color: #fbbf24;
+}
+
+.community-banner-content {
+  flex: 1;
+}
+
+.community-banner-title {
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: #fbbf24;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.125rem;
+}
+
+.community-banner-text {
+  font-size: 0.8rem;
+  color: #fde68a;
+  line-height: 1.3;
+}
+
+.community-banner-arrow {
+  font-size: 1.25rem;
+  color: #fbbf24;
+  transition: transform 0.2s ease;
+}
+
+.community-banner:hover .community-banner-arrow {
+  transform: translateX(3px);
+}
+
 .federation-view {
   padding: 1rem 2rem 2rem 2rem;
   max-width: 1000px;
