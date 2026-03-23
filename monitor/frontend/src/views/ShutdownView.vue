@@ -83,7 +83,42 @@
           </p>
           <p class="final-line">
             tru.watch was proud to provide an additional layer of value to the TrueBit network.
-            That work is now done. This service will not return.
+            That work is now done. This service will not return — not until every holder has been
+            fully reimbursed for their losses. Only then will we consider whether it is worth rebuilding.
+          </p>
+        </div>
+      </div>
+
+      <!-- Advisory for Business Owners -->
+      <div class="advisory-card">
+        <div class="advisory-label">Advisory — Business Owners &amp; Technology Evaluators</div>
+        <div class="advisory-body">
+          <p>
+            If you are a product owner, compliance officer, or business evaluating TrueBit technology —
+            including their <strong>Verified Compliance</strong>, <strong>Verified AI</strong>, or
+            <strong>Verified DeFi</strong> services — please read this carefully before making any decisions.
+          </p>
+          <p>
+            The technology itself may have merit. That is not the issue. The issue is this: when the largest
+            security incident in TrueBit's history occurred — a $26 million exploit — the team went completely
+            silent. For months. Legal inquiries received no response. The community received no guidance.
+            No timeline. No accountability.
+          </p>
+          <p>
+            Now ask yourself: if this is how TrueBit handles a crisis before you become a client — before
+            any contractual relationship exists — what will happen when a real problem arises inside your
+            business? When you need support, a response, or a resolution under time pressure?
+          </p>
+          <p class="advisory-warning">
+            Our honest recommendation, based entirely on publicly available information: <strong>do not build
+            on TrueBit at this time.</strong> Not because the technology cannot work, but because the team
+            behind it has demonstrated, at the most critical moment, that they will not be there when you
+            need them.
+          </p>
+          <p>
+            This is not a personal attack. It is a factual, professional assessment from a community that has
+            observed this project closely and has every reason to want it to succeed. We say this so that others
+            do not have to learn it the hard way.
           </p>
         </div>
       </div>
@@ -300,6 +335,49 @@
   border-left: 3px solid #d97706;
   padding-left: 1rem;
   margin-top: 0.5rem;
+}
+
+/* Advisory card */
+.advisory-card {
+  background: rgba(10, 15, 26, 0.9);
+  border: 1px solid rgba(100, 116, 139, 0.3);
+  border-radius: 0.5rem;
+  padding: 2rem;
+}
+
+.advisory-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  color: #94a3b8;
+  text-transform: uppercase;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(100, 116, 139, 0.15);
+}
+
+.advisory-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.advisory-body p {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  line-height: 1.8;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.advisory-body strong {
+  color: #e2e8f0;
+  font-weight: 600;
+}
+
+.advisory-warning {
+  color: #cbd5e1 !important;
+  border-left: 3px solid #64748b;
+  padding-left: 1rem;
 }
 
 /* Statement link */
